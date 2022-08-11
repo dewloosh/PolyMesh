@@ -1,0 +1,9 @@
+myst_parser
+nbsphinx
+sphinx-gallery
+sphinx_copybutton
+sphinxcontrib-bibtex==1.0.0
+nbsphinx-link
+sphinxcontrib-svg2pdfconverter
+furo
+dewloosh.math>=0.0.1b0

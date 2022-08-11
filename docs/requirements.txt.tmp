@@ -1,0 +1,7 @@
+myst_parser
+nbsphinx
+sphinx-gallery
+sphinx_copybutton
+sphinxcontrib-bibtex
+sphinxcontrib-svg2pdfconverter
+furo
