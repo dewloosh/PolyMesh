@@ -1,6 +1,3 @@
-flake8 
-pytest 
-pytest-cov
 networkx
 matplotlib
 vtk
@@ -9,4 +6,4 @@ sectionproperties
 pythreejs
 pandas
 plotly
-autopep8
+tetgen
