@@ -10,7 +10,7 @@ from packaging import version
 import warnings
 
 from neumann.array import matrixform
-from .neumann.linalg.sparse import JaggedArray
+from neumann.linalg.sparse import JaggedArray
 from neumann.linalg.sparse.csr import csr_matrix
 
 

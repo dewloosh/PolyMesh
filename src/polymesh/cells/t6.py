@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from ...mesh.utils import cells_coords
-from ...mesh.polygon import QuadraticTriangle as Triangle
+from ..utils import cells_coords
+from ..polygon import QuadraticTriangle as Triangle
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray

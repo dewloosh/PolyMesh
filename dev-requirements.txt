@@ -7,3 +7,6 @@ vtk
 pyvista
 sectionproperties
 pythreejs
+pandas
+plotly
+autopep8

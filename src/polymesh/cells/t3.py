@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from ...mesh.polygon import Triangle
-from ...math.array import repeat
+from ..polygon import Triangle
+from neumann.array import repeat
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray

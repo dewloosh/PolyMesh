@@ -2,10 +2,10 @@
 import numpy as np
 import unittest
 
-from dewloosh.math.linalg import Vector, ReferenceFrame, linspace
-from dewloosh.geom import PointCloud, triangulate, CartesianFrame
-from dewloosh.geom.space import StandardFrame
-from dewloosh.geom.utils import center_of_points
+from neumann.linalg import Vector, ReferenceFrame, linspace
+from polymesh import PointCloud, triangulate, CartesianFrame
+from polymesh.space import StandardFrame
+from polymesh.utils import center_of_points
 
 
 class TestLinalg(unittest.TestCase):

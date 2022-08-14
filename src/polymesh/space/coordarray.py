@@ -11,11 +11,11 @@ import numpy as np
 from numba import njit, prange
 from typing import Union
 
-from ...core.tools import issequence
+from dewloosh.core.typing import issequence
 
-from ...math.array import minmax
-from ...math.linalg.vector import VectorBase, Vector
-from ...math.linalg.frame import ReferenceFrame as FrameLike
+from neumann.array import minmax
+from neumann.linalg.vector import VectorBase, Vector
+from neumann.linalg.frame import ReferenceFrame as FrameLike
 
 from .frame import CartesianFrame
 from .point import Point

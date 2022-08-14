@@ -2,9 +2,9 @@
 import numpy as np
 import unittest
 
-from dewloosh.geom import TriMesh, CartesianFrame
-from dewloosh.geom.primitives import circular_disk
-from dewloosh.geom.cells import T3
+from polymesh import TriMesh, CartesianFrame
+from polymesh.recipes import circular_disk
+from polymesh.cells import T3
 
 
 class TestTet(unittest.TestCase):
@@ -27,10 +27,7 @@ class TestTet(unittest.TestCase):
         def test_vol_cylinder_TET4(min_radius, max_radius, height, 
                            n_angles, n_radii, n_z):
             try:
-                A = CartesianFrame(dim=3)
-                points, triangles = \
-                    circular_disk(n_angles, n_radii, min_radius, max_radius)
-                mesh2d = TriMesh(points=points, triangles=triangles, frame=A)
+                mesh2d = circular_disk(n_angles, n_radii, min_radius, max_radius)
                 mesh3d = mesh2d.extrude(h=height, N=n_z)
                 a = np.pi * (max_radius**2 - min_radius**2) * height
                 assert np.isclose(mesh3d.volume(), a, atol=0, rtol=a/1000)

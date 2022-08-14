@@ -4,8 +4,8 @@ from typing import Union
 from numpy import ndarray
 from copy import deepcopy as dcopy
 
-from ...math.linalg.frame import ReferenceFrame
-from ...math.linalg.vector import Vector
+from neumann.linalg.frame import ReferenceFrame
+from neumann.linalg.vector import Vector
 
 
 __all__ = ['CartesianFrame']

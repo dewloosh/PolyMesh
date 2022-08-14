@@ -3,7 +3,7 @@ import numpy as np
 from numpy import ndarray
 from numba import njit, prange, vectorize
 
-from ...math.linalg import normalize, norm
+from neumann.linalg import normalize, norm
 
 from ..utils import cells_coords, cell_coords
 

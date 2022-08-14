@@ -3,9 +3,9 @@ from typing import Callable, Iterable
 import numpy as np
 from functools import partial
 
-from ...core.tools import issequence
+from dewloosh.core.tools import issequence
 
-from ...math.array import minmax
+from neumann.array import minmax
 
 from .triang import triobj_to_mpl, get_triobj_data, triangulate
 from .triutils import offset_tri

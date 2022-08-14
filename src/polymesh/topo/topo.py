@@ -7,9 +7,9 @@ import awkward as ak
 from awkward import Array as akarray
 from scipy.sparse import csr_matrix as csr_scipy
 
-from ...math.linalg.sparse import csr_matrix, JaggedArray
-from ...math.arraysetops import unique2d
-from ...math.array import count_cols
+from neumann.linalg.sparse import csr_matrix, JaggedArray
+from neumann.arraysetops import unique2d
+from neumann.array import count_cols
 
 from .. space import PointCloud
 from ..utils import explode_mesh_bulk

@@ -2,10 +2,10 @@
 import numpy as np
 import unittest
 
-from dewloosh.math.linalg import Vector
+from neumann.linalg import Vector
 
-from dewloosh.geom import TriMesh, PolyData, grid, PointCloud, CartesianFrame
-from dewloosh.geom.rgrid import grid
+from polymesh import TriMesh, PolyData, grid, PointCloud, CartesianFrame
+from polymesh.grid import grid
 
 
 class TestCoords(unittest.TestCase):

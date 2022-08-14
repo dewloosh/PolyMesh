@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ...math.array import flatten2dC
+from neumann.array import flatten2dC
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray

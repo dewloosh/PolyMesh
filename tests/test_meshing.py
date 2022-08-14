@@ -2,12 +2,12 @@
 import numpy as np
 import unittest
 
-from dewloosh.geom import TriMesh, grid, Grid, PolyData
-from dewloosh.geom.primitives import circular_disk
-from dewloosh.geom.voxelize import voxelize_cylinder
-from dewloosh.geom.cells import H8, TET4
-from dewloosh.geom.topo import detach_mesh_bulk
-from dewloosh.geom.extrude import extrude_T3_TET4
+from polymesh import TriMesh, grid, Grid, PolyData
+from polymesh.recipes import circular_disk
+from polymesh.voxelize import voxelize_cylinder
+from polymesh.cells import H8, TET4
+from polymesh.topo import detach_mesh_bulk
+from polymesh.extrude import extrude_T3_TET4
 
 
 class TestMeshing(unittest.TestCase):
@@ -32,8 +32,9 @@ class TestMeshing(unittest.TestCase):
         max_radius = 25
         h = 20
         zres = 20
-        points, triangles = \
-            circular_disk(n_angles, n_radii, min_radius, max_radius)        
+        mesh = circular_disk(n_angles, n_radii, min_radius, max_radius)        
+        points = mesh.coords()
+        triangles = mesh.topology()
         points, triangles = detach_mesh_bulk(points, triangles)            
         coords, topo = extrude_T3_TET4(points, triangles, h, zres)       
         tetmesh = PolyData(coords=coords, topo=topo, celltype=TET4)

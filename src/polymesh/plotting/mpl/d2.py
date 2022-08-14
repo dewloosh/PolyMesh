@@ -4,7 +4,7 @@ import matplotlib.tri as tri
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ....math.array import minmax
+from neumann.array import minmax
 
 def plot_triangles_2d(coords, triangles, data):
 

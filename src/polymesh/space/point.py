@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from ...math.linalg import Vector
+from neumann.linalg import Vector
 from .frame import CartesianFrame
 
 

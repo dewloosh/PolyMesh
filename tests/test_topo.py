@@ -3,7 +3,7 @@ import numpy as np
 import unittest
 
 
-from dewloosh.geom.topo import TopologyArray
+from polymesh.topo import TopologyArray
 
 
 class TestTopo(unittest.TestCase):

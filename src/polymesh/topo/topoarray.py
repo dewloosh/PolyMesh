@@ -8,10 +8,10 @@ from numpy.lib.mixins import NDArrayOperatorsMixin
 import awkward as ak
 from awkward import unflatten as build, Array as akarray
 
-from ...core import Wrapper
-from ...math.linalg.sparse.jaggedarray import JaggedArray
-from ...math.arraysetops import unique2d
-from ...math.linalg.sparse.utils import count_cols
+from dewloosh.core import Wrapper
+from neumann.linalg.sparse.jaggedarray import JaggedArray
+from neumann.arraysetops import unique2d
+from neumann.linalg.sparse.utils import count_cols
 
 
 __all__ = ['TopologyArray']

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from ...mesh.polyhedron import TetraHedron
-from ...math.array import repeat
+from ..polyhedron import TetraHedron
+from neumann.array import repeat
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray

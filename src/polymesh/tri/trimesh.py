@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from ...math.array import ascont
+from neumann.array import ascont
 
 from ..polydata import PolyData
 from ..cells import T3, T6, TET4

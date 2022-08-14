@@ -3,7 +3,7 @@ from numba import njit, prange
 import numpy as np
 from numpy import ndarray
 
-from ...math.numint import GaussPoints as Gauss
+from neumann.numint import GaussPoints as Gauss
 
 from ..polyhedron import HexaHedron
 from ..utils import cells_coords

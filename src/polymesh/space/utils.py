@@ -3,9 +3,9 @@ import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
-from ...math import squeeze
-from ...math.linalg import normalize, normalize2d, norm2d
-from ...math.array import atleast2d
+from neumann import squeeze
+from neumann.linalg import normalize, normalize2d, norm2d
+from neumann.array import atleast2d
 
 from ..utils import center_of_points, cell_center, cell_coords
     

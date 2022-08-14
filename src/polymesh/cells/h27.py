@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-from ...mesh.polyhedron import TriquadraticHexaHedron
-from ...math.numint import GaussPoints as Gauss
-from ..utils import cells_coords
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
+
+from neumann.numint import GaussPoints as Gauss
+
+from ..polyhedron import TriquadraticHexaHedron
+from ..utils import cells_coords
+
 __cache = True
 
 
