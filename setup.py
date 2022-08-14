@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import codecs
 import os.path
-from setuptools import find_namespace_packages, setup
+from setuptools import find_packages, setup
 
 
 def read(rel_path):
@@ -36,16 +36,15 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 
-_module = os.listdir(os.path.join(os.path.dirname(__file__), "src/dewloosh"))[0]
-_init_path = "src/dewloosh/{}/__init__.py".format(_module)
+_init_path = "src/polymesh/__init__.py"
 _version = get_version(_init_path)
 _description = get_description(_init_path)
-_url = 'https://github.com/dewloosh/dewloosh-{}'.format(_module)
+_url = 'https://github.com/dewloosh/polymesh'
 _download_url = _url + '/archive/refs/tags/{}.zip'.format(_version)
 
 
 setup(
-	name="dewloosh.{}".format(_module),
+	name="polymesh",
     version=_version,                        
     author="dewloosh",
     author_email = 'dewloosh@gmail.com',                   
@@ -54,18 +53,17 @@ setup(
     long_description_content_type="text/markdown",
 	url = _url, 
     download_url = _download_url,
-	packages=find_namespace_packages(where='src', include=['dewloosh.*']),
+	packages=find_packages(where='src'),
 	classifiers=[
         'Development Status :: 3 - Alpha',     
         'License :: OSI Approved :: MIT License',   
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",  
         'Programming Language :: Python :: 3 :: Only',
 		'Operating System :: OS Independent'
     ],                                      
-    python_requires='>=3.6, <3.10',                             
+    python_requires='>=3.7, <3.10',                             
     package_dir={'':'src'},     
     install_requires=required,
 	zip_safe=False,

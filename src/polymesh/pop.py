@@ -2,7 +2,7 @@
 import numpy as np
 from numba import njit
 
-from ..math.array import tile
+from neumann.array import tile
 
 from .tri.triutils import edges_tri
 from .topo import unique_topo_data

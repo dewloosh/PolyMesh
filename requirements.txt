@@ -1,5 +1,5 @@
 packaging
-dewloosh.math>=0.0.1b
+neumann
 #vtk
 #matplotlib
 #pyvista

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ..core.meta import ABCMeta_Weak
+from dewloosh.core.meta import ABCMeta_Weak
 
 
 class ABCMeta_MeshData(ABCMeta_Weak):

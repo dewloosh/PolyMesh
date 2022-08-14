@@ -2,8 +2,8 @@
 import numpy as np
 from numpy import ndarray
 
-from ..math.linalg import ReferenceFrame as FrameLike
-from ..math.array import isboolarray
+from neumann.linalg import ReferenceFrame as FrameLike
+from neumann.array import isboolarray
 
 from .space import CartesianFrame, PointCloud
 from .base import PointDataBase

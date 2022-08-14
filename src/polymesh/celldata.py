@@ -2,7 +2,7 @@
 import numpy as np
 from numpy import ndarray
 
-from ..math.array import atleast2d, atleast3d, repeat
+from neumann.array import atleast2d, atleast3d, repeat
 
 from .utils import avg_cell_data, distribute_nodal_data, \
     homogenize_nodal_values

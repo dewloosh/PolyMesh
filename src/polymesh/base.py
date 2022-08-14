@@ -11,9 +11,9 @@ from abc import abstractmethod, abstractproperty
 
 from numpy import ndarray
 
-from ..core import DeepDict
+from linkeddeepdict import LinkedDeepDict
 
-from ..mesh.topo import TopologyArray
+from .topo import TopologyArray
 
 from .akwrap import AkWrapper
 from .abc import ABC_MeshData
@@ -69,7 +69,7 @@ class CellDataBase(AkWrapper, ABC_MeshData):
         raise NotImplementedError
 
 
-class PolyDataBase(DeepDict):
+class PolyDataBase(LinkedDeepDict):
 
     @abstractmethod
     def coords(self, *args, **kwargs) -> ndarray:

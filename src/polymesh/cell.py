@@ -9,8 +9,8 @@ import numpy as np
 from numpy import ndarray
 import pyvista as pv
 
-from ..math.array import atleast1d, ascont
-from ..math.utils import to_range
+from neumann.array import atleast1d, ascont
+from neumann.utils import to_range
 
 from .celldata import CellData
 from .utils import (jacobian_matrix_bulk, points_of_cells, 

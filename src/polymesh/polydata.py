@@ -6,12 +6,12 @@ import numpy as np
 from awkward import Array as akarray
 
 
-from ..core import DeepDict
-from ..core.tools import suppress
-from ..math.linalg.sparse import JaggedArray
-from ..math.linalg import Vector, ReferenceFrame as FrameLike
-from ..math.linalg.vector import VectorBase
-from ..math.array import atleastnd
+from linkeddeepdict import DeepDict
+from dewloosh.core.tools import suppress
+from neumann.linalg.sparse import JaggedArray
+from neumann.linalg import Vector, ReferenceFrame as FrameLike
+from neumann.linalg.vector import VectorBase
+from neumann.array import atleastnd
 
 from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d, extract_tet_surface
 from .space import CartesianFrame, PointCloud

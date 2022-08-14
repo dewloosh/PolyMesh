@@ -9,9 +9,9 @@ import scipy as sp
 from packaging import version
 import warnings
 
-from ..math.array import matrixform
-from ..math.linalg.sparse import JaggedArray
-from ..math.linalg.sparse.csr import csr_matrix
+from neumann.array import matrixform
+from .neumann.linalg.sparse import JaggedArray
+from neumann.linalg.sparse.csr import csr_matrix
 
 
 try:
