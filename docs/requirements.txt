@@ -9,6 +9,8 @@ furo
 sphinx-rtd-theme
 memory_profiler
 pyvista
+pandas
+tetgen
 matplotlib
 plotly
 polymesh
