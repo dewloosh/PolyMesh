@@ -1,16 +1,21 @@
+name: example-environment
+channels:
+  - conda-forge
 dependencies:
-  - numpy
-  - pyvista
-  - tetgen
-  - pandas
-  - matplotlib
-  - plotly
-  - sphinx-gallery
   - python
+  - numpy
   - pip
-  - setuptools
-  - jupyterlab
-  - pip    
   - pip:
+    - pyvista
+    - tetgen
+    - pandas
+    - matplotlib
+    - plotly
+    - sphinx-gallery
+    - python
+    - pip
+    - setuptools
+    - jupyterlab
+    - nbgitpuller
     - jupyterlab_latex
     - jupyter-server-proxy
