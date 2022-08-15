@@ -15,10 +15,10 @@ Examples Gallery
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid1_thumb.png
     :alt: Plotting in 2d with `matplotlib`
 
-  :ref:`sphx_glr_auto_examples_plot_0_grid.py`
+  :ref:`sphx_glr_auto_examples_plot_0_grid1.py`
 
 .. raw:: html
 
@@ -32,10 +32,10 @@ Examples Gallery
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_grid_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_grid2_thumb.png
     :alt: Grid Based Mesh Generation
 
-  :ref:`sphx_glr_auto_examples_plot_1_grid.py`
+  :ref:`sphx_glr_auto_examples_plot_1_grid2.py`
 
 .. raw:: html
 
@@ -51,8 +51,8 @@ Examples Gallery
 .. toctree::
    :hidden:
 
-   /auto_examples/plot_0_grid
-   /auto_examples/plot_1_grid
+   /auto_examples/plot_0_grid1
+   /auto_examples/plot_1_grid2
 
 
 .. only:: html

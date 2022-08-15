@@ -14,10 +14,10 @@ Examples using ``numpy.random.rand``
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid1_thumb.png
     :alt: Plotting in 2d with `matplotlib`
 
-  :ref:`sphx_glr_auto_examples_plot_0_grid.py`
+  :ref:`sphx_glr_auto_examples_plot_0_grid1.py`
 
 .. raw:: html
 
@@ -27,7 +27,7 @@ Examples using ``numpy.random.rand``
 
 .. only:: not html
 
- * :ref:`sphx_glr_auto_examples_plot_0_grid.py`
+ * :ref:`sphx_glr_auto_examples_plot_0_grid1.py`
 
 .. raw:: html
 
