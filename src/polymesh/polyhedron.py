@@ -2,7 +2,7 @@
 import numpy as np
 
 from .polygon import Triangle
-from .cell import PolyCell2d, PolyCell3d
+from .cell import PolyCell3d
 from .topo.tr import H8_to_TET4
 
 

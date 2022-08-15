@@ -33,7 +33,7 @@ class Triangle(PolyGon):
 
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
-        from sigmaepsilon.mesh.tri.trimesh import TriMesh
+        from polymesh.tri.trimesh import TriMesh
         if len(args) > 0 and isinstance(args[0], TriMesh):
             mesh = args[0]
             return mesh.coords(), mesh.topology().to_numpy()
@@ -63,7 +63,7 @@ class QuadraticTriangle(PolyGon):
 
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
-        from sigmaepsilon.mesh.tri.trimesh import TriMesh
+        from polymesh.tri.trimesh import TriMesh
         if len(args) > 0 and isinstance(args[0], TriMesh):
             return T3_to_T6(TriMesh.coords(), TriMesh.topology())
         elif coords is not None and topo is not None:

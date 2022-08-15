@@ -141,8 +141,8 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
             if etype == 'TET4':
                 min_radius, max_radius = radius
                 n_radii, n_angles, n_z = size
-                points, triangles = circular_disk(
-                    n_angles, n_radii, min_radius, max_radius)
+                mesh = circular_disk(n_angles, n_radii, min_radius, max_radius)
+                points, triangles = mesh.coords(), mesh.topology()
                 coords, topo = extrude_T3_TET4(points, triangles, h, n_z)
             else:
                 raise NotImplementedError("Celltype not supported!")

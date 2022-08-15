@@ -5,7 +5,6 @@ from numpy import ndarray
 import numpy as np
 from awkward import Array as akarray
 
-
 from linkeddeepdict import DeepDict
 from dewloosh.core.tools import suppress
 from neumann.linalg.sparse import JaggedArray
@@ -13,7 +12,7 @@ from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
 from neumann.array import atleastnd
 
-from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d, extract_tet_surface
+from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
 from .utils import cells_coords, cells_around, cell_center_bulk
 from .utils import k_nearest_neighbours as KNN
@@ -108,10 +107,10 @@ class PolyData(PolyDataBase):
 
     See also
     --------
-    :class:`..mesh.PolyData`
-    :class:`..mesh.tri.trimesh.TriMesh`
-    :class:`..mesh.pointdata.PointData`
-    :class:`..mesh.celldata.CellData`
+    :class:`..PolyData`
+    :class:`..tri.trimesh.TriMesh`
+    :class:`..pointdata.PointData`
+    :class:`..celldata.CellData`
 
     """
 
@@ -443,10 +442,6 @@ class PolyData(PolyDataBase):
         key : str
             A valid key in any of the blocks with data. Default is None.
 
-        See Also
-        --------
-        :class:`..mesh.PolyData`
-
         """
         key = 'x' if key is None else key
         if self.pointdata is not None:
@@ -515,7 +510,7 @@ class PolyData(PolyDataBase):
         else:
             if self.is_source('x'):
                 return self.pointdata.frame
-        return self.source().frame
+        return self.parent.frame
 
     @property
     def frames(self) -> ndarray:
@@ -541,7 +536,7 @@ class PolyData(PolyDataBase):
         self.celldata = None
         self.celltype = None
 
-    def rewire(self, deep=True, imap=None):
+    def rewire(self, deep=True, imap=None, invert=False) -> 'PolyData':
         """
         Rewires topology according to the index mapping of the source object.
 
@@ -550,25 +545,38 @@ class PolyData(PolyDataBase):
         deep : bool
             If `True`, the action propagates down.
 
+        imap : ndarray, Optional
+            Index mapper. Either provided as a numpy array, or it gets fetched
+            from the database. Default is None.
+            
+        invert : bool, Optional
+            A flag to indicate wether the provided index map should be inverted or not.
+            Default is False.
+
         Notes
         -----
         Unless node numbering was modified, subsequent executions have no effect
         after once called.
+        
+        Returns
+        -------
+        PolyData
+            Returnes the object instance for continuitation.
 
         """
         if not deep:
             if self.cd is not None:
                 if imap is not None:
-                    self.cd.rewire(imap=imap)
+                    self.cd.rewire(imap=imap, invert=invert)
                 else:
                     imap = self.source().pointdata.id
-                    self.cd.rewire(imap=imap, invert=True)
+                    self.cd.rewire(imap=imap, invert=False)
         else:
             if imap is not None:
-                [cb.rewire(imap=imap, deep=False) for
+                [cb.rewire(imap=imap, deep=False, invert=invert) for
                  cb in self.cellblocks(inclusive=True)]
             else:
-                [cb.rewire(deep=False) for
+                [cb.rewire(deep=False, invert=invert) for
                  cb in self.cellblocks(inclusive=True)]
         return self
 
@@ -743,6 +751,7 @@ class PolyData(PolyDataBase):
             if len(addr) > l0:
                 db = deepcopy(cb.cd.db)
                 cd = cb.celltype(pointdata=pd, db=db)
+                assert cd is not None
                 pd[addr[l0:]] = PolyData(None, cd)
                 assert pd[addr[l0:]].celldata is not None
         if nummrg:
