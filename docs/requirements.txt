@@ -8,4 +8,4 @@ sphinxcontrib-svg2pdfconverter
 furo
 sphinx-rtd-theme
 memory_profiler
-#polymesh
+polymesh
