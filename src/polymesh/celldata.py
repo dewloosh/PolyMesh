@@ -13,7 +13,7 @@ class CellData(CellDataBase):
     """
     A class to handle data related to the cells of a polygonal mesh.
 
-    Technically this is a wrapper around an `awkward.Record` instance.
+    Technically this is a wrapper around an :class:`awkward.Record` instance.
 
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every

@@ -16,7 +16,7 @@ class PointData(PointDataBase):
     """
     A class to handle data related to the pointcloud of a polygonal mesh.
 
-    Technicall this is a wrapper around an `awkward.Record` instance.
+    Technicall this is a wrapper around an :class:`awkward.Record` instance.
 
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every

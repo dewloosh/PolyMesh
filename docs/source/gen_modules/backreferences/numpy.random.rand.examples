@@ -1,0 +1,35 @@
+
+
+Examples using ``numpy.random.rand``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plotting in 2d with matplotlib">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid_thumb.png
+    :alt: Plotting in 2d with `matplotlib`
+
+  :ref:`sphx_glr_auto_examples_plot_0_grid.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plotting in 2d with `matplotlib`</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_auto_examples_plot_0_grid.py`
+
+.. raw:: html
+
+    </div>
+

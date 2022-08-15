@@ -2,8 +2,8 @@
 **PointData** and **CellData**
 ==============================
 
-.. autoclass:: dewloosh.geom.pointdata.PointData
+.. autoclass:: polymesh.pointdata.PointData
     :members:
 
-.. autoclass:: dewloosh.geom.celldata.CellData
+.. autoclass:: polymesh.celldata.CellData
     :members: 

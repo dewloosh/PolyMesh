@@ -2,11 +2,11 @@
 Vectors in Euclidean Space
 ==========================
 
-.. autoclass:: dewloosh.geom.space.point.Point
+.. autoclass:: polymesh.space.point.Point
     :members:
 
-.. autoclass:: dewloosh.geom.space.PointCloud
+.. autoclass:: polymesh.space.PointCloud
     :members: 
 
-.. autoclass:: dewloosh.geom.space.CartesianFrame
+.. autoclass:: polymesh.space.CartesianFrame
     :members: 

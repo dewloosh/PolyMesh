@@ -1,9 +1,9 @@
-dewloosh.geom API reference
-===========================
+PolyMesh API Reference
+======================
 
 .. toctree::
     api_polydata
     api_db
     api_space
-    api_primitives
+    api_recipes
     

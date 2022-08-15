@@ -9,7 +9,7 @@ class Point(Vector):
     """
     A class a to handle one or more points in Euclidean space.
 
-    It inherits :class:`Vector <dewloosh.math.linalg.vector.Vector>`, 
+    It inherits :class:`Vector <neumann.linalg.vector.Vector>`, 
     and extends its behaviour with default frame management for domain 
     specific applications through a ``_frame_cls_`` class property.
 
@@ -24,14 +24,14 @@ class Point(Vector):
 
     Note
     ----
-    This is class is superseded by :class:`PointCloud <dewloosh.mesh.space.coordarray.PointCloud>`.
+    This is class is superseded by :class:`PointCloud <polymesh.space.coordarray.PointCloud>`.
 
     Examples
     --------
-    >>> from dewloosh.mesh.space import Point
+    >>> from polymesh.space import Point
     >>> p = Point([1., 1., 1.])
     >>> type(p.frame)
-    dewloosh.mesh.space.frame.CartesianFrame
+    polymesh.space.frame.CartesianFrame
 
     If we want to handle more than one points:
 

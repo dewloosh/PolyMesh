@@ -2,5 +2,5 @@
 The **PolyData** Class
 ======================
 
-.. autoclass:: dewloosh.geom.PolyData
+.. autoclass:: polymesh.PolyData
     :members: 

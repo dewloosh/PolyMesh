@@ -20,12 +20,12 @@ class CartesianFrame(ReferenceFrame):
     A field-specific reference frame to be used in problems related to 
     Euclidean geometry.
 
-    It builds on top of `ReferenceFrame` from `dewloosh.math`, but adds
+    It builds on top of :class:`ReferenceFrame` from `neumann`, but adds
     the contept of 'origo', and some other applications related to the field.
     
     See Also
     --------
-    :class:`~dewloosh.math.linalg.frame.frame.ReferenceFrame`
+    :class:`~neumann.linalg.frame.frame.ReferenceFrame`
                 
     Parameters
     ----------
@@ -41,7 +41,7 @@ class CartesianFrame(ReferenceFrame):
         
     Note
     ----
-    See the documentation of `dewloosh.math.ReferenceFrame` for more control over
+    See the documentation of :class:`neumann.ReferenceFrame` for more control over
     object creation. However, if your problem not very extreme in some sense, 
     you are probably good to goo only by following the examples.    
 
@@ -93,7 +93,7 @@ class CartesianFrame(ReferenceFrame):
 
         Returns
         -------
-        Vector
+        :class:`Vector`
             A vector defined in ambient space, the parent frame, 
             or the specified frame.
 
@@ -154,7 +154,7 @@ class CartesianFrame(ReferenceFrame):
         Parameters
         ----------
         d : VectorLike
-            Vector or Array, the amount of the motion. 
+            :class:`Vector` or :class:`Array`, the amount of the motion. 
             
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -162,7 +162,7 @@ class CartesianFrame(ReferenceFrame):
 
         Returns
         -------
-        ReferenceFrame
+        :class:`ReferenceFrame`
             The object the function is called on.
 
         Examples

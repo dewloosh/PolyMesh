@@ -56,18 +56,18 @@ class PointCloud(Vector):
 
     Parameters
     ----------
-    frame : ndarray, Optional.
+    frame : :class:`ndarray`, Optional.
         A numpy array representing coordinate axes of a reference frame.
         Default is None.
 
-    inds : ndarray, Optional.
+    inds : :class:`ndarray`, Optional.
         An 1d integer array specifying point indices. Default is None.
 
     Examples
     --------
     Collect the points of a simple triangulation and get the center:
 
-    >>> from dewloosh.mesh.tri import triangulate
+    >>> from polymesh.tri import triangulate
     >>> coords, *_ = triangulate(size=(800, 600), shape=(10, 10))
     >>> coords = PointCloud(coords)
     >>> coords.center()
@@ -173,7 +173,7 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : ReferenceFrame
+        target : :class:`ReferenceFrame`
             A target frame of reference.
 
         """
@@ -222,12 +222,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : ReferenceFrame, Optional
+        target : :class:`ReferenceFrame`, Optional
             A frame of reference. Default is None.
 
         Returns
         -------
-        VectorBase
+        :class:`VectorBase`
             A numpy array.
 
         """
@@ -242,12 +242,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        p : Vector or Array, Optional
+        p : :class:`Vector` or :class:`Array`, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : ReferenceFrame, Optional
+        frame : :class:`ReferenceFrame`, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -267,12 +267,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        p : Vector or Array, Optional
+        p : :class:`Vector` or :class:`Array`, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : ReferenceFrame, Optional
+        frame : :class:`ReferenceFrame`, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -297,12 +297,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : ReferenceFrame, Optional
+        target : :class:`ReferenceFrame`, Optional
             A frame of reference. Default is None.
 
         Returns
         -------
-        VectorBase
+        :class:`VectorBase`
             A numpy array.
 
         """
@@ -319,25 +319,25 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        v : Vector or Array, Optional
+        v : :class:`Vector` or :class:`Array`, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : ReferenceFrame, Optional
+        frame : :class:`ReferenceFrame`, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
         Returns
         -------
-        ReferenceFrame
+        :class:`ReferenceFrame`
             The object the function is called on.
 
         Examples
         --------
         Collect the points of a simple triangulation and get the center:
 
-        >>> from dewloosh.mesh.tri import triangulate
+        >>> from polymesh.tri import triangulate
         >>> coords, *_ = triangulate(size=(800, 600), shape=(10, 10))
         >>> coords = PointCloud(coords)
         >>> coords.center()
@@ -367,12 +367,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : ReferenceFrame, Optional
+        target : :class:`ReferenceFrame`, Optional
             A frame of reference. Default is None.
 
         Returns
         -------
-        ReferenceFrame
+        :class:`ReferenceFrame`
             The object the function is called on.
 
         """

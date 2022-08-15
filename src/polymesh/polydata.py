@@ -107,10 +107,9 @@ class PolyData(PolyDataBase):
 
     See also
     --------
-    :class:`..PolyData`
-    :class:`..tri.trimesh.TriMesh`
-    :class:`..pointdata.PointData`
-    :class:`..celldata.CellData`
+    :class:`.tri.trimesh.TriMesh`
+    :class:`.pointdata.PointData`
+    :class:`.celldata.CellData`
 
     """
 
@@ -324,7 +323,7 @@ class PolyData(PolyDataBase):
     @classmethod
     def from_pv(cls, pvobj: pyVistaLike) -> 'PolyData':
         """
-        Returns a :class:`..mesh.PolyData` instance from 
+        Returns a :class:`PolyData` instance from 
         a `pyvista.PolyData` or a `pyvista.UnstructuredGrid` instance.
 
         """
@@ -373,12 +372,12 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        DeepDict
+        :class:`linkeddeepdict.LinkedDeepDict`
             The configuration object.
 
         Examples
         --------
-        Assume `mesh` is a proper `PolyData` instance. Then to
+        Assume `mesh` is a proper :class:`PolyData` instance. Then to
         set configuration values related to plotting with `pyVista`,
         do the following:
 
@@ -560,7 +559,7 @@ class PolyData(PolyDataBase):
         
         Returns
         -------
-        PolyData
+        :class:`PolyData`
             Returnes the object instance for continuitation.
 
         """
@@ -655,7 +654,7 @@ class PolyData(PolyDataBase):
 
         See Also
         --------
-        :class:`..mesh.space.PointCloud`
+        :class:`.space.PointCloud`
         :func:`coords`
 
         """
@@ -822,7 +821,7 @@ class PolyData(PolyDataBase):
 
         See also
         --------
-        :func:`..mesh.topo.topo.nodal_adjacency`
+        :func:`.topo.topo.nodal_adjacency`
 
         """
         topo = self.topology()
