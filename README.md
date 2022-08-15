@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://badge.fury.io/py/PolyMesh.svg)](https://pypi.org/project/PolyMesh) 
 
-# **PolyMesh** - A Python Library for Compound Meshes with Jagged Topologies
+# **PolyMesh** - A Python Library for Compound Meshes with Jagged Topology
 
 > **Warning**
 > This package is under active development and in an **beta stage**. Come back later, or star the repo to make sure you don’t miss the first stable release!
