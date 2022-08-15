@@ -6,7 +6,6 @@ Grid Based Mesh Generation
 
 # %%
 import numpy as np
-from polymesh.grid import Grid
 from polymesh import grid, PolyData, CartesianFrame
 from polymesh.cells import H8, H27, Q9, Q4
 size = Lx, Ly, Lz = 800, 600, 100
