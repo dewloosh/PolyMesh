@@ -37,7 +37,7 @@ class TriMesh(PolyData):
     Triangulate a rectangle of size 800x600 with a subdivision of 10x10
     and calculate the area
 
-    >>> from dewloosh.mesh import TriMesh, CartesianFrame
+    >>> from polymesh import TriMesh, CartesianFrame
     >>> A = CartesianFrame(dim=3)
     >>> trimesh = TriMesh(size=(800, 600), shape=(10, 10), frame=A)
     >>> trimesh.area()
@@ -58,8 +58,8 @@ class TriMesh(PolyData):
     
     See Also
     --------
-    :class:`dewloosh.mesh.polydata.PolyData`
-    :class:`dewloosh.mesh.space.frame.CartesianFrame`
+    :class:`polymesh.polydata.PolyData`
+    :class:`polymesh.space.frame.CartesianFrame`
     
     """
     
@@ -135,7 +135,7 @@ class TriMesh(PolyData):
             
         See Also
         --------
-        :class:`dewloosh.mesh.tet.tetmesh.TetMesh`
+        :class:`polymesh.tet.tetmesh.TetMesh`
         
         """
         from ..tet.tetmesh import TetMesh
@@ -181,11 +181,3 @@ class TriMesh(PolyData):
         else:
             return edges
 
-
-if __name__ == '__main__':
-    trimesh = TriMesh(size=(800, 600), shape=(10, 10))
-    trimesh.plot()
-    print(trimesh.area())
-    tetmesh = trimesh.extrude(h=300, N=5)
-    tetmesh.plot()
-    print(tetmesh.volume())

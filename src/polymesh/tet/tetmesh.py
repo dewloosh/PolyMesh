@@ -28,7 +28,3 @@ class TetMesh(PolyData):
                 raise NotImplementedError
         assert celltype is not None
         super().__init__(*args, celltype=celltype, topo=topo, **kwargs)
-        
-        
-if __name__ == '__main__': 
-    pass

@@ -4,7 +4,7 @@ import unittest
 
 from neumann.linalg import Vector
 
-from polymesh import TriMesh, PolyData, grid, PointCloud, CartesianFrame
+from polymesh import PolyData, grid, PointCloud, CartesianFrame
 from polymesh.grid import grid
 
 

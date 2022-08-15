@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from polymesh import triangulate, grid
+from polymesh.tri import triangulate
+from polymesh.grid import grid
 from polymesh.topo.tr import T3_to_T6, T6_to_T3, Q9_to_Q4, Q4_to_T3, \
     Q4_to_Q9, H8_to_H27, Q4_to_Q8, Q9_to_T6, H8_to_TET4
 

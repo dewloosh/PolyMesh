@@ -15,7 +15,3 @@ def tet_vol_bulk(ecoords: ndarray):
         v3 = ecoords[i, 3] - ecoords[i, 0]
         res[i] = np.dot(np.cross(v1, v2), v3)
     return np.abs(res) / 6
-
-
-if __name__ == '__main__':
-    pass

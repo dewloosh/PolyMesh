@@ -2,7 +2,8 @@
 import numpy as np
 import unittest
 
-from polymesh import TriMesh, CartesianFrame
+from polymesh.tri.trimesh import TriMesh
+from polymesh import CartesianFrame
 from polymesh.recipes import circular_disk
 from polymesh.cells import T3
 

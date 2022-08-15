@@ -2,12 +2,15 @@
 import numpy as np
 import unittest
 
-from polymesh import TriMesh, grid, Grid, PolyData
+from polymesh.tri.trimesh import TriMesh
+from polymesh.grid import Grid
+from polymesh import PolyData
 from polymesh.recipes import circular_disk
 from polymesh.voxelize import voxelize_cylinder
 from polymesh.cells import H8, TET4
 from polymesh.topo import detach_mesh_bulk
 from polymesh.extrude import extrude_T3_TET4
+from polymesh.tet.tetmesh import TetMesh
 
 
 class TestMeshing(unittest.TestCase):
@@ -38,6 +41,17 @@ class TestMeshing(unittest.TestCase):
         points, triangles = detach_mesh_bulk(points, triangles)            
         coords, topo = extrude_T3_TET4(points, triangles, h, zres)       
         tetmesh = PolyData(coords=coords, topo=topo, celltype=TET4)
+        
+        trimesh = TriMesh(size=(800, 600), shape=(10, 10))
+        trimesh.area()
+        tetmesh = trimesh.extrude(h=300, N=5)
+        tetmesh.volume()
+        
+    def test_tet(self):
+        trimesh = TriMesh(size=(800, 600), shape=(10, 10))
+        tetmesh = trimesh.extrude(h=300, N=5)
+        assert tetmesh.volume() == 144000000.0
+        
 
 
 if __name__ == "__main__":
