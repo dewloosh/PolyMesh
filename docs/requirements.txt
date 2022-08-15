@@ -13,4 +13,5 @@ pandas
 tetgen
 matplotlib
 plotly
+ipython
 polymesh
