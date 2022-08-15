@@ -8,4 +8,5 @@ sphinxcontrib-svg2pdfconverter
 furo
 sphinx-rtd-theme
 memory_profiler
-polymesh
+polymesh>=0.0.1a
+pyvista
