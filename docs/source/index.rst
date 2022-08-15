@@ -1,6 +1,6 @@
-======================================================================
-PolyMesh - A Python Library for Compound Meshes with Jagged Topologies
-======================================================================
+====================================================================
+PolyMesh - A Python Library for Compound Meshes with Jagged Topology
+====================================================================
   
 .. toctree::
     :caption: Contents
