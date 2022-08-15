@@ -39,7 +39,7 @@ with open('requirements.txt') as f:
 _init_path = "src/polymesh/__init__.py"
 _version = get_version(_init_path)
 _description = get_description(_init_path)
-_url = 'https://github.com/dewloosh/polymesh'
+_url = 'https://github.com/dewloosh/PolyMesh'
 _download_url = _url + '/archive/refs/tags/{}.zip'.format(_version)
 
 
@@ -55,7 +55,7 @@ setup(
     download_url = _download_url,
 	packages=find_packages(where='src'),
 	classifiers=[
-        'Development Status :: 3 - Alpha',     
+        'Development Status :: 4 - Beta',     
         'License :: OSI Approved :: MIT License',   
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
