@@ -1,14 +1,20 @@
 name: example-environment
 channels:
-  - conda-forge
+  - pypi
 dependencies:
   - python
   - numpy
+  - pyvista
+  - tetgen
+  - pandas
+  - matplotlib
+  - plotly
+  - sphinx-gallery
+  - python
   - pip
+  - setuptools
+  - matplotlib
+  - jupyterlab
+  - pip    
   - pip:
-    - pyvista
-    - tetgen
-    - pandas
-    - matplotlib
-    - plotly
-    - sphinx-gallery
+    - jupyterlab_latex
