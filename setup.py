@@ -63,7 +63,7 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
 		'Operating System :: OS Independent'
     ],                                      
-    python_requires='>=3.7, <3.10',                             
+    python_requires='>=3.7, <3.11',                             
     package_dir={'':'src'},     
     install_requires=required,
 	zip_safe=False,
