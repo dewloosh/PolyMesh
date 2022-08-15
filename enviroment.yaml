@@ -1,8 +1,4 @@
-name: example-environment
-channels:
-  - pypi
 dependencies:
-  - python
   - numpy
   - pyvista
   - tetgen
@@ -17,3 +13,4 @@ dependencies:
   - pip    
   - pip:
     - jupyterlab_latex
+    - jupyter-server-proxy
