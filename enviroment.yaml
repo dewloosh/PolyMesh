@@ -13,7 +13,6 @@ dependencies:
   - python
   - pip
   - setuptools
-  - matplotlib
   - jupyterlab
   - pip    
   - pip:
