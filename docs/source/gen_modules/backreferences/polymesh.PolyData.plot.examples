@@ -10,24 +10,24 @@ Examples using ``polymesh.PolyData.plot``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="# Recipes for Mesh Generation">
+    <div class="sphx-glr-thumbcontainer" tooltip="Grid Based Mesh Generation">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_recipes_thumb.png
-    :alt: # Recipes for Mesh Generation
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_grid_thumb.png
+    :alt: Grid Based Mesh Generation
 
-  :ref:`sphx_glr_auto_examples_plot_1_recipes.py`
+  :ref:`sphx_glr_auto_examples_plot_1_grid.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title"># Recipes for Mesh Generation</div>
+      <div class="sphx-glr-thumbnail-title">Grid Based Mesh Generation</div>
     </div>
 
 
 .. only:: not html
 
- * :ref:`sphx_glr_auto_examples_plot_1_recipes.py`
+ * :ref:`sphx_glr_auto_examples_plot_1_grid.py`
 
 .. raw:: html
 

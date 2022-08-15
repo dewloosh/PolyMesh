@@ -28,6 +28,23 @@ Examples Gallery
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Grid Based Mesh Generation">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_grid_thumb.png
+    :alt: Grid Based Mesh Generation
+
+  :ref:`sphx_glr_auto_examples_plot_1_grid.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Grid Based Mesh Generation</div>
+    </div>
+
+
+.. raw:: html
+
     </div>
 
 
@@ -35,6 +52,7 @@ Examples Gallery
    :hidden:
 
    /auto_examples/plot_0_grid
+   /auto_examples/plot_1_grid
 
 
 .. only:: html

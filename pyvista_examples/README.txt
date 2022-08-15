@@ -1,2 +1,2 @@
-Examples Gallery
-================
+Examples with PyVista
+=====================

@@ -1,7 +1,7 @@
 :orphan:
 
-Examples Gallery
-================
+Examples with PyVista
+=====================
 
 
 .. raw:: html
