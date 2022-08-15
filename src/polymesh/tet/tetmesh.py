@@ -10,7 +10,7 @@ class TetMesh(PolyData):
     
     Examples
     --------
-    >>> from dewloosh.geom import TriMesh
+    >>> from polymesh import TriMesh
     >>> trimesh = TriMesh(size=(800, 600), shape=(10, 10))
     >>> tetmesh = trimesh.extrude(h=300, N=5)
     >>> tetmesh.volume()
