@@ -2,7 +2,7 @@
 import numpy as np
 import awkward as ak
 
-from dewloosh.core import Wrapper
+from dewloosh.core.wrapping import Wrapper
 
 
 class AkWrapper(Wrapper):

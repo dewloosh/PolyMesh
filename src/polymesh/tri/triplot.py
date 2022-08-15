@@ -3,7 +3,7 @@ from typing import Callable, Iterable
 import numpy as np
 from functools import partial
 
-from dewloosh.core.tools import issequence
+from dewloosh.core.typing import issequence
 
 from neumann.array import minmax
 
