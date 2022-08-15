@@ -1,8 +1,2 @@
-networkx
-matplotlib
-vtk
 pyvista
-sectionproperties
-pandas
-plotly
 tetgen
