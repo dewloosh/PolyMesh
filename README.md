@@ -46,7 +46,10 @@ must have
   * `Numba`, `NumPy`, `SciPy`, `SymPy`, `awkward`
 
 optional 
-  * `networkx`
+  * `networkx` : For graph analysis. Example application is the calculation of optimal elimination paths for the frontal solution technique. 
+  
+  * `pyvista` : PyVista is essential for visualizing in 3d. It is an easy access to `vtk`, which is a well-known member of the community. `PolyMesh` can translate complex
+  models into `pyvista` or `vtk` objects any time, providing access to a host of 3rd party accessories.
 
 ## **License**
 
