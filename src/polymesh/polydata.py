@@ -6,7 +6,6 @@ import numpy as np
 from awkward import Array as akarray
 
 from linkeddeepdict import DeepDict
-from dewloosh.core.tools import suppress
 from neumann.linalg.sparse import JaggedArray
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
@@ -1041,7 +1040,6 @@ class PolyData(PolyDataBase):
                     res.append(pvobj)
                 return res
 
-    @suppress
     def to_k3d(self, *args, scene=None, deep=True, menu_visibility=True, scalars=None,
                config_key=None, color_map=None, detach=False, show_edges=True, **kwargs):
         assert __hask3d__, "The python package 'k3d' must be installed for this"
@@ -1098,9 +1096,12 @@ class PolyData(PolyDataBase):
             return self.k3dplot(*args, config_key=config_key, **kwargs)
         return self.pvplot(*args, notebook=notebook, config_key=config_key, **kwargs)
 
-    def k3dplot(self, scene=None, *args, menu_visibility=True, **kwargs):
+    def k3dplot(self, *args, menu_visibility=True, scene=None, **kwargs):
         if scene is None:
-            scene = k3d.plot(menu_visibility=menu_visibility)
+            if len(args) > 0:
+                scene = args
+            else:
+                scene = k3d.plot(menu_visibility=menu_visibility)
         return self.to_k3d(*args, scene=scene, **kwargs)
 
     def pvplot(self, *args, deepcopy=True, jupyter_backend='pythreejs',
