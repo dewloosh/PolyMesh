@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from dewloosh.plotly import plot_lines_3d
-
 from .polydata import PolyData
 from .cells import L2, L3
 
@@ -41,6 +39,7 @@ class LineData(PolyData):
             return self.pvplot(*args, scalars=scalars, scalar_labels=scalar_labels, 
                                **kwargs)
         elif backend == 'plotly':
+            from dewloosh.plotly import plot_lines_3d
             return plot_lines_3d
         else:
             msg = "No implementation for backend '{}'".format(backend)
