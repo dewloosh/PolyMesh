@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
+from dewloosh.plotly import plot_lines_3d
+
 from .polydata import PolyData
 from .cells import L2, L3
-from .plotting.plotly import plot_lines_3d
 
 
 __all__ = ['LineData']

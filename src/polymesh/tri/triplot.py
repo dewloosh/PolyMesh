@@ -4,6 +4,7 @@ import numpy as np
 from functools import partial
 
 from dewloosh.core.typing import issequence
+from dewloosh.mpl import triplot
 
 from neumann.array import minmax
 
