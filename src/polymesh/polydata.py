@@ -690,7 +690,7 @@ class PolyData(PolyDataBase):
         else:
             return self.points(from_cells=from_cells).show(*args, **kwargs)
 
-    def surface(self):
+    def surface(self) -> 'PolyData':
         assert self.celldata is not None, "There are no cells here."
         assert self.celldata.NDIM == 3, "This is only for 3d cells."
         coords, topo = self.cd.extract_surface(detach=False)
@@ -711,7 +711,8 @@ class PolyData(PolyDataBase):
         """
         pass
 
-    def topology(self, *args, return_inds=False, triangulate=True, **kwargs):
+    def topology(self, *args, return_inds=False, triangulate=True, 
+                 jagged=None, **kwargs):
         """
         Returns the topology as either a `numpy` or an `awkward` array.
 
@@ -723,8 +724,9 @@ class PolyData(PolyDataBase):
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
         topo = list(map(lambda i: i.celldata.topology(), blocks))
         widths = np.concatenate(list(map(lambda t: t.widths(), topo)))
-        jagged = not np.all(widths == widths[0])
-        if jagged:
+        jagged = False if not isinstance(jagged, bool) else jagged
+        needs_jagged = not np.all(widths == widths[0])
+        if jagged or needs_jagged:
             if return_inds:
                 raise NotImplementedError
             return TopologyArray(*topo)

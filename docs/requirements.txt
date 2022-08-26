@@ -15,3 +15,4 @@ matplotlib
 plotly
 ipython
 polymesh
+k3d
