@@ -39,6 +39,7 @@ try:
 except Exception:
     __hask3d__ = False
 
+
 def set_config_file(filepath):
     try:
         import vtk

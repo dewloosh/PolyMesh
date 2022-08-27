@@ -3,9 +3,9 @@ linkeddeepdict
 dewloosh.core>=1.0.11b
 neumann>=0.0.1b
 
-vtk
-matplotlib
-pyvista
-tetgen
-pandas
-plotly
+#vtk
+#matplotlib
+#pyvista
+#tetgen
+#pandas
+#plotly
