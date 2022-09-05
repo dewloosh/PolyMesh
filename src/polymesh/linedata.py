@@ -4,12 +4,14 @@ import numpy as np
 from .polydata import PolyData
 from .cells import L2, L3
 
-try:
-    from dewloosh.plotly import plot_lines_3d
-    __hasplotly__ = True
-except Exception:
-    __hasplotly__ = False
+from .config import __hasplotly__
 
+if __hasplotly__:
+    try:
+        from dewloosh.plotly import plot_lines_3d
+    except Exception:
+        pass
+    
 __all__ = ['LineData']
 
 

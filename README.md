@@ -51,6 +51,8 @@ optional
   * `pyvista` : PyVista is essential for visualizing in 3d. It is an easy access to `vtk`, which is a well-known member of the community. `PolyMesh` can translate complex
   models into `pyvista` or `vtk` objects any time, providing access to a host of 3rd party accessories.
 
+  * `meshio` : For transformation to and from many mesh formats.
+
 ## **License**
 
 This package is licensed under the MIT license.
