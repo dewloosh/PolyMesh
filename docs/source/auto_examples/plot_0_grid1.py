@@ -33,7 +33,7 @@ triobj = triangulate(points=points[:, :2], triangles=triangles)[-1]
 # ## Step 3 : Plot the mesh
 
 # %%
-from polymesh.tri.triplot import triplot
+from dewloosh.mpl import triplot
 
 triplot(triobj)
 

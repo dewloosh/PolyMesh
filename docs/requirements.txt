@@ -16,3 +16,4 @@ plotly
 ipython
 polymesh
 k3d
+dewloosh.mpl

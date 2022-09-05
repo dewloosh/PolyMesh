@@ -76,7 +76,7 @@ Plotting in 2d with `matplotlib`
 
 .. code-block:: python3
 
-    from polymesh.tri.triplot import triplot
+    from dewloosh.mpl import triplot
 
     triplot(triobj)
 
@@ -94,7 +94,7 @@ Plotting in 2d with `matplotlib`
  .. code-block:: none
 
 
-    [<matplotlib.lines.Line2D object at 0x000001F0459216A0>, <matplotlib.lines.Line2D object at 0x000001F0459219A0>]
+    [<matplotlib.lines.Line2D object at 0x0000019405342430>, <matplotlib.lines.Line2D object at 0x0000019405342610>]
 
 
 
@@ -129,7 +129,7 @@ Create a Hinton-plot with random data.
  .. code-block:: none
 
 
-    [<polymesh.tri.triplot.TriPatchCollection object at 0x000001F045C7D730>]
+    [<dewloosh.mpl.triplot.TriPatchCollection object at 0x00000194056923A0>]
 
 
 
@@ -158,7 +158,7 @@ Plot the triangles with random cell data.
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001F045AA8EB0>]
+    [<matplotlib.collections.PolyCollection object at 0x0000019403309040>]
 
 
 
@@ -191,7 +191,7 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001F0459DF1F0>]
+    [<matplotlib.collections.PolyCollection object at 0x00000194053C6C70>]
 
 
 
@@ -216,7 +216,7 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001F05A20FD00>]
+    [<matplotlib.collections.PolyCollection object at 0x000001941DC40F40>]
 
 
 
@@ -242,16 +242,16 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001F05A2FF6A0>]
+    [<matplotlib.collections.PolyCollection object at 0x000001941DD7F7F0>]
 
 
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  58.561 seconds)
+   **Total running time of the script:** ( 0 minutes  59.752 seconds)
 
-**Estimated memory usage:**  40 MB
+**Estimated memory usage:**  43 MB
 
 
 .. _sphx_glr_download_auto_examples_plot_0_grid1.py:

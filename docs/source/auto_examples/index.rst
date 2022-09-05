@@ -45,6 +45,23 @@ Examples Gallery
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Compound Meshes">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_2_pv_thumb.png
+    :alt: Compound Meshes
+
+  :ref:`sphx_glr_auto_examples_plot_2_pv.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Compound Meshes</div>
+    </div>
+
+
+.. raw:: html
+
     </div>
 
 
@@ -53,6 +70,7 @@ Examples Gallery
 
    /auto_examples/plot_0_grid1
    /auto_examples/plot_1_grid2
+   /auto_examples/plot_2_pv
 
 
 .. only:: html

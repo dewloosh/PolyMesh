@@ -181,7 +181,7 @@ The `PolyData` class delegates plotting-related jobs to `pyVista`. Call your obj
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  32.763 seconds)
+   **Total running time of the script:** ( 0 minutes  32.447 seconds)
 
 **Estimated memory usage:**  220 MB
 
