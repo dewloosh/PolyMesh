@@ -28,9 +28,11 @@ __all__ = [
     'Q8_to_T3',
     'Q9_to_T6',
     'Q4_to_T3',
+    'H8_to_L2'
     'H8_to_Q4',
     'H8_to_H27',
-    'H8_to_TET4'
+    'H8_to_TET4',
+    'TET4_to_L2'
 ]
 
 
@@ -104,12 +106,12 @@ def repeat_cell_nodal_data(edata: ndarray, path: ndarray):
 
 
 def T6_to_T3(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, decimate=True, **kwargs):
+             *args, path: ndarray = None, subdivide=True, **kwargs):
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
         if path is None:
-            if decimate:
+            if subdivide:
                 path = np.array([[0, 3, 5], [3, 1, 4],
                                  [5, 4, 2], [5, 3, 4]], dtype=topo.dtype)
             else:
