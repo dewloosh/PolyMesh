@@ -4,6 +4,7 @@ vtk
 pyvista
 sectionproperties
 pythreejs
+ipyvtklink
 pandas
 plotly
 tetgen

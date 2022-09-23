@@ -25,6 +25,8 @@ MapLike = Union[ndarray, MutableMapping]
 
 
 class PolyCell(CellData):
+    """A subclass of :class:`polymesh.celldata.CellData` as a bse class 
+    for all kinds of geometrical entities."""
 
     NNODE = None
     NDIM = None
@@ -38,30 +40,56 @@ class PolyCell(CellData):
         super().__init__(*args, **kwargs)
 
     def measures(self, *args, **kwargs):
+        """Ought to return measures for each cell in the database."""
         raise NotImplementedError
 
     def measure(self, *args, **kwargs):
+        """Ought to return the net measure for the cells in the 
+        database as a group."""
         return np.sum(self.measure(*args, **kwargs))
 
     def area(self, *args, **kwargs):
+        """Returns the total area of the cells in the database. Only for 2d entities."""
         return np.sum(self.areas(*args, **kwargs))
 
     def areas(self, *args, **kwargs):
+        """Ought to return the areas of the individuall cells in the database."""
         raise NotImplementedError
     
     def volume(self, *args, **kwargs):
+        """Returns the volume of the cells in the database."""
         return np.sum(self.volumes(*args, **kwargs))
 
     def volumes(self, *args, **kwargs):
+        """Ought to return the volumes of the individual cells in the database."""
         raise NotImplementedError
     
     def extract_surface(self, detach=False):
-        """Only for 3d meshes."""
+        """Extracts the surface of the mesh. Only for 3d meshes."""
         raise NotImplementedError
 
     def jacobian_matrix(self, *args, dshp=None, ecoords=None, topo=None, **kwargs):
         """
         Returns the jacobian matrix.
+        
+        Parameters
+        ----------
+        dshp : :class:`numpy.ndarray`
+            2d array of shape function derivatives for the primitive cell.
+        
+        ecoords : :class:`numpy.ndarray`, Optional
+            3d array of nodal coordinates for all cells. 
+            Either 'ecoords' or 'topo' must be provided.
+            
+        topo : :class:`numpy.ndarray`, Optional
+            2d integer topology array.
+            Either 'ecoords' or 'topo' must be provided.
+        
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            The 3d array of jacobian matrices for all the cells.
+            
         """
         ecoords = self.local_coordinates(
             topo=topo) if ecoords is None else ecoords
@@ -69,15 +97,32 @@ class PolyCell(CellData):
 
     def jacobian(self, *args, jac=None, **kwargs):
         """
-        Returns the jacobian determinant
+        Returns the jacobian determinant for one or more cells.
+        
+        Parameters
+        ----------
+        jac : :class:`numpy.ndarray`, Optional
+            One or more Jacobian matrices. Default is None.
+            
+        **kwargs : dict
+            Forwarded to :func:`jacobian_matrix` if the jacobian
+            is not provided by the parameter 'jac'.
+            
+        Returns
+        -------
+        float or :class:`numpy.ndarray`
+            Value of the Jacobian for one or more cells.
+            
         """
+        if jac is None:
+            jac = self.jacobian_matrix(**kwargs)
         return np.linalg.det(jac)
 
-    def points_of_cells(self, *args, target=None, **kwargs):
+    def points_of_cells(self, *args, **kwargs) -> ndarray:
         """
-        Returns the points of the cells.
+        Returns the points of the cells as a 3d float numpy array.       
+        
         """
-        assert target is None
         coords = kwargs.get('coords', None)
         if coords is None:
             if self.pointdata is not None:
@@ -89,7 +134,7 @@ class PolyCell(CellData):
 
     def local_coordinates(self, *args, **kwargs):
         """
-        Returns local coordinates of the selection.
+        Returns local coordinates of the selection as a 3d float numpy array.
         """
         frames = kwargs.get('frames', self.frames)
         topo = self.topology().to_numpy()
@@ -101,16 +146,16 @@ class PolyCell(CellData):
                 coords = self.container.source().coords()
         return points_of_cells(coords, topo, local_axes=frames)
 
-    def coords(self, *args, **kwargs):
+    def coords(self, *args, **kwargs) -> ndarray:
         """
-        Returns the coordinates of the cells in the selection.
+        Returns the coordinates of the cells in the database as a 3d numpy array.
 
         """
         return self.points_of_cells(*args, **kwargs)
 
     def topology(self) -> TopologyArray:
         """
-        Returns the numerical representation of the topology of the selection.
+        Returns the numerical representation of the topology of the cells.
 
         """
         key = self.__class__._attr_map_['nodes']
@@ -129,7 +174,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        imap : MapLike
+        imap : `MapLike`
             Mapping from old to new node indices (global to local).
             
         invert : bool, Optional
@@ -145,6 +190,7 @@ class PolyCell(CellData):
 
 
 class PolyCell1d(PolyCell):
+    """Base class for 1d cells"""
 
     NDIM = 1
 
@@ -227,6 +273,7 @@ class PolyCell1d(PolyCell):
 
 
 class PolyCell2d(PolyCell):
+    """Base class for 2d cells"""
 
     NDIM = 2
 
@@ -282,6 +329,7 @@ class PolyCell2d(PolyCell):
 
 
 class PolyCell3d(PolyCell):
+    """Base class for 3d cells"""
 
     NDIM = 3
 

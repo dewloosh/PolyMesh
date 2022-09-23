@@ -50,7 +50,8 @@ class Triangle(PolyGon):
 
 
 class QuadraticTriangle(PolyGon):
-
+    """Quadratic 6-noded triangle."""
+    
     NNODE = 6
     vtkCellType = 22
     __label__ = 'T6'
@@ -73,7 +74,8 @@ class QuadraticTriangle(PolyGon):
 
 
 class Quadrilateral(PolyGon):
-
+    """Basic 4-noded bilinear quadrilateral."""
+    
     NNODE = 4
     vtkCellType = 9
     __label__ = 'Q4'
@@ -83,7 +85,8 @@ class Quadrilateral(PolyGon):
 
 
 class BiQuadraticQuadrilateral(PolyGon):
-
+    """9-noded biquadratic quadrilateral."""
+    
     NNODE = 9
     vtkCellType = 28
     __label__ = 'Q9'

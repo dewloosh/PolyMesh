@@ -990,11 +990,18 @@ class PolyData(PolyDataBase):
             for i, block in enumerate(blocks):
                 if needsdata:
                     pdata = None
-                    if self.pointdata is not None:
-                        if scalars in self.pointdata.fields:
-                            pdata = self.pointdata[scalars].to_numpy()
-                    if pdata is None and scalars in self.celldata.fields:
-                        pdata = self.celldata[scalars].to_numpy()
+                    if block.pointdata is not None:
+                        if scalars in block.pointdata.fields:
+                            pdata = block.pointdata[scalars].to_numpy()
+                    if pdata is None and scalars in block.celldata.fields:
+                        pdata = block.celldata[scalars].to_numpy()
+                    if pdata is None:
+                        # fetch nodal celldata from pointdata of the root object
+                        """root = self.root()
+                        if root.pointdata is not None:
+                            if scalars in root.pointdata.fields:
+                                pdata_root = self.pointdata[scalars].to_numpy()"""
+                        pass                                
                     plotdata.append(pdata)
                 # the next line handles regular topologies only
                 topo = block.celldata.topology().to_numpy().astype(np.int64)

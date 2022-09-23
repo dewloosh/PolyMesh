@@ -6,10 +6,11 @@ import numpy as np
 from .utils import jacobian_matrix_bulk_1d, jacobian_det_bulk_1d
 
 
-__all__ = ['Line']
+__all__ = ['Line', 'QuadraticLine']
 
 
 class Line(PolyCell1d):
+    """Base class for lines."""
 
     NNODE = 2
     vtkCellType = 3
@@ -43,12 +44,12 @@ class Line(PolyCell1d):
 
 
 class QuadraticLine(Line):
-
+    """Base class for quadratic 3-noded lines."""
     NNODE = 3
     vtkCellType = None
 
 
 class NonlinearLine(Line):
-
+    """Base class for general nonlinear lines."""
     NNODE: int = None
     vtkCellType = None

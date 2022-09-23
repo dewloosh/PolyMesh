@@ -55,6 +55,9 @@ def dshp_Q4_bulk(pcoords: ndarray):
 
 
 class Q4(Quadrilateral):
+    """Polygon Class for 4-noded bilinear quadrilaterals. 
+    It defines the shape function of the purely geometric 
+    object :class:`polymesh.polygon.Quadrilateral`."""
 
     @classmethod
     def lcoords(cls, *args, **kwargs):
@@ -65,13 +68,13 @@ class Q4(Quadrilateral):
     def lcenter(cls, *args, **kwargs):
         return np.array([0., 0.])
 
-    def shape_function_values(self, pcoords, *args, **kwargs):
+    def shape_function_values(self, pcoords: ndarray, *args, **kwargs):
         if len(pcoords.shape) == 2:
             return shp_Q4_bulk(pcoords)
         else:
             return shp_Q4(pcoords)
 
-    def shape_function_derivatives(self, pcoords, *args, **kwargs):
+    def shape_function_derivatives(self, pcoords: ndarray, *args, **kwargs):
         if len(pcoords.shape) == 2:
             return dshp_Q4_bulk(pcoords)
         else:

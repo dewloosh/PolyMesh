@@ -7,6 +7,7 @@ from .topo.tr import H8_to_TET4
 
 
 class PolyHedron(PolyCell3d):
+    """Base class to handle polyhedra."""
     
     _face_cls_ = Triangle
 
@@ -15,6 +16,7 @@ class PolyHedron(PolyCell3d):
 
 
 class TetraHedron(PolyHedron):
+    """Class for 4-noded tetrahedra."""
 
     NNODE = 4
     vtkCellType = 10
@@ -28,6 +30,7 @@ class TetraHedron(PolyHedron):
 
 
 class QuadraticTetraHedron(PolyHedron):
+    """Class for 10-noded quadratic tetrahedra."""
 
     NNODE = 10
     vtkCellType = 24
@@ -38,6 +41,7 @@ class QuadraticTetraHedron(PolyHedron):
 
 
 class HexaHedron(PolyHedron):
+    """Class for 8-noded hexahedra."""
 
     NNODE = 8
     vtkCellType = 12
@@ -51,7 +55,8 @@ class HexaHedron(PolyHedron):
 
 
 class TriquadraticHexaHedron(PolyHedron):
-
+    """Class for 27-noded triquadratic hexahedra."""
+    
     NNODE = 27
     vtkCellType = 29
     __label__ = 'H27'
@@ -61,7 +66,8 @@ class TriquadraticHexaHedron(PolyHedron):
 
 
 class Wedge(PolyHedron):
-
+    """Class for 6-noded trilinear wedges."""
+    
     NNODE = 6
     vtkCellType = 13
     __label__ = 'W6'
@@ -71,6 +77,7 @@ class Wedge(PolyHedron):
 
 
 class BiquadraticWedge(PolyHedron):
+    """Class for 6-noded buquadratic wedges."""
 
     NNODE = 18
     vtkCellType = 32
