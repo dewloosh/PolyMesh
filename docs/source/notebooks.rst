@@ -6,3 +6,4 @@ Notebooks
     
     _notebooks/basic_usage
     _notebooks/grids
+    _notebooks/advanced_usage

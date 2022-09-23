@@ -3,4 +3,4 @@ Recipes for Mesh Generation
 ===========================
 
 .. automodule:: polymesh.recipes
-    :members: 
+    :members: circular_disk, cylinder
