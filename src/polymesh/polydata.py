@@ -711,8 +711,7 @@ class PolyData(PolyDataBase):
         """
         pass
 
-    def topology(self, *args, return_inds=False, triangulate=True, 
-                 jagged=None, **kwargs):
+    def topology(self, *args, return_inds=False, jagged=None, **kwargs):
         """
         Returns the topology as either a `numpy` or an `awkward` array.
 

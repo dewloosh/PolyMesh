@@ -1,0 +1,14 @@
+{
+    "mesh": {
+        "coordinates": "coords",
+        "data": {
+            "random": "random_data"
+        },
+        "layout": {
+            "stand": {
+                "topology": "topo",
+                "class": "TET4"
+            }
+        }
+    }
+}
