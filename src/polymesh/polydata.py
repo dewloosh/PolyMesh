@@ -9,7 +9,7 @@ from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
-from neumann.array import atleastnd
+from neumann.array import atleastnd, minmax
 
 from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
@@ -298,10 +298,12 @@ class PolyData(PolyDataBase):
 
     @property
     def pd(self) -> PointData:
+        """Returns the attached pointdata."""
         return self.pointdata
 
     @property
     def cd(self) -> PolyCell:
+        """Returns the attached celldata."""
         return self.celldata
 
     def simplify(self, inplace=True):
@@ -314,6 +316,7 @@ class PolyData(PolyDataBase):
 
     @classmethod
     def read(cls, *args, **kwargs) -> 'PolyData':
+        """Reads from a file using PyVista."""
         try:
             return cls.from_pv(pv.read(*args, **kwargs))
         except Exception:
@@ -323,7 +326,7 @@ class PolyData(PolyDataBase):
     def from_pv(cls, pvobj: pyVistaLike) -> 'PolyData':
         """
         Returns a :class:`PolyData` instance from 
-        a `pyvista.PolyData` or a `pyvista.UnstructuredGrid` instance.
+        a :class:`pyvista.PolyData` or a :class:`pyvista.UnstructuredGrid` instance.
 
         """
         celltypes = cls._cell_classes_.values()
@@ -578,8 +581,22 @@ class PolyData(PolyDataBase):
                  cb in self.cellblocks(inclusive=True)]
         return self
 
-    def to_standard_form(self, inplace=True):
-        """Transforms the problem to standard form."""
+    def to_standard_form(self, inplace=True) -> 'PolyData':
+        """
+        Transforms the problem to standard form, which means
+        a centralized pointdata and regular cell indices.
+        
+        Notes
+        -----
+        Some operation might work better if the layout of the mesh
+        admits the standard form.
+        
+        Parameters
+        ----------
+        inplace : bool, Optional
+            Performs the operations inplace. Default is True.
+            
+        """
         if not self.is_root():
             raise NotImplementedError
 
@@ -683,14 +700,48 @@ class PolyData(PolyDataBase):
         return points
 
     def coords(self, *args, return_inds=False, from_cells=False, **kwargs) -> VectorBase:
-        """Returns the coordinates as an array."""
+        """
+        Returns the coordinates as an array.
+        
+        Parameters
+        ----------
+        return_inds : bool, Optional
+            Returns the indices of the points. Default is False.
+            
+        from_cells : bool, Optional
+            If there is no pointdata attaached to the current block, the points of
+            the sublevels of the mesh can be gathered from cell information.
+            Default is False.
+        
+        Returns
+        -------
+        :class:`neumann.linalg.vector.VectorBase`
+         
+        """
         if return_inds:
             p, inds = self.points(return_inds=True, from_cells=from_cells)
             return p.show(*args, **kwargs), inds
         else:
             return self.points(from_cells=from_cells).show(*args, **kwargs)
+    
+    def bounds(self, *args, **kwargs) -> list:
+        """
+        Returns the bounds of the mesh.
+        
+        Example
+        -------
+        >>> from polymesh.examples import stand_vtk
+        >>> pd = stand_vtk(read=True)
+        >>> pd.bounds()
+        
+        """
+        c = self.coords(*args, **kwargs)
+        return [minmax(c[:, 0]), minmax(c[:, 1]), minmax(c[:, 2])]
 
     def surface(self) -> 'PolyData':
+        """
+        Returns the surface of the mesh as another `PolyData` instance.
+        """
         assert self.celldata is not None, "There are no cells here."
         assert self.celldata.NDIM == 3, "This is only for 3d cells."
         coords, topo = self.cd.extract_surface(detach=False)
@@ -701,24 +752,31 @@ class PolyData(PolyDataBase):
         return self.__class__(pd, cd, frame=frame)
 
     def cells(self):
-        """
-        This should be the same to topology, what point is to coords,
-        with no need to copy the underlying mechanism.
-
-        The relationship of resulting object to the topology of a mesh should 
-        be similar to that of `PointCloud` and the points in 3d space.
-
-        """
+        #This should be the same to topology, what point is to coords,
+        #with no need to copy the underlying mechanism.
+        #
+        #The relationship of resulting object to the topology of a mesh should 
+        #be similar to that of `PointCloud` and the points in 3d space.
         pass
 
-    def topology(self, *args, return_inds=False, jagged=None, **kwargs):
+    def topology(self, *args, return_inds=False, jagged=None, **kwargs) -> Union[ndarray, akarray]:
         """
         Returns the topology as either a `numpy` or an `awkward` array.
+        
+        Parameters
+        ----------
+        return_inds : bool, Optional
+            Returns the indices of the points. Default is False.
+            
+        jagged : bool, Optional
+            If True, returns the topology as a :class:`TopologyArray` instance,
+            even if the mesh is regular. Default is False.
 
-        Notes
-        -----
-        The call automatically propagates down.
-
+        Returns
+        -------
+        Union[ndarray, akarray]
+            The topology as a 2d integer array.
+            
         """
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
         topo = list(map(lambda i: i.celldata.topology(), blocks))
@@ -738,6 +796,15 @@ class PolyData(PolyDataBase):
                 return topo
 
     def detach(self, nummrg=False) -> 'PolyData':
+        """
+        Returns a detached version of the mesh.
+        
+        Parameters
+        ----------
+        nummrg: bool, Optional
+            If True, merges node numbering. Default is False.
+            
+        """
         pd = PolyData(self.root().pd, frame=self.frame)
         l0 = len(self.address)
         if self.celldata is not None:
@@ -758,6 +825,9 @@ class PolyData(PolyDataBase):
         return pd
 
     def nummrg(self, store_indices=True):
+        """
+        Merges node numbering.
+        """
         if not self.is_root():
             self.root().nummrg()
             return self
@@ -773,7 +843,7 @@ class PolyData(PolyDataBase):
         return self
 
     def move(self, v: VectorLike, frame: FrameLike = None):
-        """Moves the object."""
+        """Moves and returns the object."""
         if self.is_root():
             pc = self.points()
             pc.move(v, frame)
@@ -787,7 +857,7 @@ class PolyData(PolyDataBase):
         return self
 
     def rotate(self, *args, **kwargs):
-        """Rotates the object."""
+        """Rotates and returns the object."""
         if self.is_root():
             pc = self.points()
             pc.rotate(*args, **kwargs)
@@ -961,9 +1031,25 @@ class PolyData(PolyDataBase):
     def to_vtk(self, *args, deepcopy=True, fuse=True, deep=True,
                scalars=None, detach=True, **kwargs):
         """
-        Returns the mesh as a `vtk` oject, and optionally fetches
-        data.
+        Returns the mesh as a `vtk` oject.
+        
+        Parameters
+        ----------
+        deepcopy : bool, Optional
+            Obviously. Default is True.
+            
+        fuse : bool, Optional
+            Wether to fuse submeshes into one object. Default is False.
 
+        deep : bool, Optional
+            Wether to into submeshes or not. Default is True.
+        
+        scalars : ndarray, None
+            Scalars to decorate the object with. Default is None.
+            
+        detach : bool, Optional
+            If True, the mesh is detached. Default is True.
+        
         """
         if not __hasvtk__:
             raise ImportError
@@ -1050,6 +1136,15 @@ class PolyData(PolyDataBase):
 
     def to_k3d(self, *args, scene=None, deep=True, menu_visibility=True, scalars=None,
                config_key=None, color_map=None, detach=False, show_edges=True, **kwargs):
+        """
+        Returns the mesh as a k3d mesh object.
+        
+        Returns
+        -------
+        Plot
+            Plot Widget.
+            
+        """
         assert __hask3d__, "The python package 'k3d' must be installed for this"
         if scene is None:
             scene = k3d.plot(menu_visibility=menu_visibility)
@@ -1100,11 +1195,17 @@ class PolyData(PolyDataBase):
         return scene
 
     def plot(self, *args, notebook=False, backend=None, config_key=None, **kwargs):
+        """
+        Plots the mesh using supported backends.
+        """
         if notebook and backend == 'k3d':
             return self.k3dplot(*args, config_key=config_key, **kwargs)
         return self.pvplot(*args, notebook=notebook, config_key=config_key, **kwargs)
 
     def k3dplot(self, *args, menu_visibility=True, scene=None, **kwargs):
+        """
+        Plots the mesh using 'k3d' as the backend.
+        """
         if scene is None:
             if len(args) > 0:
                 scene = args
@@ -1117,6 +1218,9 @@ class PolyData(PolyDataBase):
                scalars=None, window_size=None, return_plotter=False,
                config_key=None, plotter=None, cmap=None, camera_position=None,
                lighting=False, edge_color=None, **kwargs):
+        """
+        Plots the mesh using PyVista.
+        """
         if not __haspyvista__:
             raise ImportError('You need to install `pyVista` for this.')
         if scalars is None:
@@ -1207,8 +1311,10 @@ class PolyData(PolyDataBase):
 
 
 class IndexManager(object):
-    """This object ought to guarantee, that every cell in a 
-    model has a unique ID."""
+    """
+    This object ought to guarantee, that every cell in a 
+    model has a unique ID.
+    """
 
     def __init__(self, start=0):
         self.queue = []

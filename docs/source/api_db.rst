@@ -14,10 +14,11 @@ data and general numba and gpu support.
 .. autoclass:: polymesh.pointdata.PointData
     :members:
 
-
 .. autoclass:: polymesh.celldata.CellData
-    :members: 
+    :members:
 
+.. autoclass:: polymesh.linedata.LineData
+    :members: 
 
 .. autoclass:: polymesh.PolyData
     :members: 

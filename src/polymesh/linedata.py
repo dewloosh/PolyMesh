@@ -16,6 +16,7 @@ __all__ = ['LineData']
 
 
 class LineData(PolyData):
+    """Data class for 1d cells."""
 
     _cell_classes_ = {
         2: L2,

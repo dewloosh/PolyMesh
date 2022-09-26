@@ -18,7 +18,7 @@ PolyMesh - A Python Library for Compound Meshes with Jagged Topology
 
 .. toctree::
     :caption: API
-    :maxdepth: 3
+    :maxdepth: 4
    
     api
    

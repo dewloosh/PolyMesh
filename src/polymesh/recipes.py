@@ -41,7 +41,7 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
 
     Examples
     --------
-    >>> from dewloosh.mesh.recipes import circular_disk
+    >>> from polymesh.recipes import circular_disk
     >>> mesh = circular_disk(120, 60, 5, 25) 
 
     """
@@ -112,7 +112,7 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
     
     Examples
     --------
-    >>> from dewloosh.mesh.recipes import cylinder
+    >>> from polymesh.recipes import cylinder
     >>> mesh = cylinder(120, 60, 5, 25)
         
     """

@@ -11,7 +11,7 @@ from neumann.linalg.sparse import csr_matrix, JaggedArray
 from neumann.arraysetops import unique2d
 from neumann.array import count_cols
 
-from .. space import PointCloud
+from ..space import PointCloud
 from ..utils import explode_mesh_bulk
 from ..config import __hasnx__
 
