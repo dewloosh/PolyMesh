@@ -94,8 +94,8 @@ class PolyData(PolyDataBase):
 
     Examples
     --------
-    >>> from ..mesh import PolyData
-    >>> from ..mesh.rgrid import grid
+    >>> from polymesh import PolyData
+    >>> from polymesh.grid import grid
     >>> size = Lx, Ly, Lz = 100, 100, 100
     >>> shape = nx, ny, nz = 10, 10, 10
     >>> coords, topo = grid(size=size, shape=shape, eshape='H27')

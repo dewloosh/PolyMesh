@@ -517,13 +517,18 @@ def knngridL2(*args, max_distance=None, k=3, **kwargs):
 class Grid(PolyData):
     """
     A class to generate meshes based on grid-like data. All input
-    arguments are forwarded to ``grid``.
+    arguments are forwarded to :func:``grid``.
     
     Examples
     --------
+    >>> from polymesh.grid import Grid
     >>> size = 80, 60, 20
     >>> shape = 8, 6, 2
     >>> grid = Grid(size=size, shape=shape, eshape='H8')
+    
+    See also
+    --------
+    :func:``grid``
     
     """
     
