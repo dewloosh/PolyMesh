@@ -1196,7 +1196,7 @@ class PolyData(PolyDataBase):
 
     def plot(self, *args, notebook=False, backend=None, config_key=None, **kwargs):
         """
-        Plots the mesh using supported backends.
+        Plots the mesh using supported backends. The default backend is PyVista.
         """
         if notebook and backend == 'k3d':
             return self.k3dplot(*args, config_key=config_key, **kwargs)
@@ -1217,7 +1217,7 @@ class PolyData(PolyDataBase):
                show_edges=True, notebook=False, theme='document',
                scalars=None, window_size=None, return_plotter=False,
                config_key=None, plotter=None, cmap=None, camera_position=None,
-               lighting=False, edge_color=None, **kwargs):
+               lighting=False, edge_color=None, return_img=False, **kwargs):
         """
         Plots the mesh using PyVista.
         """
@@ -1277,10 +1277,15 @@ class PolyData(PolyDataBase):
             plotter.add_mesh(poly, **params)
         if return_plotter:
             return plotter
+        show_params = {}
         if notebook:
-            return plotter.show(jupyter_backend=jupyter_backend)
+            show_params.update(jupyter_backend=jupyter_backend)
         else:
-            return plotter.show()
+            if return_img:
+                plotter.show(auto_close=False) 
+                plotter.show(screenshot=True)
+                return plotter.last_image
+        return plotter.show(**show_params)
 
     def __join_parent__(self, parent: DeepDict, key: Hashable = None):
         super().__join_parent__(parent, key)

@@ -10,13 +10,13 @@ from ..extrude import extrude_T3_TET4
 from ..tri.triang import triangulate
 from ..tri.triutils import edges_tri
 from ..topo import unique_topo_data
-from ..topo.tr import T3_to_T6
+from ..topo.tr import T3_to_T6, T6_to_T3
 
 
 class TriMesh(PolyData):
     """
     A class to handle triangular meshes.
-    
+
     Parameters
     ----------
     points : ndarray, Optional.
@@ -25,7 +25,7 @@ class TriMesh(PolyData):
     triangles : ndarray, Optional.
         2d numpy array of integers, describing the topology of a polygonal mesh. 
         Default is None.
-        
+
     Notes
     -----
     See the PolyData class for the rest of the possible arguments to the 
@@ -55,20 +55,20 @@ class TriMesh(PolyData):
     >>> trimesh.normals()
     >>> trimesh.is_planar()
     True
-    
+
     See Also
     --------
     :class:`polymesh.polydata.PolyData`
     :class:`polymesh.space.frame.CartesianFrame`
-    
+
     """
-    
+
     _cell_classes_ = {
         3: T3,
         6: T6,
     }
 
-    def __init__(self, *args,  points=None, triangles=None, 
+    def __init__(self, *args,  points=None, triangles=None,
                  celltype=None, **kwargs):
         # parent class handles pointdata and celldata creation
         points = points if points is not None else \
@@ -94,7 +94,7 @@ class TriMesh(PolyData):
             points, triangles = T3_to_T6(points, triangles)
         assert triangles.shape[1] == celltype.NNODE
         super().__init__(*args, coords=points, topo=triangles, **kwargs)
-        
+
     def axes(self) -> np.ndarray:
         """
         Returns the normalized coordinate frames of triangles as a 3d numpy array.
@@ -103,7 +103,7 @@ class TriMesh(PolyData):
         assert x.shape[-1] == 3, "This is only available for 3d datasets."
         return frames_of_surfaces(x, self.topology()[:, :3])
 
-    def normals(self) ->np.ndarray:
+    def normals(self) -> np.ndarray:
         """
         Retuns the surface normals as a 2d numpy array.
         """
@@ -132,11 +132,11 @@ class TriMesh(PolyData):
         -------
         TetMesh
             A tetrahedral mesh.
-            
+
         See Also
         --------
         :class:`polymesh.tet.tetmesh.TetMesh`
-        
+
         """
         from ..tet.tetmesh import TetMesh
         if not self.is_planar():
@@ -173,7 +173,7 @@ class TriMesh(PolyData):
         numpy.ndarray, Optional
             Integer array of indices, that together with the edge data 
             reconstructs the topology.
-            
+
         """
         edges, IDs = unique_topo_data(edges_tri(self.topology()))
         if return_cells:
@@ -181,3 +181,24 @@ class TriMesh(PolyData):
         else:
             return edges
 
+    def to_triobj(self, *args, **kwargs):
+        """
+        Returns a triangulation object of a specified backend.
+        See :func:`polymesh.tri.triang.triangulate` for the details.
+        
+        Note
+        ----
+        During the process, the 6-noded triangles of the section are converted
+        into 3-noded ones.
+
+        See also
+        --------
+        :class:`matplotlib.tri.Triangulation`
+        :func:`polymesh.tri.triang.triangulate`
+
+        """
+        coords, topo = self.coords(), self.topology()
+        if topo.shape[-1] == 6:
+            path = np.array([[0, 5, 4], [5, 1, 3], [3, 2, 4], [5, 3, 4]], dtype=int)
+            coords, topo = T6_to_T3(coords, topo, path=path)
+        return triangulate(points=coords, triangles=topo)[-1]

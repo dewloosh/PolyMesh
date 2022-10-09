@@ -13,7 +13,26 @@ from ..extrude import extrude_T3_TET4
 from ..voxelize import voxelize_cylinder
 
 
-__all__ = ['circular_disk', 'cylinder']
+__all__ = ['circular_disk', 'cylinder', 'circular_helix']
+
+
+def circular_helix(a=None, b=None, *args, slope=None, pitch=None):
+    """    
+    Returns the function :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`,
+    which describes a circular helix of radius a and slope a/b (or pitch 2πb).
+    
+    """
+    if pitch is not None:
+        b = b if b is not None else pitch / 2 / np.pi
+    if slope is not None:
+        a = a if a is not None else slope * b
+        b = b if b is not None else slope / a
+    def inner(t):
+        """
+        Evaluates :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`.
+        """
+        return a * np.cos(t), a * np.sin(t), b * t
+    return inner
 
 
 def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
