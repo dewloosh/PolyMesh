@@ -1,6 +1,6 @@
 """
-Corcular Disk
-=============
+Circular Disk with PyVista
+==========================
 
 """
 

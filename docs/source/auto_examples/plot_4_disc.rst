@@ -18,8 +18,8 @@
 .. _sphx_glr_auto_examples_plot_4_disc.py:
 
 
-Corcular Disk
-=============
+Circular Disk with PyVista
+==========================
 
 .. GENERATED FROM PYTHON SOURCE LINES 6-28
 
@@ -62,9 +62,9 @@ Corcular Disk
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  10.195 seconds)
+   **Total running time of the script:** ( 0 minutes  5.812 seconds)
 
-**Estimated memory usage:**  87 MB
+**Estimated memory usage:**  47 MB
 
 
 .. _sphx_glr_download_auto_examples_plot_4_disc.py:
