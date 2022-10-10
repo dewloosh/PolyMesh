@@ -1,24 +1,39 @@
-====================================================================
-PolyMesh - A Python Library for Compound Meshes with Jagged Topology
-====================================================================
-  
+==============================================================================
+PolyMesh - A Python Library for Compound Polygonal Meshes with Jagged Topology
+==============================================================================
+
+----
+
+.. image:: logo.png
+
+
+PolyMesh is an effort to provide an easy access to the most popular data
+visualization libraries. It makes you able to
+
+* build, manipulate and analyse meshes easily, then convert to other formats
+
+* plot spatial data with the most popular backends such as Matplotlib, 
+  Plotly, PyVista, Vedo, etc.
+
+The library is built around the cornerstones of high performance computing 
+in Python, such as `Numpy`, `Scipy`, `Awkward` and `Numba` and provides
+a few 'numba-jittable' classes to handle pointclouds and polygonal meshes.
+
+.. _user_guide:
+
 .. toctree::
-    :caption: Contents
     :maxdepth: 3
-   
-    user_guide
+
     notebooks
 
 
 .. toctree::
-    :maxdepth: 4
-    :caption: Examples
+    :maxdepth: 2
 
     auto_examples/index.rst
 
 .. toctree::
-    :caption: API
-    :maxdepth: 4
+    :maxdepth: 2
    
     api
    

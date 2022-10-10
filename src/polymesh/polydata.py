@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from copy import copy, deepcopy
-from typing import Union, Hashable, Collection, Iterable
+from typing import Union, Hashable, Collection, Iterable, Tuple
 from numpy import ndarray
 import numpy as np
+import awkward as ak
 from awkward import Array as akarray
+import functools
+from pandas import DataFrame
 
 from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray
@@ -11,6 +14,7 @@ from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
 from neumann.array import atleastnd, minmax
 
+from .akwrap import AkWrapper
 from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
 from .utils import cells_coords, cells_around, cell_center_bulk
@@ -94,16 +98,22 @@ class PolyData(PolyDataBase):
 
     Examples
     --------
-    >>> from polymesh import PolyData
+    >>> from polymesh import PolyData, PointData
     >>> from polymesh.grid import grid
+    >>> from polymesh.space import StandardFrame
+    >>> from polymesh.cells import H27
     >>> size = Lx, Ly, Lz = 100, 100, 100
     >>> shape = nx, ny, nz = 10, 10, 10
     >>> coords, topo = grid(size=size, shape=shape, eshape='H27')
-    >>> pd = PolyData(coords=coords)
-    >>> pd['A']['Part1'] = PolyData(topo=topo[:10])
-    >>> pd['B']['Part2'] = PolyData(topo=topo[10:-10])
-    >>> pd['C']['Part3'] = PolyData(topo=topo[-10:])
-
+    >>> GlobalFrame = StandardFrame(dim=3)
+    >>> pd = PointData(coords=coords, frame=GlobalFrame)
+    >>> cd = H27(topo=topo, frames=GlobalFrame)
+    >>> mesh = PolyData(pd, frame=GlobalFrame)
+    >>> mesh['A']['Part1'] = PolyData(cd=H27(topo=topo[:10], frames=GlobalFrame))
+    >>> mesh['A']['Part2'] = PolyData(cd=H27(topo=topo[10:-10], frames=GlobalFrame))
+    >>> mesh['A']['Part3'] = PolyData(cd=H27(topo=topo[-10:], frames=GlobalFrame))
+    >>> mesh.plot()
+    
     See also
     --------
     :class:`.tri.trimesh.TriMesh`
@@ -364,8 +374,111 @@ class PolyData(PolyDataBase):
             else:
                 msg = "The element type with vtkId <{}> is not jet supported here."
                 raise NotImplementedError(msg.format(vtkid))
-
         return pd
+
+    @classmethod
+    def from_dict(cls, d_in: dict) -> Tuple[dict, 'PolyData']:
+        """
+        Reads a mesh form a dictionary. Returns a decorated version
+        of the input dictionary and a `PolyData` instance.
+
+        It must be implemented in subclasses. An example is 
+        :class:`sigmaepsilon.solid.fem.linemesh.BernoulliFrame`
+        """
+        raise NotImplementedError
+
+    def to_pandas(self, *args, fields: Iterable[str] = None, **kwargs) -> Tuple[DataFrame, DataFrame]:
+        """
+        Returns the data contained within the mesh to pandas dataframes.
+
+        Parameters
+        ----------
+        path_pd : str
+            File path for point-related data.
+
+        path_cd : str
+            File path for cell-related data.
+
+        fields : Iterable[str], Optional
+            Valid field names to include in the parquet files.
+
+        """
+        ak_pd, ak_cd = self.to_ak(*args, fields=fields, **kwargs)
+        return ak.to_pandas(ak_pd), ak.to_pandas(ak_cd)
+
+    def to_parquet(self, path_pd: str, path_cd: str, *args,
+                   fields: Iterable[str] = None, **kwargs):
+        """
+        Saves the data contained within the mesh to parquet files.
+
+        Parameters
+        ----------
+        path_pd : str
+            File path for point-related data.
+
+        path_cd : str
+            File path for cell-related data.
+
+        fields : Iterable[str], Optional
+            Valid field names to include in the parquet files.
+
+        """
+        ak_pd, ak_cd = self.to_ak(*args, fields=fields, **kwargs)
+        ak.to_parquet(ak_pd, path_pd)
+        ak.to_parquet(ak_cd, path_cd)
+
+    def to_ak(self, *args, fields: Iterable[str] = None, **kwargs):
+        """
+        Returns the data contained within the mesh as two Awkward arrays.
+
+        Parameters
+        ----------
+        fields : Iterable[str], Optional
+            Valid field names to include in the returned objects.
+        """
+        lp, lc = self.to_lists(*args, fields=fields, **kwargs)
+        return ak.from_iter(lp), ak.from_iter(lc)
+
+    def to_lists(self, *args, fields: Iterable[str] = None, **kwargs) -> Tuple[list, list]:
+        """
+        Returns data of the object as a tuple of lists. The first is a list of point-related,
+        the other one is cell-related data. Unless specified by 'fields', all data is returned
+        from the pointcloud and the related cells of the mesh.
+
+        Parameters
+        ----------
+        fields : Iterable[str], Optional
+            A list of keys that might identify data in a database. Default is None.
+
+        """
+        # handle points
+        pdb = self.pd.db
+        if fields is not None:
+            db = {}
+            for f in fields:
+                if f in pdb.fields:
+                    db[f] = pdb[f]
+            lp = AkWrapper(fields=db).to_list()
+        else:
+            lp = pdb.to_list()
+
+        # handle cells
+        blocks = self.cellblocks(*args, inclusive=True, **kwargs)
+        if fields is not None:
+            def foo(b):
+                cdb = b.cd.db
+                db = {}
+                for f in fields:
+                    if f in cdb.fields:
+                        db[f] = cdb[f]
+                cd = AkWrapper(fields=db)
+                return cd.db.to_list()
+        else:
+            def foo(b): return b.cd.db.to_list()
+
+        lc = list(map(foo, blocks))
+        lc = functools.reduce(lambda a, b: a+b, lc)
+        return lp, lc
 
     @property
     def config(self) -> DeepDict:
@@ -549,7 +662,7 @@ class PolyData(PolyDataBase):
         imap : ndarray, Optional
             Index mapper. Either provided as a numpy array, or it gets fetched
             from the database. Default is None.
-            
+
         invert : bool, Optional
             A flag to indicate wether the provided index map should be inverted or not.
             Default is False.
@@ -558,7 +671,7 @@ class PolyData(PolyDataBase):
         -----
         Unless node numbering was modified, subsequent executions have no effect
         after once called.
-        
+
         Returns
         -------
         :class:`PolyData`
@@ -585,17 +698,17 @@ class PolyData(PolyDataBase):
         """
         Transforms the problem to standard form, which means
         a centralized pointdata and regular cell indices.
-        
+
         Notes
         -----
         Some operation might work better if the layout of the mesh
         admits the standard form.
-        
+
         Parameters
         ----------
         inplace : bool, Optional
             Performs the operations inplace. Default is True.
-            
+
         """
         if not self.is_root():
             raise NotImplementedError
@@ -702,38 +815,38 @@ class PolyData(PolyDataBase):
     def coords(self, *args, return_inds=False, from_cells=False, **kwargs) -> VectorBase:
         """
         Returns the coordinates as an array.
-        
+
         Parameters
         ----------
         return_inds : bool, Optional
             Returns the indices of the points. Default is False.
-            
+
         from_cells : bool, Optional
             If there is no pointdata attaached to the current block, the points of
             the sublevels of the mesh can be gathered from cell information.
             Default is False.
-        
+
         Returns
         -------
         :class:`neumann.linalg.vector.VectorBase`
-         
+
         """
         if return_inds:
             p, inds = self.points(return_inds=True, from_cells=from_cells)
             return p.show(*args, **kwargs), inds
         else:
             return self.points(from_cells=from_cells).show(*args, **kwargs)
-    
+
     def bounds(self, *args, **kwargs) -> list:
         """
         Returns the bounds of the mesh.
-        
+
         Example
         -------
         >>> from polymesh.examples import stand_vtk
         >>> pd = stand_vtk(read=True)
         >>> pd.bounds()
-        
+
         """
         c = self.coords(*args, **kwargs)
         return [minmax(c[:, 0]), minmax(c[:, 1]), minmax(c[:, 2])]
@@ -752,22 +865,22 @@ class PolyData(PolyDataBase):
         return self.__class__(pd, cd, frame=frame)
 
     def cells(self):
-        #This should be the same to topology, what point is to coords,
-        #with no need to copy the underlying mechanism.
+        # This should be the same to topology, what point is to coords,
+        # with no need to copy the underlying mechanism.
         #
-        #The relationship of resulting object to the topology of a mesh should 
-        #be similar to that of `PointCloud` and the points in 3d space.
+        # The relationship of resulting object to the topology of a mesh should
+        # be similar to that of `PointCloud` and the points in 3d space.
         pass
 
     def topology(self, *args, return_inds=False, jagged=None, **kwargs) -> Union[ndarray, akarray]:
         """
         Returns the topology as either a `numpy` or an `awkward` array.
-        
+
         Parameters
         ----------
         return_inds : bool, Optional
             Returns the indices of the points. Default is False.
-            
+
         jagged : bool, Optional
             If True, returns the topology as a :class:`TopologyArray` instance,
             even if the mesh is regular. Default is False.
@@ -776,7 +889,7 @@ class PolyData(PolyDataBase):
         -------
         Union[ndarray, akarray]
             The topology as a 2d integer array.
-            
+
         """
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
         topo = list(map(lambda i: i.celldata.topology(), blocks))
@@ -798,12 +911,12 @@ class PolyData(PolyDataBase):
     def detach(self, nummrg=False) -> 'PolyData':
         """
         Returns a detached version of the mesh.
-        
+
         Parameters
         ----------
         nummrg: bool, Optional
             If True, merges node numbering. Default is False.
-            
+
         """
         pd = PolyData(self.root().pd, frame=self.frame)
         l0 = len(self.address)
@@ -949,7 +1062,7 @@ class PolyData(PolyDataBase):
 
         The argument `knn_options` is passed to the KNN search algorithm,
         the rest to the `centers` function of the mesh.
-        
+
         Examples
         --------
         >>> from sigmaepsilon.mesh.grid import Grid
@@ -1032,24 +1145,24 @@ class PolyData(PolyDataBase):
                scalars=None, detach=True, **kwargs):
         """
         Returns the mesh as a `vtk` oject.
-        
+
         Parameters
         ----------
         deepcopy : bool, Optional
             Obviously. Default is True.
-            
+
         fuse : bool, Optional
             Wether to fuse submeshes into one object. Default is False.
 
         deep : bool, Optional
             Wether to into submeshes or not. Default is True.
-        
+
         scalars : ndarray, None
             Scalars to decorate the object with. Default is None.
-            
+
         detach : bool, Optional
             If True, the mesh is detached. Default is True.
-        
+
         """
         if not __hasvtk__:
             raise ImportError
@@ -1087,7 +1200,7 @@ class PolyData(PolyDataBase):
                         if root.pointdata is not None:
                             if scalars in root.pointdata.fields:
                                 pdata_root = self.pointdata[scalars].to_numpy()"""
-                        pass                                
+                        pass
                     plotdata.append(pdata)
                 # the next line handles regular topologies only
                 topo = block.celldata.topology().to_numpy().astype(np.int64)
@@ -1138,12 +1251,12 @@ class PolyData(PolyDataBase):
                config_key=None, color_map=None, detach=False, show_edges=True, **kwargs):
         """
         Returns the mesh as a k3d mesh object.
-        
+
         Returns
         -------
         Plot
             Plot Widget.
-            
+
         """
         assert __hask3d__, "The python package 'k3d' must be installed for this"
         if scene is None:
@@ -1282,7 +1395,7 @@ class PolyData(PolyDataBase):
             show_params.update(jupyter_backend=jupyter_backend)
         else:
             if return_img:
-                plotter.show(auto_close=False) 
+                plotter.show(auto_close=False)
                 plotter.show(screenshot=True)
                 return plotter.last_image
         return plotter.show(**show_params)

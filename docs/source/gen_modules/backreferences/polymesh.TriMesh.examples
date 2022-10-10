@@ -3,6 +3,10 @@
 Examples using ``polymesh.TriMesh``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
+.. start-sphx-glr-thumbnails
+
+
 .. raw:: html
 
     <div class="sphx-glr-thumbnails">
@@ -10,24 +14,24 @@ Examples using ``polymesh.TriMesh``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Compound Meshes">
+    <div class="sphx-glr-thumbcontainer" tooltip="Corcular Disk">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_2_pv_thumb.png
-    :alt: Compound Meshes
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_4_disc_thumb.png
+    :alt: Corcular Disk
 
-  :ref:`sphx_glr_auto_examples_plot_2_pv.py`
+  :ref:`sphx_glr_auto_examples_plot_4_disc.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Compound Meshes</div>
+      <div class="sphx-glr-thumbnail-title">Corcular Disk</div>
     </div>
 
 
 .. only:: not html
 
- * :ref:`sphx_glr_auto_examples_plot_2_pv.py`
+ * :ref:`sphx_glr_auto_examples_plot_4_disc.py`
 
 .. raw:: html
 

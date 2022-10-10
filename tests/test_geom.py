@@ -6,6 +6,9 @@ from neumann.linalg import Vector
 
 from polymesh import PolyData, grid, PointCloud, CartesianFrame
 from polymesh.grid import grid
+from polymesh import PolyData, PointData
+from polymesh.space import StandardFrame
+from polymesh.cells import H27
 
 
 class TestCoords(unittest.TestCase):
@@ -53,6 +56,23 @@ class TestPolyData(unittest.TestCase):
         pd['A']['Part1'] = PolyData(topo=topo[:10])
         pd['B']['Part2'] = PolyData(topo=topo[10:-10])
         pd['C']['Part3'] = PolyData(topo=topo[-10:])
+        
+    def test_cube(self):
+        size = Lx, Ly, Lz = 100, 100, 100
+        shape = nx, ny, nz = 10, 10, 10
+        coords, topo = grid(size=size, shape=shape, eshape='H27')
+        GlobalFrame = StandardFrame(dim=3)
+        pd = PointData(coords=coords, frame=GlobalFrame)
+        cd = H27(topo=topo, frames=GlobalFrame)
+        mesh = PolyData(pd, frame=GlobalFrame)
+
+        part1 = H27(topo=topo[:10], frames=GlobalFrame)
+        part2 = H27(topo=topo[10:-10], frames=GlobalFrame)
+        part3 = H27(topo=topo[-10:], frames=GlobalFrame)
+
+        mesh['A']['Part1'] = PolyData(cd=part1)
+        mesh['A']['Part2'] = PolyData(cd=part2)
+        mesh['A']['Part3'] = PolyData(cd=part3)
 
 
 """def test_grid_origo_1(dx, dy, dz):

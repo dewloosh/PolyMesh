@@ -62,6 +62,40 @@ Examples Gallery
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="A Simple Cube">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_3_cube_thumb.png
+    :alt: A Simple Cube
+
+  :ref:`sphx_glr_auto_examples_plot_3_cube.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">A Simple Cube</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Corcular Disk">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_4_disc_thumb.png
+    :alt: Corcular Disk
+
+  :ref:`sphx_glr_auto_examples_plot_4_disc.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Corcular Disk</div>
+    </div>
+
+
+.. raw:: html
+
     </div>
 
 
@@ -71,6 +105,8 @@ Examples Gallery
    /auto_examples/plot_0_grid1
    /auto_examples/plot_1_grid2
    /auto_examples/plot_2_pv
+   /auto_examples/plot_3_cube
+   /auto_examples/plot_4_disc
 
 
 .. only:: html

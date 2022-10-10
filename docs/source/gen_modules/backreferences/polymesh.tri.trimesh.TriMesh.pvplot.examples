@@ -1,0 +1,39 @@
+
+
+Examples using ``polymesh.tri.trimesh.TriMesh.pvplot``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Corcular Disk">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_4_disc_thumb.png
+    :alt: Corcular Disk
+
+  :ref:`sphx_glr_auto_examples_plot_4_disc.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Corcular Disk</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_auto_examples_plot_4_disc.py`
+
+.. raw:: html
+
+    </div>
+

@@ -3,6 +3,10 @@
 Examples using ``polymesh.PolyCell3d``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
+.. start-sphx-glr-thumbnails
+
+
 .. raw:: html
 
     <div class="sphx-glr-thumbnails">
@@ -10,24 +14,24 @@ Examples using ``polymesh.PolyCell3d``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Grid Based Mesh Generation">
+    <div class="sphx-glr-thumbcontainer" tooltip="A Simple Cube">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_grid2_thumb.png
-    :alt: Grid Based Mesh Generation
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_3_cube_thumb.png
+    :alt: A Simple Cube
 
-  :ref:`sphx_glr_auto_examples_plot_1_grid2.py`
+  :ref:`sphx_glr_auto_examples_plot_3_cube.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Grid Based Mesh Generation</div>
+      <div class="sphx-glr-thumbnail-title">A Simple Cube</div>
     </div>
 
 
 .. only:: not html
 
- * :ref:`sphx_glr_auto_examples_plot_1_grid2.py`
+ * :ref:`sphx_glr_auto_examples_plot_3_cube.py`
 
 .. raw:: html
 
