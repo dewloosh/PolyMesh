@@ -30,3 +30,5 @@ python:
    - requirements: dev-requirements.txt
    - requirements: devops-requirements.txt
    - requirements: docs/requirements.txt
+   - method: pip
+     path: .
