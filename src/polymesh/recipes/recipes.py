@@ -13,9 +13,6 @@ from ..extrude import extrude_T3_TET4
 from ..voxelize import voxelize_cylinder
 
 
-__all__ = ['circular_disk', 'cylinder', 'circular_helix']
-
-
 def circular_helix(a=None, b=None, *args, slope=None, pitch=None):
     """    
     Returns the function :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`,
@@ -60,7 +57,7 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
 
     Examples
     --------
-    >>> from dewloosh.mesh.recipes import circular_disk
+    >>> from polymesh.recipes import circular_disk
     >>> mesh = circular_disk(120, 60, 5, 25) 
 
     """
@@ -131,7 +128,7 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
     
     Examples
     --------
-    >>> from dewloosh.mesh.recipes import cylinder
+    >>> from polymesh.recipes import cylinder
     >>> mesh = cylinder(120, 60, 5, 25)
         
     """

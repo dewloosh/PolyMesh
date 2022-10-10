@@ -8,3 +8,4 @@ from .polydata import PolyData
 from .linedata import LineData
 from .linedata import LineData as PolyData1d
 from .pointdata import PointData
+from .utils import k_nearest_neighbours as KNN
