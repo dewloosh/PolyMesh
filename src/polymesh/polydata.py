@@ -6,7 +6,6 @@ import numpy as np
 import awkward as ak
 from awkward import Array as akarray
 import functools
-from pandas import DataFrame
 
 from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray
@@ -387,7 +386,7 @@ class PolyData(PolyDataBase):
         """
         raise NotImplementedError
 
-    def to_pandas(self, *args, fields: Iterable[str] = None, **kwargs) -> Tuple[DataFrame, DataFrame]:
+    def to_pandas(self, *args, fields: Iterable[str] = None, **kwargs):
         """
         Returns the data contained within the mesh to pandas dataframes.
 
