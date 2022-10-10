@@ -2,5 +2,5 @@
 Recipes for Mesh Generation
 ===========================
 
-.. automodule:: polymesh.recipes
+.. automodule:: polymesh.recipes.recipes
     :members:
