@@ -33,7 +33,7 @@ a few 'numba-jittable' classes to handle pointclouds and polygonal meshes.
     auto_examples/index.rst
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 4
    
     api
    
