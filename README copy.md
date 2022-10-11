@@ -6,6 +6,9 @@
 
 # **PolyMesh** - A Python Library for Compound Meshes with Jagged Topology
 
+> **Warning**
+> This package is under active development and in a **beta stage**. Come back later, or star the repo to make sure you don’t miss the first stable release!
+
 ## **Documentation**
 
 Click [here](https://PolyMesh.readthedocs.io/en/latest/) to read the documentation.
