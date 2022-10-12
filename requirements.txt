@@ -1,4 +1,4 @@
 packaging
 linkeddeepdict
-dewloosh.core>=1.0.11b
-neumann>=0.0.1b
+dewloosh.core
+neumann
