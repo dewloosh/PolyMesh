@@ -9,3 +9,5 @@ pandas
 plotly
 tetgen
 autopep8
+awkward
+pyarrow

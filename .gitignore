@@ -134,3 +134,5 @@ dmypy.json
 _README.md
 working/
 .vscode
+notebooks/*.json
+notebooks/*.parquet
