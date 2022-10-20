@@ -7,7 +7,6 @@ from typing import Union, MutableMapping
 
 import numpy as np
 from numpy import ndarray
-import pyvista as pv
 
 from neumann.array import atleast1d, ascont
 from neumann.utils import to_range
@@ -20,6 +19,9 @@ from .tet.tetutils import tet_vol_bulk
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .topo import detach_mesh_bulk, rewire, TopologyArray
 
+from .config import __haspyvista__
+if __haspyvista__:
+    import pyvista as pv
 
 MapLike = Union[ndarray, MutableMapping]
 
@@ -352,8 +354,9 @@ class PolyCell3d(PolyCell):
             ugrid = mesh_to_vtk(coords, topo, vtkid)
         return ugrid
     
-    def to_pv(self, detach=False) -> pv.UnstructuredGrid:
-        return pv.wrap(self.to_vtk(detach=detach))
+    if __haspyvista__:
+        def to_pv(self, detach=False) -> pv.UnstructuredGrid:
+            return pv.wrap(self.to_vtk(detach=detach))
         
     def extract_surface(self, detach=False):
         pvs = self.to_pv(detach=detach).extract_surface(pass_pointid=True)
