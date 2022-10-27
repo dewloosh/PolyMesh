@@ -2,7 +2,7 @@ PolyMesh API Reference
 ======================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 6
     
     api_db
     api_space

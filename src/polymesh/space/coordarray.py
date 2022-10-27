@@ -51,7 +51,8 @@ def dcoords(coords, v):
 
 
 class PointCloud(Vector):
-    """A numba-jittable class to support calculations related to points 
+    """
+    A numba-jittable class to support calculations related to points 
     in Euclidean space.
 
     Parameters

@@ -19,10 +19,10 @@ class TriMesh(PolyData):
 
     Parameters
     ----------
-    points : ndarray, Optional.
+    points : numpy.ndarray, Optional.
         2d numpy array of floats, describing a pointcloud. Default is None.
 
-    triangles : ndarray, Optional.
+    triangles : numpy.ndarray, Optional.
         2d numpy array of integers, describing the topology of a polygonal mesh. 
         Default is None.
 
@@ -122,7 +122,7 @@ class TriMesh(PolyData):
 
         Parameters
         ----------
-        h : Float
+        h : float
             Size perpendicular to the plane of the surface to be extruded.
 
         N : Int

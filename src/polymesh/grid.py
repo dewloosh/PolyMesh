@@ -24,11 +24,11 @@ def grid(*args, size=None, shape=None, eshape=None, shift=None, start=0,
     ----------
 
     size : tuple, Optional
-        A 2-tuple, containg side lengths of a rectangular domain. \n
+        A 2-tuple, containg side lengths of a rectangular domain. 
         Should be provided alongside `shape`.
 
     shape : tuple or int, Optional
-        A 2-tuple, describing subdivisions along coordinate directions \n
+        A 2-tuple, describing subdivisions along coordinate directions
         Should be provided alongside `size`.
         
     eshape : str or Tuple, Optional
@@ -61,7 +61,7 @@ def grid(*args, size=None, shape=None, eshape=None, shift=None, start=0,
     the results of this call to build a vtk model, you have to account for this.
     Optinally, you can use the dedicated grid generation routines of this module.
     
-    2) If you"d rather get the result as a `PolyData`, use the `Grid` class.
+    2) If you'd rather get the result as a `PolyData`, use the `Grid` class.
     
     Returns
     -------

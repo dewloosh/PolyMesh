@@ -19,12 +19,12 @@ class L3(QuadraticLine):
 
     """def shape_function_values(self, coords, *args, **kwargs):
         if len(coords.shape) == 2:
-            return shp2_bulk(coords)
+            return shp3_bulk(coords)
         else:
-            return shp2(coords)
+            return shp3(coords)
 
     def shape_function_derivatives(self, coords, *args, **kwargs):
         if len(coords.shape) == 2:
-            return dshp2_bulk(coords)
+            return dshp3_bulk(coords)
         else:
-            return dshp2(coords)"""
+            return dshp3(coords)"""

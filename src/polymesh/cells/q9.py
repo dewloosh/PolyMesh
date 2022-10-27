@@ -103,9 +103,11 @@ def dshp_Q9_bulk(pcoords: ndarray):
 
 
 class Q9(BiQuadraticQuadrilateral):
-    """Polygon Class for 9-noded biquadratic quadrilaterals. 
+    """
+    Polygon Class for 9-noded biquadratic quadrilaterals. 
     It defines the shape function of the purely geometric 
-    object :class:`polymesh.polygon.BiQuadraticQuadrilateral`."""
+    object :class:`polymesh.polygon.BiQuadraticQuadrilateral`.
+    """
 
     @classmethod
     def lcoords(cls, *args, **kwargs):

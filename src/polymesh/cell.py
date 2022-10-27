@@ -27,8 +27,10 @@ MapLike = Union[ndarray, MutableMapping]
 
 
 class PolyCell(CellData):
-    """A subclass of :class:`polymesh.celldata.CellData` as a bse class 
-    for all kinds of geometrical entities."""
+    """
+    A subclass of :class:`polymesh.celldata.CellData` as a base class 
+    for all kinds of geometrical entities.
+    """
 
     NNODE = None
     NDIM = None
@@ -76,20 +78,20 @@ class PolyCell(CellData):
         
         Parameters
         ----------
-        dshp : :class:`numpy.ndarray`
+        dshp : numpy.ndarray
             2d array of shape function derivatives for the primitive cell.
         
-        ecoords : :class:`numpy.ndarray`, Optional
+        ecoords : numpy.ndarray, Optional
             3d array of nodal coordinates for all cells. 
             Either 'ecoords' or 'topo' must be provided.
             
-        topo : :class:`numpy.ndarray`, Optional
+        topo : numpy.ndarray, Optional
             2d integer topology array.
             Either 'ecoords' or 'topo' must be provided.
         
         Returns
         -------
-        :class:`numpy.ndarray`
+        numpy.ndarray
             The 3d array of jacobian matrices for all the cells.
             
         """
@@ -103,7 +105,7 @@ class PolyCell(CellData):
         
         Parameters
         ----------
-        jac : :class:`numpy.ndarray`, Optional
+        jac : numpy.ndarray, Optional
             One or more Jacobian matrices. Default is None.
             
         **kwargs : dict
@@ -112,7 +114,7 @@ class PolyCell(CellData):
             
         Returns
         -------
-        float or :class:`numpy.ndarray`
+        float or numpy.ndarray
             Value of the Jacobian for one or more cells.
             
         """

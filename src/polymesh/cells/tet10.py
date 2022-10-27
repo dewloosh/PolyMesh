@@ -40,6 +40,10 @@ def dshp_TET10():
 
 
 class TET10(QuadraticTetraHedron):
+    """
+    10-node isoparametric hexahedron.
+    
+    """
 
     @classmethod
     def lcoords(cls, *args, **kwargs):

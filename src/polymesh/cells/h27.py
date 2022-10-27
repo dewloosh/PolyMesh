@@ -98,6 +98,15 @@ def shp_H27(pcoord):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
+def shp_H27_bulk(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 27), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP, :] = shp_H27(pcoords[iP])
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
 def shape_function_matrix_H27(pcoord: np.ndarray):
     eye = np.eye(3, dtype=pcoord.dtype)
     shp = shp_H27(pcoord)
@@ -275,7 +284,7 @@ def volumes_H27(ecoords: np.ndarray, qpos: np.ndarray,
 class H27(TriquadraticHexaHedron):
     """
     27-node isoparametric triquadratic hexahedron
-
+    
     top
     7---14---6
     |    |   |
@@ -300,7 +309,15 @@ class H27(TriquadraticHexaHedron):
     """
 
     @classmethod
-    def lcoords(cls, *args, **kwargs):
+    def lcoords(cls) -> ndarray:
+        """
+        Returns local coordinates of the cell.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
         return np.array([
             [-1., -1., -1], [1., -1., -1.], [1., 1., -1.], [-1., 1., -1.],
             [-1., -1., 1.], [1., -1., 1.],  [1., 1., 1.],  [-1., 1., 1.],
@@ -311,21 +328,74 @@ class H27(TriquadraticHexaHedron):
             [0., 0., -1.],  [0., 0., 1.],   [0., 0., 0.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs):
-        return np.array([0., 0., 0.])
+    def lcenter(cls) -> ndarray:
+        """
+        Returns the local coordinates of the center of the cell.
 
-    def shape_function_derivatives(self, coords=None, *args, **kwargs):
-        if coords is None:
-            if self.pointdata is not None:
-                coords = self.pointdata.x
-            else:
-                coords = self.container.source().coords()
+        Returns
+        -------
+        numpy.ndarray
+
+        """
+        return np.array([0., 0., 0.])
+    
+    @classmethod
+    def shape_function_values(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+        """
+        Evaluates the shape functions. The points of evaluation should be 
+        understood in the master element.
+
+        Parameters
+        ----------
+        coords : numpy.ndarray
+            Points of evaluation. It should be a 1d array for a single point
+            and a 2d array for several points. In the latter case, the points
+            should run along the first axis.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (27,) for a single, (N, 27) for N evaulation points.
+
+        """
+        if len(coords.shape) == 2:
+            return dshp_H27_bulk(coords)
+        else:
+            return shp_H27(coords)
+
+    @classmethod
+    def shape_function_derivatives(cls, coords=None, *args, **kwargs) -> ndarray:
+        """
+        Returns shape function derivatives wrt. the master element. The points of evaluation 
+        should be understood in the master element.
+
+        Parameters
+        ----------
+        coords : numpy.ndarray
+            Points of evaluation. It should be a 1d array for a single point
+            and a 2d array for several points. In the latter case, the points
+            should run along the first axis.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (27, 3) for a single, (N, 27, 3) for N evaulation points.
+
+        """
         if len(coords.shape) == 2:
             return dshp_H27_bulk(coords)
         else:
             return dshp_H27(coords)
 
-    def volumes(self, coords=None, topo=None):
+    def volumes(self, coords=None, topo=None) -> ndarray:
+        """
+        Returns the volumes of the cells.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
         if coords is None:
             if self.pointdata is not None:
                 coords = self.pointdata.x

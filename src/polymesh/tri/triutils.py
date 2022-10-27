@@ -125,7 +125,7 @@ def inscribed_radius(ecoords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def inscribed_radii(ecoords: ndarray):
+def inscribed_radii(ecoords: ndarray) -> ndarray:
     """
     Returns the radii of the inscribed circle of several triangles.
     
@@ -152,7 +152,7 @@ def inscribed_radii(ecoords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def areas_tri(ecoords: np.ndarray):
+def areas_tri(ecoords: np.ndarray) -> ndarray:
     """
     Returns the total sum of signed areas of several triangles.
     
@@ -184,7 +184,7 @@ def areas_tri(ecoords: np.ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def area_tri_bulk(ecoords: np.ndarray):
+def area_tri_bulk(ecoords: np.ndarray) -> ndarray:
     """
     Returns the signed area of several triangles.
     
@@ -216,7 +216,7 @@ def area_tri_bulk(ecoords: np.ndarray):
 
 
 @vectorize("f8(f8, f8, f8, f8, f8, f8)", target='parallel', cache=__cache)
-def area_tri_u(x1, y1, x2, y2, x3, y3):
+def area_tri_u(x1, y1, x2, y2, x3, y3) -> float:
     """
     Vectorized implementation of `area_tri_bulk`.
     
@@ -470,10 +470,10 @@ def tri_glob_to_loc(points: np.ndarray, triangles: np.ndarray):
  
     
 if __name__ == '__main__':
-    from dewloosh.mesh.tri.triang import triangulate
-    from dewloosh.mesh.space.utils import frames_of_surfaces, \
+    from polymesh.tri.triang import triangulate
+    from polymesh.space.utils import frames_of_surfaces, \
         is_planar_surface
-    from dewloosh.math.array import ascont
+    from neumann.array import ascont
     from time import time
 
     points, triangles, triobj = triangulate(size=(800, 600),

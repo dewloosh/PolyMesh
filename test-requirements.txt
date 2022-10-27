@@ -3,3 +3,4 @@ tetgen
 pytest
 pandas
 pyarrow
+networkx

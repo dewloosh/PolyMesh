@@ -55,9 +55,11 @@ def dshp_Q4_bulk(pcoords: ndarray):
 
 
 class Q4(Quadrilateral):
-    """Polygon Class for 4-noded bilinear quadrilaterals. 
+    """
+    Polygon Class for 4-noded bilinear quadrilaterals. 
     It defines the shape function of the purely geometric 
-    object :class:`polymesh.polygon.Quadrilateral`."""
+    object :class:`polymesh.polygon.Quadrilateral`.
+    """
 
     @classmethod
     def lcoords(cls, *args, **kwargs):

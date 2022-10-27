@@ -36,6 +36,10 @@ def dshp_TET4():
 
 
 class TET4(TetraHedron):
+    """
+    4-node isoparametric hexahedron.
+    
+    """
 
     @classmethod
     def lcoords(cls, *args, **kwargs):
