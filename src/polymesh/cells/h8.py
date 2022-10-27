@@ -117,15 +117,17 @@ class H8(HexaHedron):
     """
     8-node isoparametric hexahedron.
 
-    top        
-    7--6  
-    |  |
-    4--5
+    ::
+    
+        top        
+        7--6  
+        |  |
+        4--5
 
-    bottom
-    3--2  
-    |  |
-    0--1
+        bottom
+        3--2  
+        |  |
+        0--1
 
     """
 
