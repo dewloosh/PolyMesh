@@ -147,7 +147,7 @@ class CartesianFrame(ReferenceFrame):
             s = self.origo()
             return Vector(s - t).show(target)
 
-    def move(self, d: VectorLike, frame: ReferenceFrame = None):
+    def move(self, d: VectorLike, frame: ReferenceFrame = None) -> 'CartesianFrame':
         """
         Moves the frame by shifting its origo.
         
@@ -187,7 +187,7 @@ class CartesianFrame(ReferenceFrame):
             self._origo += d.show(self)
         return self
 
-    def fork(self, *args, **kwargs):
+    def fork(self, *args, **kwargs) -> 'CartesianFrame':
         """
         Retures a new frame, as a child of the current one. 
         Optionally, a transformation can be provided and all the arguments 
@@ -200,7 +200,7 @@ class CartesianFrame(ReferenceFrame):
         else:
             return self.orient_new(*args, **kwargs)
 
-    def copy(self, deepcopy=False):
+    def copy(self, deepcopy=False) -> 'CartesianFrame':
         """
         Returns a shallow or deep copy of this object, depending of the
         argument `deepcopy` (default is False).
@@ -210,7 +210,7 @@ class CartesianFrame(ReferenceFrame):
         else:
             return self.__class__(self.axes, parent=self.parent)
 
-    def join(self, parent: ReferenceFrame = None):
+    def join(self, parent: ReferenceFrame = None) -> 'CartesianFrame':
         """
         Sets this object as the 'child' to the provided frame.
         If there is no frame provided, the object is joined to the root.
