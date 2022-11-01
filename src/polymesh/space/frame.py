@@ -187,12 +187,6 @@ class CartesianFrame(ReferenceFrame):
             self._origo += d.show(self)
         return self
 
-    def rotate(self, *args, **kwargs):
-        """
-        Applies a transformation to the frame in-place.
-        """
-        return self.orient(*args, **kwargs)
-
     def fork(self, *args, **kwargs):
         """
         Retures a new frame, as a child of the current one. 

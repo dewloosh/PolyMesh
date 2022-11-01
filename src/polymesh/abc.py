@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Callable
 from dewloosh.core.meta import ABCMeta_Weak
 
 
@@ -16,10 +17,17 @@ class ABCMeta_MeshData(ABCMeta_Weak):
     def __new__(metaclass, name, bases, namespace, *args, **kwargs):
         cls = super().__new__(metaclass, name, bases, namespace, *args,
                               **kwargs)
+        
+        # merge database fields
         _attr_map_ = namespace.get('_attr_map_', {})
         for base in bases:
             _attr_map_.update(base.__dict__.get('_attr_map_', {}))
         cls._attr_map_ = _attr_map_
+        
+        # generate shape functions
+        shpfnc = namespace.get('shpfnc', None)
+        if shpfnc is None:
+            cls.pina=True
         return cls
     
     

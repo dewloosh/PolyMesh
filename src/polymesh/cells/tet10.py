@@ -22,9 +22,17 @@ def shp_TET10(pcoord: ndarray):
                      4*u*r, 4*r*s, 4*s*u,
                      4*u*t, 4*r*t, 4*s*t])
 
+@njit(nogil=True, parallel=True, cache=__cache)
+def shp_TET10_bulk(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 10), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP, :] = shp_TET10(pcoords[iP])
+    return res
+
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET4(pcoord: np.ndarray):
+def shape_function_matrix_TET10(pcoord: np.ndarray):
     eye = np.eye(3, dtype=pcoord.dtype)
     shp = shp_TET10(pcoord)
     res = np.zeros((3, 30), dtype=pcoord.dtype)
@@ -34,9 +42,18 @@ def shape_function_matrix_TET4(pcoord: np.ndarray):
 
 
 @njit(nogil=True, cache=__cache)
-def dshp_TET10():
+def dshp_TET10(x):
     return np.array([[-1., -1., -1.], [1., 0., 0.], 
                      [0., 1., 0.], [0., 0., 1.]])
+    
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def dshp_TET10_bulk(pcoords: ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 10, 3), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = dshp_TET10(pcoords[iP])
+    return res
 
 
 class TET10(QuadraticTetraHedron):
@@ -44,6 +61,9 @@ class TET10(QuadraticTetraHedron):
     10-node isoparametric hexahedron.
     
     """
+    
+    shpfnc = shp_TET10_bulk
+    dshpfnc = dshp_TET10_bulk
 
     @classmethod
     def lcoords(cls, *args, **kwargs):
@@ -58,12 +78,5 @@ class TET10(QuadraticTetraHedron):
         return np.array([[1/3, 1/3, 1/3]])
 
     def shape_function_derivatives(self, coords=None, *args, **kwargs):
-        if coords is None:
-            if self.pointdata is not None:
-                coords = self.pointdata.x
-            else:
-                coords = self.container.source().coords()
-        if len(coords.shape) == 2:
-            return repeat(dshp_TET10(), coords.shape[0])
-        else:
-            return dshp_TET10()
+        return dshp_TET10_bulk(coords) if len(coords.shape) == 2 else dshp_TET10(coords)
+    

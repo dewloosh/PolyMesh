@@ -360,10 +360,8 @@ class H27(TriquadraticHexaHedron):
             An array of shape (27,) for a single, (N, 27) for N evaulation points.
 
         """
-        if len(coords.shape) == 2:
-            return dshp_H27_bulk(coords)
-        else:
-            return shp_H27(coords)
+        return shp_H27_bulk(coords) if len(coords.shape) == 2 else shp_H27(coords)
+         
 
     @classmethod
     def shape_function_derivatives(cls, coords=None, *args, **kwargs) -> ndarray:
@@ -384,10 +382,7 @@ class H27(TriquadraticHexaHedron):
             An array of shape (27, 3) for a single, (N, 27, 3) for N evaulation points.
 
         """
-        if len(coords.shape) == 2:
-            return dshp_H27_bulk(coords)
-        else:
-            return dshp_H27(coords)
+        return dshp_H27_bulk(coords) if len(coords.shape) == 2 else dshp_H27(coords)
 
     def volumes(self, coords=None, topo=None) -> ndarray:
         """

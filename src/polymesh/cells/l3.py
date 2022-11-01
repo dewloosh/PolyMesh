@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple, List
 import numpy as np
+from numpy import ndarray
+from sympy import symbols
 
 from ..line import QuadraticLine
 
@@ -8,13 +11,53 @@ __all__ = ['L3']
 
 
 class L3(QuadraticLine):
+    """
+    3-Node line element.
+    """
+    
+    shpfnc = None
+    dshpfnc = None
+    
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Retruns the polynomial base of the master element.
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+
+        list
+            A list of monomials.
+
+        """
+        locvars = r = symbols('r', real=True)
+        monoms = [1, r, r**2]
+        return [locvars], monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs):
-        return np.array([[-1., 0., 1.]])
+    def lcoords(cls, *args, **kwargs) -> ndarray:
+        """
+        Returns local coordinates of the cell.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
+        return np.array([-1., 0., 1.])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs):
+    def lcenter(cls, *args, **kwargs) -> ndarray:
+        """
+        Returns the local coordinates of the center of the cell.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
         return np.array([0.])
 
     """def shape_function_values(self, coords, *args, **kwargs):

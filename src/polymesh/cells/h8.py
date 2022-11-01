@@ -176,16 +176,13 @@ class H8(HexaHedron):
             An array of shape (8,) for a single, (N, 8) for N evaulation points.
 
         """
-        if len(coords.shape) == 2:
-            return dshp_H8_bulk(coords)
-        else:
-            return shp_H8(coords)
+        return shp_H8_bulk(coords) if len(coords.shape) == 2 else shp_H8(coords)
 
     @classmethod
     def shape_function_derivatives(cls, coords: ndarray, *args, **kwargs) -> ndarray:
         """
-        Returns shape function derivatives wrt. the master element. The points of evaluation 
-        should be understood in the master element.
+        Returns shape function derivatives wrt. the master element. The points of 
+        evaluation should be understood in the master element.
 
         Parameters
         ----------
@@ -200,10 +197,7 @@ class H8(HexaHedron):
             An array of shape (8, 3) for a single, (N, 8, 3) for N evaulation points.
 
         """
-        if len(coords.shape) == 2:
-            return dshp_H8_bulk(coords)
-        else:
-            return dshp_H8(coords)
+        return dshp_H8_bulk(coords) if len(coords.shape) == 2 else dshp_H8(coords)
 
     def volumes(self, coords=None, topo=None) -> ndarray:
         """

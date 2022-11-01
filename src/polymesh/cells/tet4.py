@@ -20,6 +20,15 @@ def shp_TET4(pcoord: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
+def shp_TET4_bulk(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 4), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP, :] = shp_TET4(pcoords[iP])
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
 def shape_function_matrix_TET4(pcoord: np.ndarray):
     eye = np.eye(3, dtype=pcoord.dtype)
     shp = shp_TET4(pcoord)
@@ -30,9 +39,18 @@ def shape_function_matrix_TET4(pcoord: np.ndarray):
 
 
 @njit(nogil=True, cache=__cache)
-def dshp_TET4():
+def dshp_TET4(x):
     return np.array([[-1., -1., -1.], [1., 0., 0.], 
                      [0., 1., 0.], [0., 0., 1.]])
+    
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def dshp_TET4_bulk(pcoords: ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 4, 3), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = dshp_TET4(pcoords[iP])
+    return res
 
 
 class TET4(TetraHedron):
@@ -40,6 +58,9 @@ class TET4(TetraHedron):
     4-node isoparametric hexahedron.
     
     """
+    
+    shpfnc = shp_TET4_bulk
+    dshpfnc = dshp_TET4_bulk
 
     @classmethod
     def lcoords(cls, *args, **kwargs):
@@ -54,12 +75,5 @@ class TET4(TetraHedron):
         return np.array([[1/3, 1/3, 1/3]])
 
     def shape_function_derivatives(self, coords=None, *args, **kwargs):
-        if coords is None:
-            if self.pointdata is not None:
-                coords = self.pointdata.x
-            else:
-                coords = self.container.source().coords()
-        if len(coords.shape) == 2:
-            return repeat(dshp_TET4(), coords.shape[0])
-        else:
-            return dshp_TET4()
+        return dshp_TET4_bulk(coords) if len(coords.shape) == 2 else dshp_TET4(coords)
+    

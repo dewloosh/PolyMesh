@@ -22,6 +22,7 @@ __cache = True
 
 __all__ = [
     'transform_topo',
+    'L2_to_L3',
     'T3_to_T6', 'T6_to_T3',
     'Q4_to_Q8',
     'Q4_to_Q9', 'Q9_to_Q4',

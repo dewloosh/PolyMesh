@@ -474,9 +474,6 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
     return res
 
 
-cell_coords_bulk = cells_coords
-
-
 @njit(nogil=True, parallel=True, cache=__cache)
 def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:
     """
@@ -582,7 +579,7 @@ def cell_center_bulk(coords: ndarray, topo: ndarray) -> ndarray:
         2d coordinate array
         
     """
-    return np.mean(cell_coords_bulk(coords, topo), axis=1)
+    return np.mean(cells_coords(coords, topo), axis=1)
 
 
 @njit(nogil=True, parallel=True, cache=__cache)

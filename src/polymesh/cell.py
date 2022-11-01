@@ -4,15 +4,17 @@ try:
 except ImportError:
     from collections import Iterable
 from typing import Union, MutableMapping
+from typing import Tuple, List, Callable
 
 import numpy as np
 from numpy import ndarray
+from sympy import Matrix, lambdify
 
 from neumann.array import atleast1d, ascont
 from neumann.utils import to_range
 
 from .celldata import CellData
-from .utils import (jacobian_matrix_bulk, points_of_cells, 
+from .utils import (jacobian_matrix_bulk, points_of_cells,
                     pcoords_to_coords_1d, cells_coords)
 from .tri.triutils import area_tri_bulk
 from .tet.tetutils import tet_vol_bulk
@@ -30,18 +32,115 @@ class PolyCell(CellData):
     """
     A subclass of :class:`polymesh.celldata.CellData` as a base class 
     for all kinds of geometrical entities.
+
     """
 
     NNODE = None
     NDIM = None
     vtkCellType = None
     _face_cls_ = None
+    shpfnc: Callable = None
+    dshpfnc: Callable = None
 
-    def __init__(self, *args, i: ndarray=None, **kwargs):
+    def __init__(self, *args, i: ndarray = None, **kwargs):
         if isinstance(i, ndarray):
             key = self.__class__._attr_map_['id']
             kwargs[key] = i
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def lcoords(cls, *args, **kwargs) -> ndarray:
+        """
+        Ought to return local coordinates of the master element.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def lcenter(cls, *args, **kwargs) -> ndarray:
+        """
+        Ought to return the local coordinates of the center of the
+        master element.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Ought to retrun the polynomial base of the master element. 
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+
+        list
+            A list of monomials.
+
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def generate_shape_functions(cls):
+        """
+        Generates shape functions for the cell.
+
+        """
+        nN = cls.NNODE
+        nD = cls.NDIM
+        locvars, monoms = cls.polybase()
+        monoms.pop(0)
+        lcoords = cls.lcoords()
+        if nD == 1:
+            lcoords = np.reshape(lcoords, (nN, 1))
+
+        def subs(lpos): return {v: lpos[i] for i, v in enumerate(locvars)}
+        def mval(lpos): return [m.evalf(subs=subs(lpos)) for m in monoms]
+        M = np.ones((nN, nN), dtype=float)
+        M[:, 1:] = np.vstack([mval(loc) for loc in lcoords])
+        coeffs = np.linalg.inv(M)
+        monoms.insert(0, 1)
+        shp = Matrix([np.dot(coeffs[:, i], monoms) for i in range(nN)])
+        dshp = Matrix([[f.diff(m) for m in locvars] for f in shp])
+        _shpf = lambdify([locvars], shp, 'numpy')
+        _dshpf = lambdify([locvars], dshp, 'numpy')
+
+        def shpf(p):
+            r = np.squeeze(_shpf([p[..., i] for i in range(nD)])).T
+            return ascont(r)
+
+        def dshpf(p):
+            r = np.squeeze(_dshpf([p[..., i] for i in range(nD)])).T
+            return ascont(np.swapaxes(r, -1, -2))
+
+        return shp, dshp, shpf, dshpf
+
+    @classmethod
+    def shape_function_values(self, pcoords: ndarray, *args, **kwargs) -> ndarray:
+        """
+        Evaluates the shape functions at the points specified by 'pcoords'.
+
+        Parameters
+        ----------
+        pcoords : numpy.ndarray
+            Locations of the evaluation points.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (nP, nN).
+
+        """
+        return self.__class__.shpfnc(pcoords).astype(float)
 
     def measures(self, *args, **kwargs):
         """Ought to return measures for each cell in the database."""
@@ -59,7 +158,7 @@ class PolyCell(CellData):
     def areas(self, *args, **kwargs):
         """Ought to return the areas of the individuall cells in the database."""
         raise NotImplementedError
-    
+
     def volume(self, *args, **kwargs):
         """Returns the volume of the cells in the database."""
         return np.sum(self.volumes(*args, **kwargs))
@@ -67,7 +166,7 @@ class PolyCell(CellData):
     def volumes(self, *args, **kwargs):
         """Ought to return the volumes of the individual cells in the database."""
         raise NotImplementedError
-    
+
     def extract_surface(self, detach=False):
         """Extracts the surface of the mesh. Only for 3d meshes."""
         raise NotImplementedError
@@ -75,25 +174,25 @@ class PolyCell(CellData):
     def jacobian_matrix(self, *args, dshp=None, ecoords=None, topo=None, **kwargs):
         """
         Returns the jacobian matrix.
-        
+
         Parameters
         ----------
         dshp : numpy.ndarray
-            2d array of shape function derivatives for the primitive cell.
-        
+            2d array of shape function derivatives for the master cell.
+
         ecoords : numpy.ndarray, Optional
             3d array of nodal coordinates for all cells. 
             Either 'ecoords' or 'topo' must be provided.
-            
+
         topo : numpy.ndarray, Optional
             2d integer topology array.
             Either 'ecoords' or 'topo' must be provided.
-        
+
         Returns
         -------
         numpy.ndarray
             The 3d array of jacobian matrices for all the cells.
-            
+
         """
         ecoords = self.local_coordinates(
             topo=topo) if ecoords is None else ecoords
@@ -102,21 +201,25 @@ class PolyCell(CellData):
     def jacobian(self, *args, jac=None, **kwargs):
         """
         Returns the jacobian determinant for one or more cells.
-        
+
         Parameters
         ----------
         jac : numpy.ndarray, Optional
             One or more Jacobian matrices. Default is None.
-            
+
         **kwargs : dict
             Forwarded to :func:`jacobian_matrix` if the jacobian
             is not provided by the parameter 'jac'.
-            
+
         Returns
         -------
         float or numpy.ndarray
             Value of the Jacobian for one or more cells.
             
+        See Also
+        --------
+        :func:`jacobian_matrix`
+
         """
         if jac is None:
             jac = self.jacobian_matrix(**kwargs)
@@ -125,7 +228,7 @@ class PolyCell(CellData):
     def points_of_cells(self, *args, **kwargs) -> ndarray:
         """
         Returns the points of the cells as a 3d float numpy array.       
-        
+
         """
         coords = kwargs.get('coords', None)
         if coords is None:
@@ -136,9 +239,11 @@ class PolyCell(CellData):
         topo = self.topology().to_numpy()
         return points_of_cells(coords, topo)
 
-    def local_coordinates(self, *args, **kwargs):
+    def local_coordinates(self, *args, **kwargs) -> ndarray:
         """
-        Returns local coordinates of the selection as a 3d float numpy array.
+        Returns local coordinates of the selection as a 3d float 
+        numpy array.
+
         """
         frames = kwargs.get('frames', self.frames)
         topo = self.topology().to_numpy()
@@ -152,14 +257,16 @@ class PolyCell(CellData):
 
     def coords(self, *args, **kwargs) -> ndarray:
         """
-        Returns the coordinates of the cells in the database as a 3d numpy array.
+        Returns the coordinates of the cells in the database as a 3d 
+        numpy array.
 
         """
         return self.points_of_cells(*args, **kwargs)
 
     def topology(self) -> TopologyArray:
         """
-        Returns the numerical representation of the topology of the cells.
+        Returns the numerical representation of the topology of 
+        the cells.
 
         """
         key = self.__class__._attr_map_['nodes']
@@ -178,9 +285,9 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        imap : `MapLike`
+        imap : MapLike
             Mapping from old to new node indices (global to local).
-            
+
         invert : bool, Optional
             If `True` the argument `imap` describes a local to global
             mapping and an inversion takes place. In this case, 
@@ -218,8 +325,9 @@ class PolyCell1d(PolyCell):
 
     # NOTE The functionality of `pcoords_to_coords_1d` needs to be generalized
     # for higher order cells.
-    def points_of_cells(self, *args, points=None, cells=None, target='global',
-                        rng=None, flatten=False, **kwargs):
+    def points_of_cells(self, *args, points=None, cells=None,
+                        target='global', rng=None, flatten=False,
+                        **kwargs):
         if isinstance(target, str):
             assert target.lower() in ['global', 'g']
         else:
@@ -289,10 +397,10 @@ class PolyCell2d(PolyCell):
 
     def areas(self, *args, **kwargs):
         raise NotImplementedError
-    
+
     def to_triangles(self):
         raise NotImplementedError
-    
+
     def areas(self, *args, coords=None, topo=None, **kwargs):
         if coords is None:
             coords = self.container.root().coords()
@@ -302,13 +410,13 @@ class PolyCell2d(PolyCell):
         res = np.sum(areas.reshape(topo.shape[0], int(
             len(areas)/topo.shape[0])), axis=1)
         return np.squeeze(res)
-    
+
     def area(self, *args, coords=None, topo=None, **kwargs):
         if coords is None:
             coords = self.container.root().coords()
         topo = self.topology().to_numpy() if topo is None else topo
         return np.sum(self.areas(coords=coords, topo=topo))
-    
+
     def volumes(self, *args, **kwargs):
         dbkey = self.__class__._attr_map_['t']
         areas = self.areas(*args, **kwargs)
@@ -317,10 +425,10 @@ class PolyCell2d(PolyCell):
             return areas * t
         else:
             return areas
-        
+
     def volume(self, *args, **kwargs):
         return np.sum(self.volumes(*args, **kwargs))
-    
+
     def measures(self, *args, **kwargs):
         return self.areas(*args, **kwargs)
 
@@ -342,7 +450,7 @@ class PolyCell3d(PolyCell):
 
     def measures(self, *args, **kwargs):
         return self.volumes(*args, **kwargs)
-    
+
     def to_tetrahedra(self) -> np.ndarray:
         raise NotImplementedError
 
@@ -355,11 +463,11 @@ class PolyCell3d(PolyCell):
         else:
             ugrid = mesh_to_vtk(coords, topo, vtkid)
         return ugrid
-    
+
     if __haspyvista__:
         def to_pv(self, detach=False) -> pv.UnstructuredGrid:
             return pv.wrap(self.to_vtk(detach=detach))
-        
+
     def extract_surface(self, detach=False):
         pvs = self.to_pv(detach=detach).extract_surface(pass_pointid=True)
         s = pvs.triangulate().cast_to_unstructured_grid()
@@ -370,10 +478,10 @@ class PolyCell3d(PolyCell):
             return s.points, topo
         else:
             return self.container.root().coords(), topo
-        
+
     def boundary(self, detach=False):
         return self.surface(detach=detach)
-            
+
     def volumes(self, *args, coords=None, topo=None, **kwargs):
         if coords is None:
             coords = self.container.root().coords()
@@ -383,4 +491,3 @@ class PolyCell3d(PolyCell):
         res = np.sum(volumes.reshape(topo.shape[0], int(
             len(volumes) / topo.shape[0])), axis=1)
         return np.squeeze(res)
-    

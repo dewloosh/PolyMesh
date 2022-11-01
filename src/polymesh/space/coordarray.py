@@ -57,11 +57,11 @@ class PointCloud(Vector):
 
     Parameters
     ----------
-    frame : :class:`ndarray`, Optional.
+    frame : numpy.ndarray, Optional
         A numpy array representing coordinate axes of a reference frame.
         Default is None.
 
-    inds : :class:`ndarray`, Optional.
+    inds : numpy.ndarray, Optional
         An 1d integer array specifying point indices. Default is None.
 
     Examples
@@ -173,8 +173,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
-        target : :class:`ReferenceFrame`
+        target : ReferenceFrame
             A target frame of reference.
 
         """
@@ -223,7 +222,7 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : :class:`ReferenceFrame`, Optional
+        target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Returns
@@ -242,13 +241,12 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
-        p : :class:`Vector` or :class:`Array`, Optional
+        p : Vector or Array, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : :class:`ReferenceFrame`, Optional
+        frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -268,12 +266,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        p : :class:`Vector` or :class:`Array`, Optional
+        p : Vector or Array, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : :class:`ReferenceFrame`, Optional
+        frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -298,13 +296,13 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : :class:`ReferenceFrame`, Optional
+        target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Returns
         -------
-        :class:`VectorBase`
-            A numpy array.
+        VectorBase
+            The coordinates in the desired frame.
 
         """
         x = super().show(target)
@@ -320,18 +318,18 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        v : :class:`Vector` or :class:`Array`, Optional
+        v : Vector or Array, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
 
-        frame : :class:`ReferenceFrame`, Optional
+        frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
         Returns
         -------
-        :class:`ReferenceFrame`
+        ReferenceFrame
             The object the function is called on.
 
         Examples
@@ -368,12 +366,12 @@ class PointCloud(Vector):
         Parameters
         ----------
 
-        target : :class:`ReferenceFrame`, Optional
+        target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Returns
         -------
-        :class:`ReferenceFrame`
+        ReferenceFrame
             The object the function is called on.
 
         """

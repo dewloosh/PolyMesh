@@ -104,28 +104,80 @@ def dshp_Q9_bulk(pcoords: ndarray):
 
 class Q9(BiQuadraticQuadrilateral):
     """
-    Polygon Class for 9-noded biquadratic quadrilaterals. 
-    It defines the shape function of the purely geometric 
-    object :class:`polymesh.polygon.BiQuadraticQuadrilateral`.
+    Polygon class for 9-noded biquadratic quadrilaterals. 
+
+    See Also
+    --------
+    :class:`polymesh.polygon.BiQuadraticQuadrilateral`
+    
     """
+    
+    shpfnc = shp_Q9_bulk
+    dshpfnc = dshp_Q9_bulk
 
     @classmethod
     def lcoords(cls, *args, **kwargs):
+        """
+        Returns local coordinates of the cell.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
         return np.array([[-1., -1.], [1., -1.], [1., 1.], [-1., 1.],
                         [0., -1.], [1., 0.], [0., 1.], [-1., 0.], [0., 0.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs):
+    def lcenter(cls, *args, **kwargs) -> ndarray:
+        """
+        Returns the local coordinates of the center of the cell.
+
+        Returns
+        -------
+        numpy.ndarray
+
+        """
         return np.array([0., 0.])
 
-    def shape_function_values(self, coords=None, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return shp_Q9_bulk(coords)
-        else:
-            return shp_Q9(coords)
+    @classmethod
+    def shape_function_values(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+        """
+        Evaluates the shape functions. The points of evaluation should be 
+        understood in the range [-1, 1].
 
-    def shape_function_derivatives(self, coords=None, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return dshp_Q9_bulk(coords)
-        else:
-            return dshp_Q9(coords)
+        Parameters
+        ----------
+        coords : numpy.ndarray
+            Points of evaluation. It should be a 1d array for a single point
+            and a 2d array for several points. In the latter case, the points
+            should run along the first axis.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (9,) for a single, (N, 9) for N evaulation points.
+
+        """
+        return shp_Q9_bulk(pcoords) if len(pcoords.shape) == 2 else shp_Q9(pcoords)
+
+    @classmethod
+    def shape_function_derivatives(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+        """
+        Returns shape function derivatives wrt. the master element. The points of 
+        evaluation should be understood in the range [-1, 1].
+
+        Parameters
+        ----------
+        coords : numpy.ndarray
+            Points of evaluation. It should be a 1d array for a single point
+            and a 2d array for several points. In the latter case, the points
+            should run along the first axis.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (9, 2) for a single, (N, 9, 2) for N evaulation points.
+
+        """
+        return dshp_Q9_bulk(pcoords) if len(pcoords.shape) == 2 else dshp_Q9(pcoords)
