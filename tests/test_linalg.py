@@ -142,8 +142,6 @@ class TestLinalg(unittest.TestCase):
         B.move(Vector(np.array([1., 0, 0]), frame=B))
         B.move(-Vector(np.array([np.sqrt(2)/2, 0, 0])))
         B.move(-Vector(np.array([0, np.sqrt(2)/2, 0])))
-        C = B.fork().rotate('Body', [0, 0, 45*np.pi/180],
-                            'XYZ').move(-Vector([0, np.sqrt(2)/2, 0]))
     
     def test_frame_2(self):
         A = ReferenceFrame()
