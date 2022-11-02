@@ -16,7 +16,7 @@ from neumann.array import atleastnd, minmax
 from .akwrap import AkWrapper
 from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
-from .utils import cells_coords, cells_around, cell_center_bulk
+from .utils import cells_coords, cells_around, cell_centers_bulk
 from .utils import k_nearest_neighbours as KNN
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk, PolyData_to_mesh
 from .cells import (
@@ -112,7 +112,7 @@ class PolyData(PolyDataBase):
     >>> mesh['A']['Part2'] = PolyData(cd=H27(topo=topo[10:-10], frames=GlobalFrame))
     >>> mesh['A']['Part3'] = PolyData(cd=H27(topo=topo[-10:], frames=GlobalFrame))
     >>> mesh.plot()
-    
+
     See also
     --------
     :class:`.tri.trimesh.TriMesh`
@@ -139,10 +139,10 @@ class PolyData(PolyDataBase):
     _pv_config_key_ = ('pv', 'default')
     _k3d_config_key_ = ('k3d', 'default')
 
-    def __init__(self, pd=None, cd=None, *args, coords=None, topo=None,
-                 celltype=None, frame: FrameLike = None, newaxis: int = 2,
-                 cell_fields=None, point_fields=None, parent: 'PolyData' = None,
-                 **kwargs):
+    def __init__(self, pd: Union[PointData, CellData] = None, cd: CellData = None, *args,
+                 coords: ndarray = None, topo: ndarray = None, celltype=None, 
+                 frame: FrameLike = None, newaxis: int = 2, cell_fields: dict = None, 
+                 point_fields: dict = None, parent: 'PolyData' = None, **kwargs):
         self._reset_point_data()
         self._reset_cell_data()
         self._frame = frame
@@ -1042,7 +1042,7 @@ class PolyData(PolyDataBase):
             inds = np.unique(self.topology())
             pc = root.points()[inds]
             coords = pc.show(target)
-        return cell_center_bulk(coords, self.topology(*args, **kwargs))
+        return cell_centers_bulk(coords, self.topology(*args, **kwargs))
 
     def centralize(self, target: FrameLike = None) -> 'PolyData':
         """
