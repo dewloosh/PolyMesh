@@ -383,8 +383,8 @@ def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
             return counts, csr
         return csr
     elif frmt == 'dicts':
-        cellIDs = np.arange(len(topo)).astype(np.int32) if cellIDs is None else cellIDs
-        nodeIDs = np.arange(len(counts)).astype(np.int32) if nodeIDs is None else nodeIDs
+        cellIDs = np.arange(len(topo)).astype(int) if cellIDs is None else cellIDs
+        nodeIDs = np.arange(len(counts)).astype(int) if nodeIDs is None else nodeIDs
         ereg, nreg = _nodal_cell_data_to_dicts_(
             counts, ereg, nreg, cellIDs, nodeIDs)
         if return_counts:
@@ -422,7 +422,9 @@ def _cells_at_nodes_reg_np_(topo: ndarray):
 
 @njit(nogil=True, cache=__cache)
 def _cells_at_nodes_reg_ak_(topo: akarray):
-    """Returns arrays. Assumes a regular topology."""
+    """
+    Returns arrays. Assumes a regular topology.
+    """
     ncols = count_cols(topo)
     nE = len(ncols)
     count = _count_cells_at_nodes_reg_ak_(topo)

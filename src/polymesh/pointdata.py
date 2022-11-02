@@ -97,7 +97,9 @@ class PointData(PointDataBase):
     
     @property
     def frame(self) -> FrameLike:
-        """Returns the frame of the underlying pointcloud."""
+        """
+        Returns the frame of the underlying pointcloud.
+        """
         if isinstance(self._frame, FrameLike):
             return self._frame
         else:
