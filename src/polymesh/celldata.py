@@ -273,7 +273,7 @@ class CellData(CellDataBase):
         assert isinstance(value, ndarray)
         value = atleast3d(value)
         if len(value) == 1:
-            value = repeat(value[0], len(self.celldata._wrapped))
+            value = repeat(value[0], len(self._wrapped))
         else:
             assert len(value) == len(self._wrapped)
         self._wrapped[self.__class__._attr_map_['frames']] = value
