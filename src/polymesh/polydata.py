@@ -85,13 +85,6 @@ class PolyData(PolyDataBase):
     cd : CellData, Optional
         A CellData instance, if the first argument is provided. Dafault is None.
 
-    coords : ndarray, Optional.
-        2d numpy array of floats, describing a pointcloud. Default is None.
-
-    topo : ndarray, Optional.
-        2d numpy array of integers, describing the topology of a polygonal mesh. 
-        Default is None.
-
     celltype : int, Optional.
         An integer spcifying a valid celltype.
 

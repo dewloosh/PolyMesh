@@ -11,7 +11,7 @@ from numpy import ndarray
 from sympy import Matrix, lambdify
 
 from neumann.array import atleast1d, ascont
-from neumann.utils import to_range
+from neumann.utils import to_range_1d
 
 from .celldata import CellData
 from .utils import (jacobian_matrix_bulk, points_of_cells,
@@ -178,7 +178,7 @@ class PolyCell(CellData):
         Parameters
         ----------
         dshp : numpy.ndarray
-            2d array of shape function derivatives for the master cell.
+            3d array of shape function derivatives for the master cell.
 
         ecoords : numpy.ndarray, Optional
             3d array of nodal coordinates for all cells. 
@@ -215,7 +215,7 @@ class PolyCell(CellData):
         -------
         float or numpy.ndarray
             Value of the Jacobian for one or more cells.
-            
+
         See Also
         --------
         :func:`jacobian_matrix`
@@ -361,8 +361,8 @@ class PolyCell1d(PolyCell):
         else:
             rng = np.array([0, 1]) if rng is None else np.array(rng)
 
-        points, rng = to_range(points, source=rng, target=[
-                               0, 1]).flatten(), [0, 1]
+        points, rng = to_range_1d(points, source=rng, target=[
+            0, 1]).flatten(), [0, 1]
         datacoords = pcoords_to_coords_1d(points, ecoords)  # (nE * nP, nD)
 
         if not flatten:
