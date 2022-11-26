@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from numba.core import types as nbtypes, cgutils
-from numba.extending import typeof_impl, models, \
-    make_attribute_wrapper, register_model, box, \
-    unbox, NativeValue, type_callable, lower_builtin,\
-    overload, overload_attribute
+from numba.extending import (typeof_impl, models,
+                             make_attribute_wrapper, register_model, box,
+                             unbox, NativeValue, type_callable, lower_builtin,
+                             overload, overload_attribute)
 import operator
 from typing import Union
 from numpy import ndarray
@@ -19,7 +19,7 @@ from neumann.linalg.frame import ReferenceFrame as FrameLike
 
 from .frame import CartesianFrame
 from .point import Point
-from .utils import index_of_closest_point
+from .utils import index_of_closest_point, index_of_furthest_point
 
 __cache = True
 
@@ -68,6 +68,7 @@ class PointCloud(Vector):
     --------
     Collect the points of a simple triangulation and get the center:
 
+    >>> from polymesh.space import PointCloud
     >>> from polymesh.tri import triangulate
     >>> coords, *_ = triangulate(size=(800, 600), shape=(10, 10))
     >>> coords = PointCloud(coords)
@@ -113,15 +114,15 @@ class PointCloud(Vector):
 
     >>> coords[10:50][[1, 2, 10]].inds
     array([11, 12, 20])
-    
+
     The instances are available in numba-jitted functions:
-    
+
     >>> from numba import njit
-    
+
     >>> @njit
     >>> def foo(arr): 
     >>>     return arr.inds
-    
+
     >>> c = np.array([[0, 0, 0], [0, 0, 1.], [0, 0, 0]])
     >>> COORD = PointCloud(c, inds=np.array([0, 1, 2, 3]))
     >>> foo(COORD)
@@ -227,7 +228,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        :class:`VectorBase`
+        VectorBase
             A numpy array.
 
         """
@@ -242,9 +243,9 @@ class PointCloud(Vector):
         Parameters
         ----------
         p : Vector or Array, Optional
-            An array of a vector. If provided as an array, the `frame`
-            argument can be used to specify the parent frame in which the
-            motion is tp be understood.
+            Vectors or coordinates of one or more points. If provided as 
+            an array, the `frame` argument can be used to specify the 
+            parent frame in which the coordinates are to be understood.
 
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -258,6 +259,30 @@ class PointCloud(Vector):
         if not isinstance(p, Vector):
             p = Vector(p, frame=frame)
         return index_of_closest_point(self.show(), p.show())
+    
+    def id_of_furthest(self, p: VectorLike, frame: FrameLike = None):
+        """
+        Returns the index of the point being furthest from `p`.
+
+        Parameters
+        ----------
+        p : Vector or Array, Optional
+            Vectors or coordinates of one or more points. If provided as 
+            an array, the `frame` argument can be used to specify the 
+            parent frame in which the coordinates are to be understood.
+
+        frame : ReferenceFrame, Optional
+            A frame in which the input is defined if it is not a Vector.
+            Default is None.
+
+        Returns
+        -------
+        int
+
+        """
+        if not isinstance(p, Vector):
+            p = Vector(p, frame=frame)
+        return index_of_furthest_point(self.show(), p.show())
 
     def closest(self, p: VectorLike, frame: FrameLike = None) -> Point:
         """
@@ -267,9 +292,9 @@ class PointCloud(Vector):
         ----------
 
         p : Vector or Array, Optional
-            An array of a vector. If provided as an array, the `frame`
-            argument can be used to specify the parent frame in which the
-            motion is tp be understood.
+            Vectors or coordinates of one or more points. If provided as 
+            an array, the `frame` argument can be used to specify the 
+            parent frame in which the coordinates are to be understood.
 
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -286,7 +311,42 @@ class PointCloud(Vector):
             gid = self.inds[id]
         else:
             gid = id
-        return Point(arr, frame=self.frame, id=id, gid=gid)
+        if isinstance(id, int):      
+            return Point(arr, frame=self.frame, id=id, gid=gid)
+        else:
+            return PointCloud(arr, frame=self.frame, inds=id)
+        
+    def furthest(self, p: VectorLike, frame: FrameLike = None) -> Point:
+        """
+        Returns the point being closest to `p`.
+
+        Parameters
+        ----------
+
+        p : Vector or Array, Optional
+            Vectors or coordinates of one or more points. If provided as 
+            an array, the `frame` argument can be used to specify the 
+            parent frame in which the coordinates are to be understood.
+
+        frame : ReferenceFrame, Optional
+            A frame in which the input is defined if it is not a Vector.
+            Default is None.
+
+        Returns
+        -------
+        Point
+
+        """
+        id = self.id_of_furthest(p, frame)
+        arr = self._array[id, :]
+        if isinstance(self.inds, np.ndarray):
+            gid = self.inds[id]
+        else:
+            gid = id
+        if isinstance(id, int):      
+            return Point(arr, frame=self.frame, id=id, gid=gid)
+        else:
+            return PointCloud(arr, frame=self.frame, inds=id)
 
     def show(self, target: FrameLike = None):
         """
@@ -513,14 +573,3 @@ def box_type(typ, val, c):
     c.pyapi.decref(data_obj)
     c.pyapi.decref(inds_obj)
     return python_obj
-
-
-if __name__ == '__main__':
-    from numba import njit
-
-    @njit
-    def foo(arr): return arr.inds
-
-    c = np.array([[0, 0, 0], [0, 0, 1.], [0, 0, 0]])
-    COORD = PointCloud(c, inds=np.array([0, 1, 2, 3]))
-    foo(COORD)

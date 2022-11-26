@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from numpy import ndarray
+from numpy.linalg import norm
 from numba import njit, prange
 
 from neumann import squeeze
@@ -8,7 +9,7 @@ from neumann.linalg import normalize, normalize2d, norm2d
 from neumann.array import atleast2d
 
 from ..utils import center_of_points, cell_center, cell_coords
-    
+
 __cache = True
 
 
@@ -17,10 +18,10 @@ def frame_of_plane(coords: ndarray):
     """
     Returns the frame of a planar surface. It needs
     at least 3 pointds to work properly (len(coords>=3)).
-    
+
     It takes the center, the first point and a point from
     the middle to form the coordinate axes.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
@@ -30,7 +31,7 @@ def frame_of_plane(coords: ndarray):
     -------        
     numpy.ndarray
         3x3 global -> local DCM matrix 
-        
+
     """
     tr = np.zeros((3, 3), dtype=coords.dtype)
     center = center_of_points(coords)
@@ -59,7 +60,7 @@ def frames_of_surfaces(coords: ndarray, topo: ndarray):
     -------       
     numpy.ndarray
         3d array of 3x3 transformation matrices
-        
+
     """
     nE, nNE = topo.shape
     nNE -= 1
@@ -98,7 +99,7 @@ def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
 
     numpy.ndarray
         3d array of 3x3 transformation matrices
-        
+
     """
     nE, nNE = topo.shape
     tr = np.zeros((nE, 3, 3), dtype=coords.dtype)
@@ -128,7 +129,7 @@ def _frames_of_lines_auto(coords: ndarray, topo: ndarray):
         _dot = ijk @ tr[iE, 0, :]
         i2 = np.argmin(np.absolute(_dot))
         _dot = np.dot(ijk[i2], tr[iE, 0, :])
-        tr[iE, 2, :] = normalize(ijk[i2] - tr[iE, 0, :] * _dot)            
+        tr[iE, 2, :] = normalize(ijk[i2] - tr[iE, 0, :] * _dot)
         tr[iE, 1, :] = np.cross(tr[iE, 2, :], tr[iE, 0, :])
     return tr
 
@@ -147,7 +148,7 @@ def _frames_of_lines_ref(coords: ndarray, topo: ndarray, refZ: ndarray):
 
 
 @squeeze(True)
-def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray=None):
+def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None):
     """
     Returns coordinate frames of line elements defined by a coordinate array
     and a topology array. The cross-sections of the line elements are
@@ -156,7 +157,7 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray=None):
     are no references provided, local z axes lean towards global z. 
     Other properties are determined in a way, so that x-y-z form a 
     right-handed orthonormal basis.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
@@ -164,7 +165,7 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray=None):
 
     topo : numpy.ndarray
         2d point-based topology array
-        
+
     refZ : numpy.ndarray, Optional
         1d or 2d float array of reference points. If it is 2d, it must
         contain values for all lines defined by `topo`. 
@@ -174,7 +175,7 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray=None):
     -------      
     numpy.ndarray
         3d array of 3x3 transformation matrices
-        
+
     """
     topo = atleast2d(topo)
     if isinstance(refZ, ndarray):
@@ -186,19 +187,19 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray=None):
         return _frames_of_lines_ref(coords, topo, _refZ)
     else:
         return _frames_of_lines_auto(coords, topo)
-    
+
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def is_planar_surface(normals: ndarray, tol=1e-8):
+def is_planar_surface(normals: ndarray, tol: float = 1e-8) -> bool:
     """
     Returns true if all the normals point in the same direction.
     The provided normal vectors are assumed to be normalized.
-    
+
     Parameters
     ----------
     normals : numpy.ndarray
         2d float array of surface normals
-        
+
     tol : float
         Floating point tolerance as maximum deviation.
 
@@ -216,34 +217,104 @@ def is_planar_surface(normals: ndarray, tol=1e-8):
 
 
 @njit(nogil=True, cache=__cache)
-def distances_from_point(coords: ndarray, p: ndarray, normalize=False):
+def distances_from_point(coords: ndarray, p: ndarray,
+                         normalize: bool = False) -> ndarray:
     if normalize:
         return norm2d(normalize2d(coords - p))
     else:
         return norm2d(coords - p)
 
 
-@njit(nogil=True, cache=__cache)
-def index_of_furthest_point(coords: ndarray, p: ndarray):
-    return np.argmax(distances_from_point(coords, p))
+@njit(nogil=True, parallel=True, cache=__cache)
+def distance_matrix(x: ndarray, y: ndarray) -> ndarray:
+    N = x.shape[0]
+    M = y.shape[0]
+    res = np.zeros((N, M), dtype=x.dtype)
+    for n in prange(N):
+        for m in prange(M):
+            res[n, m] = np.linalg.norm(x[n] - y[m])
+    return res
+
+
+def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
+    """
+    Returs the index of the point in 'coords', being closest to
+    one or more targets.
+
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        2d float array of vertex coordinates.
+
+    target : numpy.ndarray
+        1d or 2d coordinate array of the target point(s).
+
+    Returns
+    -------
+    int or Iterable[int]
+        One or more indices of 'coords', for which the distance from
+        one or more points described by 'target' is minimal.
+
+    """
+    if len(target.shape) == 1:
+        assert coords.shape[1] == target.shape[0], \
+            "The dimensions of `coords` and `target` are not compatible."
+        return _index_of_closest_point(coords, target)
+    else:
+        d = distance_matrix(target, coords)
+        return np.argmin(d, axis=1)
+
+
+def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
+    """
+    Returs the index of the point in 'coords', being furthest from
+    one or more targets.
+
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        2d float array of vertex coordinates.
+
+    target : numpy.ndarray
+        1d or 2d coordinate array of the target point(s).
+
+    Returns
+    -------
+    int or Iterable[int]
+        One or more indices of 'coords', for which the distance from
+        one or more points described by 'target' is maximal.
+
+    """
+    if len(target.shape) == 1:
+        assert coords.shape[1] == target.shape[0], \
+            "The dimensions of `coords` and `target` are not compatible."
+        return _index_of_furthest_point(coords, target)
+    else:
+        d = distance_matrix(target, coords)
+        return np.argmax(d, axis=1)
 
 
 @njit(nogil=True, cache=__cache)
-def index_of_closest_point(coords: ndarray, p: ndarray):
+def _index_of_closest_point(coords: ndarray, p: ndarray) -> int:
     return np.argmin(distances_from_point(coords, p))
 
 
+@njit(nogil=True, cache=__cache)
+def _index_of_furthest_point(coords: ndarray, p: ndarray) -> int:
+    return np.argmax(distances_from_point(coords, p))
+
+
 @njit(nogil=True, parallel=True, cache=__cache)
-def is_line(coords: ndarray, tol=1e-8):
+def is_line(coords: ndarray, tol=1e-8) -> bool:
     """
     Returns true if all the normals point in the same direction.
     The provided normal vectors are assumed to be normalized.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
         2d float array of point coordinates
-        
+
     tol : float
         Floating point tolerance as maximum deviation.
 
@@ -252,7 +323,7 @@ def is_line(coords: ndarray, tol=1e-8):
     Bool
         True if all absolute deviations from the line between the first 
         and the last point is smaller than 'tol'.
-        
+
     """
     nP = coords.shape[0]
     c = normalize2d(move_points(coords, -coords[0]))
@@ -264,22 +335,22 @@ def is_line(coords: ndarray, tol=1e-8):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def is_planar(coords: ndarray, tol=1e-8):
+def is_planar(coords: ndarray, tol: float = 1e-8) -> bool:
     """
     Returns true if all the points fit on a planar surface.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
         2d float array of point coordinates
-        
+
     tol : float
         Floating point tolerance as maximum deviation.
 
     Returns
     -------        
     Bool
-                
+
     """
     nP = coords.shape[0]
     dA = distances_from_point(coords, coords[0])
@@ -296,7 +367,7 @@ def is_planar(coords: ndarray, tol=1e-8):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def move_points(coords: ndarray, p: ndarray):
+def move_points(coords: ndarray, p: ndarray) -> ndarray:
     res = np.zeros_like(coords)
     for i in prange(coords.shape[0]):
         res[i] = coords[i] + p

@@ -65,7 +65,7 @@ class PolyData(PolyDataBase):
     """
     A class to handle complex polygonal meshes.
 
-    The `PolyData` class is arguably the most important class in the library 
+    The `PolyData` class is the most important class in the library 
     and a backbone of all mesh classes. 
 
     The implementation is based on the `awkward` library, which provides 
@@ -929,7 +929,7 @@ class PolyData(PolyDataBase):
             pd.nummrg()
         return pd
 
-    def nummrg(self, store_indices=True):
+    def nummrg(self, store_indices:bool=True):
         """
         Merges node numbering.
         """
