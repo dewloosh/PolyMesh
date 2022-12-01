@@ -2,6 +2,7 @@
 import numpy as np
 from numpy import ndarray
 
+from dewloosh.core import classproperty
 from neumann.array import atleast2d, atleast3d, repeat
 
 from .base import PointDataBase, CellDataBase, PolyDataBase as PolyData
@@ -31,7 +32,7 @@ class CellData(CellDataBase):
         'activity': 'activity',  # activity of the cells
         'ndf': 'ndf',  # nodal distribution factors
     }
-
+    
     def __init__(self, *args, pointdata=None, celldata=None,
                  wrap=None, topo=None, fields=None, frames=None,
                  db=None, activity=None, container: PolyData = None, **kwargs):
@@ -70,7 +71,35 @@ class CellData(CellDataBase):
             if isinstance(frames, ndarray):
                 # this handles possible repetition of a single frame
                 self.frames = frames
-
+    
+    @classproperty
+    def _dbkey_nodes_(cls) -> str:
+        return cls._attr_map_['nodes']
+    
+    @classproperty
+    def _dbkey_frames_(cls) -> str:
+        return cls._attr_map_['frames']
+    
+    @classproperty
+    def _dbkey_areas_(cls) -> str:
+        return cls._attr_map_['areas']
+    
+    @classproperty
+    def _dbkey_thickness_(cls) -> str:
+        return cls._attr_map_['t']
+    
+    @classproperty
+    def _dbkey_activity_(cls) -> str:
+        return cls._attr_map_['activity']
+    
+    @classproperty
+    def _dbkey_ndf_(cls) -> str:
+        return cls._attr_map_['ndf']
+    
+    @classproperty
+    def _dbkey_id_(cls) -> str:
+        return cls._attr_map_['id']
+    
     @property
     def pd(self) -> PointDataBase:
         """
@@ -114,6 +143,9 @@ class CellData(CellDataBase):
         return None if c is None else c.source()
 
     def __getattr__(self, attr):
+        """
+        Modified for being able to fetch data from pointcloud.
+        """
         if attr in self.__dict__:
             return getattr(self, attr)
         try:
@@ -127,11 +159,11 @@ class CellData(CellDataBase):
                         return avg_cell_data(data, topo)
             except:
                 pass
-            raise AttributeError("'{}' object has no attribute \
-                called {}".format(self.__class__.__name__, attr))
+            name = self.__class__.__name__
+            raise AttributeError(f"'{name}' object has no attribute called {attr}")
         except Exception:
-            raise AttributeError("'{}' object has no attribute \
-                called {}".format(self.__class__.__name__, attr))
+            name = self.__class__.__name__
+            raise AttributeError(f"'{name}' object has no attribute called {attr}")
 
     def set_nodal_distribution_factors(self, factors: ndarray, key: str = None):
         """

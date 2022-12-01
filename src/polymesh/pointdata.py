@@ -3,7 +3,7 @@ import numpy as np
 from numpy import ndarray
 
 from neumann.linalg import ReferenceFrame as FrameLike
-from neumann.array import isboolarray
+from neumann.logical import isboolarray
 
 from .space import CartesianFrame, PointCloud
 from .base import PointDataBase
