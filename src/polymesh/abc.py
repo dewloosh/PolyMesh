@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import Callable
 from dewloosh.core.meta import ABCMeta_Weak
 
 
@@ -27,7 +26,8 @@ class ABCMeta_MeshData(ABCMeta_Weak):
         # generate shape functions
         shpfnc = namespace.get('shpfnc', None)
         if shpfnc is None:
-            cls.pina=True
+            # shape functions should be generated here
+            pass
         return cls
     
     

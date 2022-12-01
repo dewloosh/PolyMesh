@@ -6,12 +6,14 @@ import numpy as np
 import awkward as ak
 from awkward import Array as akarray
 import functools
+import warnings
 
+from dewloosh.core.warning import PerformanceWarning
 from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
-from neumann.array import atleastnd, minmax
+from neumann.array import atleast1d, atleastnd, minmax
 
 from .akwrap import AkWrapper
 from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
@@ -65,7 +67,7 @@ class PolyData(PolyDataBase):
     """
     A class to handle complex polygonal meshes.
 
-    The `PolyData` class is arguably the most important class in the library 
+    The `PolyData` class is the most important class in the library 
     and a backbone of all mesh classes. 
 
     The implementation is based on the `awkward` library, which provides 
@@ -84,13 +86,6 @@ class PolyData(PolyDataBase):
 
     cd : CellData, Optional
         A CellData instance, if the first argument is provided. Dafault is None.
-
-    coords : ndarray, Optional.
-        2d numpy array of floats, describing a pointcloud. Default is None.
-
-    topo : ndarray, Optional.
-        2d numpy array of integers, describing the topology of a polygonal mesh. 
-        Default is None.
 
     celltype : int, Optional.
         An integer spcifying a valid celltype.
@@ -149,6 +144,8 @@ class PolyData(PolyDataBase):
         self._newaxis = newaxis
         self._parent = parent
         self._config = DeepDict()
+        self._cid2bid = None  # maps cell indices to block indices
+        self._bid2b = None  # maps block indices to block addresses
         self._init_config_()
 
         self.point_index_manager = IndexManager()
@@ -307,18 +304,103 @@ class PolyData(PolyDataBase):
 
     @property
     def pd(self) -> PointData:
-        """Returns the attached pointdata."""
+        """
+        Returns the attached pointdata.
+        """
         return self.pointdata
 
     @property
     def cd(self) -> PolyCell:
-        """Returns the attached celldata."""
+        """
+        Returns the attached celldata.
+        """
         return self.celldata
+    
+    def lock(self, create_mappers:bool=False) -> 'PolyData':
+        """
+        Locks the layout. If a `PolyData` instance is locked,
+        missing keys are handled the same way as they would've been handled
+        if it was a ´dict´. Also, setting or deleting items in a locked
+        dictionary and not possible and you will experience an error upon trying.
+        
+        The object is returned for continuation.
+        
+        Parameters
+        ----------
+        create_mappers : bool, Optional
+            If True, some mappers are generated to speed up certain types of
+            searches, like finding a block containing cells based on their indices.
+            
+            .. versionadded:: 0.0.9
+                            
+        """
+        if not self._locked and create_mappers:
+            bid2b, cid2bid = self._create_mappers_()
+            self._cid2bid = cid2bid  # maps cell indices to block indices
+            self._bid2b = bid2b  # maps block indices to block addresses
+        self._locked = True
+        return self
 
-    def simplify(self, inplace=True):
-        # generalization of triangulation
-        # cells should be broken into simplest representations
-        raise NotImplementedError
+    def unlock(self) -> 'PolyData':
+        """
+        Releases the layout. If a `PolyMesh` instance is not locked,
+        a missing key creates a new level in the layout, also setting and deleting
+        items becomes an option. Additionally, mappers created with the call
+        `generate_cell_mappers` are deleted.
+        
+        The object is returned for continuation.
+        
+        """
+        self._locked = False
+        self._cid2bid = None  # maps cell indices to block indices
+        self._bid2b = None  # maps block indices to block addresses
+        return self
+        
+    def blocks_of_cells(self, i : Union[int, Iterable]=None) -> dict:
+        """
+        Returns a dictionary that maps cell indices to blocks or 
+        block addresses.
+        
+        .. versionadded:: 0.0.9
+        
+        """
+        assert self.is_root(), "This must be called on the root object."
+        if self._cid2bid is None:
+            warnings.warn(
+                "Calling 'obj.lock(create_mappers=True)' creates additional"
+                " mappers that make lookups like this much more efficient. "
+                "See the doc of the PolyMesh library for more details.", 
+                PerformanceWarning)
+            bid2b, cid2bid = self._create_mappers_()
+        else:
+            cid2bid = self._cid2bid
+            bid2b = self._bid2b
+        if i is None:
+            return {cid : bid2b[bid] for cid, bid in cid2bid.items()}
+        cids = atleast1d(i)
+        bids = [cid2bid[cid] for cid in cids]
+        cid2b = {cid : bid2b[bid] for cid, bid in zip(cids, bids)}
+        return cid2b
+               
+    def _create_mappers_(self) -> Tuple[dict, dict]:
+        """
+        Generates mappers between cells and blocks to speed up some
+        queries. This can only be called on the root object.
+        The object is returned for continuation.
+        """
+        assert self.is_root(), "This must be called on the root object."
+        bid2b = {}  # block index to block address
+        cids = []  # cell indices
+        bids = []  # block infices of cells
+        for bid, b in enumerate(self.cellblocks(inclusive=True)):
+            b.id = bid
+            bid2b[bid] = b
+            cids.append(b.cd.id)
+            bids.append(np.full(len(b.cd), bid))
+        cids = np.concatenate(cids)
+        bids = np.concatenate(bids)
+        cid2bid = {cid : bid for cid, bid in zip(cids, bids)}
+        return bid2b, cid2bid
 
     def __deepcopy__(self, memo):
         return self.__copy__(memo)
@@ -383,6 +465,7 @@ class PolyData(PolyDataBase):
 
         It must be implemented in subclasses. An example is 
         :class:`sigmaepsilon.solid.fem.linemesh.BernoulliFrame`
+        
         """
         raise NotImplementedError
 
@@ -936,7 +1019,7 @@ class PolyData(PolyDataBase):
             pd.nummrg()
         return pd
 
-    def nummrg(self, store_indices=True):
+    def nummrg(self, store_indices:bool=True):
         """
         Merges node numbering.
         """
