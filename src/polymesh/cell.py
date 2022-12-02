@@ -44,8 +44,7 @@ class PolyCell(CellData):
 
     def __init__(self, *args, i: ndarray = None, **kwargs):
         if isinstance(i, ndarray):
-            key = self.__class__._attr_map_['id']
-            kwargs[key] = i
+            kwargs[self._dbkey_id_] = i
         super().__init__(*args, **kwargs)
 
     @classmethod
@@ -269,13 +268,13 @@ class PolyCell(CellData):
         the cells.
 
         """
-        key = self.__class__._attr_map_['nodes']
+        key = self._dbkey_nodes_
         if key in self.fields:
             return TopologyArray(self.nodes)
         else:
             return None
 
-    def rewire(self, imap: MapLike = None, invert=False):
+    def rewire(self, imap: MapLike = None, invert:bool=False):
         """
         Rewires the topology of the block according to the mapping
         described by the argument `imap`. The mapping happens the
@@ -287,17 +286,17 @@ class PolyCell(CellData):
         ----------
         imap : MapLike
             Mapping from old to new node indices (global to local).
-
         invert : bool, Optional
             If `True` the argument `imap` describes a local to global
             mapping and an inversion takes place. In this case, 
             `imap` must be a `numpy` array. Default is False.
 
         """
-        topo32 = self.topology().to_array().astype(np.int32)
-        topo = rewire(topo32, imap, invert=invert).astype(int)
-        key = self.__class__._attr_map_['nodes']
-        self._wrapped[key] = topo
+        if imap is None:
+            imap = self.source().pointdata.id
+        topo = self.topology().to_array().astype(int)
+        topo = rewire(topo, imap, invert=invert).astype(int)
+        self._wrapped[self._dbkey_nodes_] = topo
 
 
 class PolyCell1d(PolyCell):
@@ -418,7 +417,7 @@ class PolyCell2d(PolyCell):
         return np.sum(self.areas(coords=coords, topo=topo))
 
     def volumes(self, *args, **kwargs):
-        dbkey = self.__class__._attr_map_['t']
+        dbkey = self._dbkey_thickness_
         areas = self.areas(*args, **kwargs)
         if dbkey in self.fields:
             t = self.db[dbkey].to_numpy()
@@ -437,7 +436,7 @@ class PolyCell2d(PolyCell):
         return ascont(ecoords[:, :, :2])
 
     def thickness(self, *args, **kwargs) -> ndarray:
-        return self._wrapped[self.__class__._attr_map_['t']].to_numpy()
+        return self._wrapped[self._dbkey_thickness_].to_numpy()
 
 
 class PolyCell3d(PolyCell):

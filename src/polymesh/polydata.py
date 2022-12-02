@@ -20,7 +20,8 @@ from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
 from .utils import cells_coords, cells_around, cell_centers_bulk
 from .utils import k_nearest_neighbours as KNN
-from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk, PolyData_to_mesh
+from .vtkutils import (mesh_to_UnstructuredGrid as mesh_to_vtk, 
+                       PolyData_to_mesh)
 from .cells import (
     T3 as Triangle,
     Q4 as Quadrilateral,
@@ -31,14 +32,16 @@ from .cells import (
 )
 from .polyhedron import Wedge
 from .utils import index_of_closest_point, nodal_distribution_factors
-from .topo import regularize, nodal_adjacency, detach_mesh_bulk, cells_at_nodes
+from .topo import (regularize, nodal_adjacency, 
+                   detach_mesh_bulk, cells_at_nodes)
 from .topo.topoarray import TopologyArray
 from .pointdata import PointData
 from .celldata import CellData
 from .base import PolyDataBase
 from .cell import PolyCell
 
-from .config import __hasvtk__, __haspyvista__, __hask3d__, __hasmatplotlib__
+from .config import (__hasvtk__, __haspyvista__, 
+                     __hask3d__, __hasmatplotlib__)
 if __hasvtk__:
     import vtk
 if __hask3d__:
@@ -81,12 +84,10 @@ class PolyData(PolyDataBase):
 
     Parameters
     ----------
-    pd : PolyData or CellData, Optional
+    pd : PointData or CellData, Optional
         A PolyData or a CellData instance. Dafault is None.
-
     cd : CellData, Optional
         A CellData instance, if the first argument is provided. Dafault is None.
-
     celltype : int, Optional.
         An integer spcifying a valid celltype.
 
@@ -162,18 +163,22 @@ class PolyData(PolyDataBase):
         elif isinstance(cd, CellData):
             self.celldata = cd
 
-        pkeys = self.__class__._point_class_._attr_map_
-        ckeys = CellData._attr_map_
-
+        pidkey = self.__class__._point_class_._dbkey_id_
+        cidkey = CellData._dbkey_id_
+        
         if self.pointdata is not None:
+            if self.pd.has_id:
+                if self.celldata is not None:
+                    imap = self.pd.id
+                    self.cd.rewire(imap=imap, invert=True)
             N = len(self.pointdata)
             GIDs = self.root().pim.generate_np(N)
-            self.pd[pkeys['id']] = GIDs
+            self.pd[pidkey] = GIDs
 
         if self.celldata is not None:
             N = len(self.celldata)
             GIDs = self.root().cim.generate_np(N)
-            self.cd[pkeys['id']] = GIDs
+            self.cd[cidkey] = GIDs
             try:
                 pd = self.source().pd
             except Exception:
@@ -187,7 +192,7 @@ class PolyData(PolyDataBase):
             point_fields = {} if point_fields is None else point_fields
             pointtype = self.__class__._point_class_
             GIDs = self.root().pim.generate_np(coords.shape[0])
-            point_fields[pkeys['id']] = GIDs
+            point_fields[pidkey] = GIDs
             self.pointdata = pointtype(coords=coords, frame=frame,
                                        newaxis=newaxis, stateful=True,
                                        fields=point_fields)
@@ -208,7 +213,7 @@ class PolyData(PolyDataBase):
                 raise TypeError("Topo must be an 1d array of integers.")
 
             GIDs = self.root().cim.generate_np(topo.shape[0])
-            cell_fields[ckeys['id']] = GIDs
+            cell_fields[cidkey] = GIDs
             try:
                 pd = self.source().pointdata
             except Exception:
@@ -218,11 +223,14 @@ class PolyData(PolyDataBase):
         if self.celldata is not None:
             self.celltype = self.celldata.__class__
             self.celldata.container = self
-
+            
+    def __deepcopy__(self, memo):
+        return self.__copy__(memo)
+    
     def __copy__(self, memo=None):
         cls = self.__class__
         result = cls(frame=self.frame)
-        cfoo = copy if not memo is None else deepcopy
+        cfoo = copy if memo is None else deepcopy
         if memo is not None:
             memo[id(self)] = result
         # self
@@ -358,8 +366,7 @@ class PolyData(PolyDataBase):
         
     def blocks_of_cells(self, i : Union[int, Iterable]=None) -> dict:
         """
-        Returns a dictionary that maps cell indices to blocks or 
-        block addresses.
+        Returns a dictionary that maps cell indices to blocks.
         
         .. versionadded:: 0.0.9
         
@@ -401,9 +408,6 @@ class PolyData(PolyDataBase):
         bids = np.concatenate(bids)
         cid2bid = {cid : bid for cid, bid in zip(cids, bids)}
         return bid2b, cid2bid
-
-    def __deepcopy__(self, memo):
-        return self.__copy__(memo)
 
     @classmethod
     def read(cls, *args, **kwargs) -> 'PolyData':
@@ -732,19 +736,18 @@ class PolyData(PolyDataBase):
         self.celldata = None
         self.celltype = None
 
-    def rewire(self, deep=True, imap=None, invert=False) -> 'PolyData':
+    def rewire(self, deep:bool=True, imap:ndarray=None, 
+               invert:bool=False) -> 'PolyData':
         """
         Rewires topology according to the index mapping of the source object.
 
         Parameters
         ----------
-        deep : bool
-            If `True`, the action propagates down.
-
-        imap : ndarray, Optional
+        deep : bool, Optional
+            If `True`, the action propagates down. Default is True.
+        imap : numpy.ndarray, Optional
             Index mapper. Either provided as a numpy array, or it gets fetched
             from the database. Default is None.
-
         invert : bool, Optional
             A flag to indicate wether the provided index map should be inverted or not.
             Default is False.
@@ -756,7 +759,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        :class:`PolyData`
+        PolyData
             Returnes the object instance for continuitation.
 
         """
@@ -894,7 +897,8 @@ class PolyData(PolyDataBase):
             return points, inds
         return points
 
-    def coords(self, *args, return_inds=False, from_cells=False, **kwargs) -> VectorBase:
+    def coords(self, *args, return_inds:bool=False, from_cells:bool=False, 
+               **kwargs) -> VectorBase:
         """
         Returns the coordinates as an array.
 
@@ -902,7 +906,6 @@ class PolyData(PolyDataBase):
         ----------
         return_inds : bool, Optional
             Returns the indices of the points. Default is False.
-
         from_cells : bool, Optional
             If there is no pointdata attaached to the current block, the points of
             the sublevels of the mesh can be gathered from cell information.
@@ -962,14 +965,13 @@ class PolyData(PolyDataBase):
         ----------
         return_inds : bool, Optional
             Returns the indices of the points. Default is False.
-
         jagged : bool, Optional
             If True, returns the topology as a :class:`TopologyArray` instance,
             even if the mesh is regular. Default is False.
 
         Returns
         -------
-        Union[ndarray, akarray]
+        Union[numpy.ndarray, awkward.Array]
             The topology as a 2d integer array.
 
         """
@@ -990,7 +992,7 @@ class PolyData(PolyDataBase):
             else:
                 return topo
 
-    def detach(self, nummrg=False) -> 'PolyData':
+    def detach(self, nummrg:bool=False) -> 'PolyData':
         """
         Returns a detached version of the mesh.
 
@@ -1232,16 +1234,12 @@ class PolyData(PolyDataBase):
         ----------
         deepcopy : bool, Optional
             Obviously. Default is True.
-
         fuse : bool, Optional
             Wether to fuse submeshes into one object. Default is False.
-
         deep : bool, Optional
             Wether to into submeshes or not. Default is True.
-
         scalars : ndarray, None
             Scalars to decorate the object with. Default is None.
-
         detach : bool, Optional
             If True, the mesh is detached. Default is True.
 
@@ -1485,24 +1483,27 @@ class PolyData(PolyDataBase):
     def __join_parent__(self, parent: DeepDict, key: Hashable = None):
         super().__join_parent__(parent, key)
         if self.pointdata is not None:
+            if self.pointdata.has_id:
+                if self.celldata is not None:
+                    self.rewire(deep=True, invert=True)
             GIDs = self.root().pim.generate_np(len(self.pointdata))
-            self.pointdata['id'] = GIDs
+            self.pointdata.id = GIDs
         if self.celldata is not None:
             GIDs = self.root().cim.generate_np(len(self.celldata))
-            self.celldata['id'] = GIDs
+            self.celldata.id = GIDs
             if self.celldata.pd is None:
                 self.celldata.pd = self.source().pd
             self.celldata.container = self
-        self.rewire(deep=True)
+            self.rewire(deep=True)
 
     def __leave_parent__(self):
         if self.pointdata is not None:
             self.root().pim.recycle(self.poitdata.id)
-            dbkey = self.pointdata.__class__._attr_map_['id']
+            dbkey = self.pointdata._dbkey_id_
             del self.pointdata._wrapped[dbkey]
         if self.celldata is not None:
             self.root().cim.recycle(self.celldata.id)
-            dbkey = self.celldata.__class__._attr_map_['id']
+            dbkey = self.celldata._dbkey_id_
             del self.celldata._wrapped[dbkey]
         super().__leave_parent__()
 

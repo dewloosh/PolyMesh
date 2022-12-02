@@ -25,7 +25,7 @@ class Line(PolyCell1d):
         return lengths_of_lines(coords, topo)
 
     def areas(self, *args, **kwargs):
-        areakey = self.__class__._attr_map_['areas']
+        areakey = self._dbkey_areas_
         if areakey in self.fields:
             return self[areakey].to_numpy()
         else:

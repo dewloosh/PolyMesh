@@ -64,10 +64,8 @@ def rewire(topo: TopoLike, imap: MappingLike, invert=False):
     ----------
     topo : numpy.ndarray array or JaggedArray
         1d or 2d integer array representing topological data of a mesh.
-
     imap : MappingLike
         Inverse mapping on the index sets from global to local.   
-
     invert : bool, Optional
         If `True` the argument `imap` describes a local to global
         mapping and an inversion takes place. In this case, 
@@ -270,21 +268,17 @@ def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
     ----------
     topo : numpy.ndarray array or JaggedArray
         A 2d array (either jagged or not) representing topological data of a mesh.
-
     frmt : str
         A string specifying the output format. Valid options are
         'jagged', 'csr', 'scipy-csr' and 'dicts'. 
         See below for the details on the returned object.   
-
     return_counts : bool
         Wether to return the numbers of connecting elements at the nodes
         as a numpy array. If format is 'raw', the
         counts are always returned irrelevant to this option.
-
     assume_regular : bool
         If the topology is regular, you can gain some speed with providing
         it as `True`. Default is `False`.
-
     cellIDs : numpy.ndarray
         Indices of the cells in `topo`. If nor `None`, format must be 'dicts'.
         Default is `None`.
@@ -545,11 +539,9 @@ def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None, return_indice
         A 2d float array representing geometrical data of a mesh.
         If it is a `PointCloud` instance, indices may be included
         and parameter `inds` is obsolete.
-
     topo : TopoLike
         A 2d integer array (either jagged or not) representing topological 
         data of a mesh.
-
     inds : ndarray, Optional
         Global indices of the coordinates, in `coords`. If provided, the
         coordinates of node `j` of cell `i` is accessible as
@@ -558,7 +550,6 @@ def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None, return_indice
 
         where `imap` is a mapping from local to global indices, and gets
         automatically generated from `inds`.  Default is None.
-
     return_indices : bool, Optional.
         If True, an index array for inverse mapping of point indices is returned.
         Default is False.
@@ -567,7 +558,6 @@ def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None, return_indice
     -------
     ndarray
         NumPy array similar to `coords`, but possibly with less entries.
-
     TopoLike
         Integer array representing the topology, with a good cahnce of 
         being jagged, depending on your input.
@@ -671,12 +661,10 @@ def nodal_adjacency(topo: TopoLike, *args, frmt=None,
     ----------
     topo : numpy.ndarray array or JaggedArray
         A 2d array (either jagged or not) representing topological data of a mesh.
-
     frmt : str
         A string specifying the output format. Valid options are
         'jagged', 'csr' and 'scipy-csr'. See below for the details on the 
         returned object.
-
     assume_regular : bool
         If the topology is regular, you can gain some speed with providing
         it as `True`. Default is `False`.
@@ -760,7 +748,6 @@ def unique_topo_data(topo3d: TopoLike):
     numpy.ndarray
         The sorted unique topolical entities as integer arrays 
         of node indices.
-
     numpy.ndarray
         Indices of the unique array, that can be used to 
         reconstruct `topo`. See the examples.

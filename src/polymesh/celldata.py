@@ -5,7 +5,9 @@ from numpy import ndarray
 from dewloosh.core import classproperty
 from neumann.array import atleast2d, atleast3d, repeat
 
-from .base import PointDataBase, CellDataBase, PolyDataBase as PolyData
+from .base import (PointDataBase, CellDataBase, 
+                   PolyDataBase as PolyData)
+from .akwrap import AwkwardLike
 from .utils import (avg_cell_data, distribute_nodal_data_bulk,
                     homogenize_nodal_values)
 
@@ -14,12 +16,16 @@ class CellData(CellDataBase):
     """
     A class to handle data related to the cells of a polygonal mesh.
 
-    Technically this is a wrapper around an :class:`awkward.Record` instance.
+    Technically this is a wrapper around an Awkward data object instance.
 
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every
     polygonal data structure, it is useful to understand how it works.
 
+    See Also
+    --------
+    :class:`awkward.Array`
+    :class:`awkward.Record`
     """
 
     _attr_map_ = {
@@ -30,19 +36,19 @@ class CellData(CellDataBase):
         'areas': 'areas',  # areas of 1d cells
         't': 't',  # thicknesses for 2d cells
         'activity': 'activity',  # activity of the cells
-        'ndf': 'ndf',  # nodal distribution factors
     }
     
-    def __init__(self, *args, pointdata=None, celldata=None,
-                 wrap=None, topo=None, fields=None, frames=None,
-                 db=None, activity=None, container: PolyData = None, **kwargs):
+    def __init__(self, *args, pointdata:PointDataBase=None, 
+                 wrap:AwkwardLike=None, topo:ndarray=None, 
+                 fields:dict=None, activity:ndarray=None,
+                 frames:ndarray=None, db:AwkwardLike=None,  
+                 container: PolyData = None, **kwargs):
         amap = self.__class__._attr_map_
         fields = {} if fields is None else fields
         assert isinstance(fields, dict)
 
-        celldata = db if db is not None else celldata
-        if celldata is not None:
-            wrap = celldata
+        if db is not None:
+            wrap = db
         else:
             nodes = None
             if len(args) > 0:
@@ -99,6 +105,10 @@ class CellData(CellDataBase):
     @classproperty
     def _dbkey_id_(cls) -> str:
         return cls._attr_map_['id']
+    
+    @property
+    def has_id(self) -> ndarray:
+        return self._dbkey_id_ in self._wrapped.fields
     
     @property
     def pd(self) -> PointDataBase:

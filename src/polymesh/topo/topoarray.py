@@ -17,9 +17,6 @@ from neumann.linalg.sparse.utils import count_cols
 __all__ = ['TopologyArray']
 
 
-HANDLED_FUNCTIONS = {}
-
-
 class TopologyArrayBase(JaggedArray):
 
     def __init__(self, *topo, cuts=None, **kwargs):
@@ -180,7 +177,8 @@ class TopologyArray(NDArrayOperatorsMixin, Wrapper):
         
     def __array_function__(self, func, types, args, kwargs):
         if func not in HANDLED_FUNCTIONS:
-            return func(*args[0], **kwargs)  # vstakc works well with this
+            arrs = [arg._array for arg in args]
+            return func(*arrs, **kwargs)
         # Note: this allows subclasses that don't override
         # __array_function__ to handle DiagonalArray objects.
         if not all(issubclass(t, self.__class__) for t in types):
