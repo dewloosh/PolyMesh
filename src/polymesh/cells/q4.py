@@ -62,7 +62,7 @@ class Q4(Quadrilateral):
 
     See Also
     --------
-    :class:`polymesh.polygon.Quadrilateral`
+    :class:`Quadrilateral`
 
     """
     
@@ -78,7 +78,6 @@ class Q4(Quadrilateral):
         -------
         list
             A list of SymPy symbols.
-
         list
             A list of monomials.
 
@@ -113,7 +112,8 @@ class Q4(Quadrilateral):
         return np.array([0., 0.])
 
     @classmethod
-    def shape_function_values(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, pcoords: ndarray, 
+                              *args, **kwargs) -> ndarray:
         """
         Evaluates the shape functions. The points of evaluation should be 
         understood on the master element
@@ -134,7 +134,8 @@ class Q4(Quadrilateral):
         return shp_Q4_bulk(pcoords) if len(pcoords.shape) == 2 else shp_Q4(pcoords)
 
     @classmethod
-    def shape_function_derivatives(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, pcoords: ndarray, 
+                                   *args, **kwargs) -> ndarray:
         """
         Returns shape function derivatives wrt. the master element. The points of 
         evaluation should be understood on the master element.

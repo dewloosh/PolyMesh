@@ -32,10 +32,8 @@ class CartesianFrame(ReferenceFrame):
     axes : ndarray, Optional.
         2d numpy array of floats specifying cartesian reference frames.
         Dafault is None.
-    
     dim : int, Optional
         Dimension of the mesh. Deafult is 3.
-        
     origo : ndarray, Optional.
         The origo of the mesh. Default is the zero vector.
         

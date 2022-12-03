@@ -2,6 +2,7 @@
 import unittest
 import os
 import numpy as np
+import awkward as ak
 
 from polymesh import PolyData, PointData
 from polymesh.cells import T3, Q4, H8
@@ -12,12 +13,14 @@ from neumann.logical import isclose
 
 class TestIO(unittest.TestCase):
 
-    def test_parquet(self):
+    def test_db_io(self):
         """
-        Creates a compound volume, measures its volume, writes
-        all the data to parquet files, reads back in and measures
+        1) Creates a compound volume, measures its volume, writes
+        all the data to several parquet files, reads back in and measures
         the volume again. It is also checked if the topology has
-        tight and zeroed indexing. 
+        tight and zeroed indexing.
+        2) Writes all pointdata and celldata to two files by merging
+        block data. 
         """
         A = StandardFrame(dim=3)
         tri = TriMesh(size=(100, 100), shape=(10, 10), 
@@ -69,6 +72,16 @@ class TestIO(unittest.TestCase):
         t1 = np.max(t) - imin + 1
         self.assertEqual(t0, t1)
         self.assertEqual(imin, 0)
+        
+        ## PART 2
+        mesh.to_parquet("mesh_pd.parquet", "mesh_cd.parquet")
+        paths.extend(["mesh_pd.parquet", "mesh_cd.parquet"])
+        mesh.to_pandas()
+        mesh['grids', 'H8'].cd.to_pandas()
+        mesh['grids', 'H8'].cd.to_akarray()
+        mesh['grids', 'H8'].cd.to_akrecord()
+        ak.from_parquet("mesh_pd.parquet")['id']
+        ak.from_parquet("mesh_cd.parquet")['id']
         
         for path in paths:
             if os.path.exists(path):

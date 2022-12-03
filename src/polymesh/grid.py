@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple
+from typing import Tuple, Union, Iterable
 import numpy as np
 from numpy import ndarray
 from numba import njit, prange
@@ -15,43 +15,33 @@ __cache = True
 __all__ = ['grid', 'gridQ4', 'gridQ9', 'gridH8', 'gridH27', 'knngridL2', 'Grid']
 
 
-def grid(*args, size=None, shape=None, eshape=None, shift=None, start=0,
-         bins=None, centralize=False, **kwargs) -> Tuple[ndarray, ndarray]:
+def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None, 
+         eshape:Union[str, Tuple[int]]=None, shift:Iterable=None, start:int=0,
+         bins:Iterable=None, centralize:bool=False, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     Crates a 1d, 2d or 3d grid for different patterns.
     
     Parameters
     ----------
-
     size : tuple, Optional
         A 2-tuple, containg side lengths of a rectangular domain. 
         Should be provided alongside `shape`.
-
     shape : tuple or int, Optional
         A 2-tuple, describing subdivisions along coordinate directions
         Should be provided alongside `size`.
-        
     eshape : str or Tuple, Optional
         This specifies element shape. 
         Supported strings are thw following:
-        
         'Q4' : 4-noded quadrilateral
-           
         'Q9' : 9-noded quadrilateral
-          
         'H8' : 8-noded hexagon
-            
-        'H27' : 27-noded hexagon
-        
+        'H27' : 27-noded hexagon 
     shift: numpy.ndarray, Optional
         1d float array, specifying a translation.
-                
     start : index, Optional
         Starting value for node numbering. Default is 0.
-        
     bins : numpy.ndarray, Optional
         Numpy array or an iterable of numy arrays.
-        
     centralize : bool, Optional
         If True, the returned coordinates are centralized.
            
@@ -67,7 +57,6 @@ def grid(*args, size=None, shape=None, eshape=None, shift=None, start=0,
     -------
     numpy.ndarray
         A numpy float array of coordinates.
-    
     numpy.ndarray
         A numpy integer array describing the topology.
     
@@ -505,7 +494,21 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
     return coords, topo + start
 
 
-def knngridL2(*args, max_distance=None, k=3, **kwargs):
+def knngridL2(*args, max_distance:float=None, k:int=3, **kwargs):
+    """
+    Returns a KNN grid of L2 lines.
+    
+    Parameters
+    ----------
+    *args : tuple, Optional
+        Positional arguments forwarded to :func:``grid``.
+    max_distance : float, Optional
+        Maximum distance allowed. Default is None.
+    k : int, Optional
+        Number of neighbours for a given point.
+    **kwargs : dict, Optional
+        Keyword arguments forwarded to :func:``grid``. 
+    """
     X, _ = grid(*args, **kwargs)
     i = knn(X, X, k=k, max_distance=max_distance)
     T, _ = unique_topo_data(knn_to_lines(i))

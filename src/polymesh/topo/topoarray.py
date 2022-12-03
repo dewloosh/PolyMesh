@@ -18,7 +18,7 @@ __all__ = ['TopologyArray']
 
 
 class TopologyArrayBase(JaggedArray):
-
+    
     def __init__(self, *topo, cuts=None, **kwargs):
         if cuts is None and len(topo) > 0:
             widths = list(map(lambda topo: topo.shape[1], topo))
@@ -83,7 +83,15 @@ HANDLED_FUNCTIONS = {}
 
 
 class TopologyArray(NDArrayOperatorsMixin, Wrapper):
-
+    """
+    A class to handle complex topologies. It is a subclass of
+    the JaggedArray class from the Neumann library and is compatible
+    with Numpy universal functions.
+    
+    See Also
+    --------
+    :class:`neumann.linalg.sparse.JaggedArray`
+    """
     __array_base__ = TopologyArrayBase
 
     def __init__(self, *args, to_numpy=True, wrap=None, **kwargs):
@@ -121,34 +129,57 @@ class TopologyArray(NDArrayOperatorsMixin, Wrapper):
         return len(self._array)
 
     def to_ak(self) -> akarray:
+        """
+        Returns underlying data as an Awkward array.
+        """
         if isinstance(self._array, akarray):
             return self.__array__()
         else:
             return self.__class__.__array_base__(self.__array__())
 
     def to_numpy(self) -> ndarray:
+        """
+        Returns underlying data as a NumPy array. This is only possible
+        for regular topologies.
+        """
         if isinstance(self._array, ndarray):
             return self.__array__()
         else:
             return TypeError("Background object cannot be converted to a `numpy` array.")
 
     def to_array(self) -> Union[akarray, ndarray]:
+        """
+        Returns the underlying data, which either an Awkward or a NumPy array.
+        """
         return self.__array__()
     
     def to_list(self):
+        """
+        Returns underlying data as lists.
+        """
         if isinstance(self._array, ndarray):
             return self.__array__().tolist()
         else:
             return self.__array__().to_list()
 
     def unique(self, *args, **kwargs):
+        """
+        Returns unique elements, by generalizing the functionality provided
+        by :func:`numpy.unique`, see its documentation for the details.
+        """
         return np.unique(self, *args, **kwargs)
 
-    def is_jagged(self):
+    def is_jagged(self) -> bool:
+        """
+        Returns True if the topology is jagged, False otherwise.
+        """
         widths = self.widths()
         return not np.all(widths == widths[0])
 
-    def widths(self):
+    def widths(self) -> ndarray:
+        """
+        Returns the number of columns for each row.
+        """
         return count_cols(self._array)
 
     def flatten(self, return_cuts=False):
@@ -170,6 +201,10 @@ class TopologyArray(NDArrayOperatorsMixin, Wrapper):
 
     @property
     def shape(self):
+        """
+        Returns the shape of the data as a tuple. If the topology is 
+        jagged, the second item is an iterable.
+        """
         if isinstance(self._array, ndarray):
             return self._array.shape
         else:

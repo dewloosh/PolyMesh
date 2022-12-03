@@ -9,8 +9,8 @@ def stand_vtk(read=False) -> Union[str, PolyData]:
     
     Example
     -------
-    from polymesh.examples import stand_vtk
-    pd = stand_vtk(read=True)
+    >>> from polymesh.examples import stand_vtk
+    >>> mesh = stand_vtk(read=True)
     
     """
     vtkpath = download_stand()

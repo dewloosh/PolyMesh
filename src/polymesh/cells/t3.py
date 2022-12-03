@@ -68,7 +68,7 @@ class T3(Triangle):
     
     See Also
     --------
-    :class:`polymesh.polygon.Triangle`
+    :class:`Triangle`
     
     """
     
@@ -100,7 +100,8 @@ class T3(Triangle):
         return np.array([[1/3, 1/3]])
     
     @classmethod
-    def shape_function_values(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, coords: ndarray, 
+                              *args, **kwargs) -> ndarray:
         """
         Evaluates the shape functions. The points of evaluation should be 
         understood on the master element.
@@ -121,7 +122,8 @@ class T3(Triangle):
         return shp_CST_bulk(coords) if len(coords.shape) == 2 else shp_CST(coords)
 
     @classmethod
-    def shape_function_derivatives(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, coords: ndarray, 
+                                   *args, **kwargs) -> ndarray:
         """
         Returns shape function derivatives wrt. the master element. The points of 
         evaluation should be understood on the master element.

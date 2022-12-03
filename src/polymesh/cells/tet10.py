@@ -60,6 +60,9 @@ class TET10(QuadraticTetraHedron):
     """
     10-node isoparametric hexahedron.
     
+    See Also
+    --------
+    :class:`QuadraticTetraHedron`
     """
     
     shpfnc = shp_TET10_bulk

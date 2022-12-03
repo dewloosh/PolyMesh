@@ -41,13 +41,10 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
     ----------
     nangles : int
         Number of subdivisions in radial direction.
-
     nradii : int
         Number of subdivisions in circumferential direction.
-
     rmin : float
         Inner radius. Can be zero.
-
     rmax : float
         Outer radius.
 
@@ -91,8 +88,7 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
     Parameters
     ----------
     shape : tuple or int, Optional
-        A 2-tuple or a float, describing the shape of the cylinder.
-                
+        A 2-tuple or a float, describing the shape of the cylinder.    
     size : Union[tuple, float, int], Optional
         Parameter controlling the density of the mesh. Default is None. 
         
@@ -105,20 +101,17 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
         
         If `voxelize` is ``True`` and ``size`` is an ``int``, 
         the parameter controls the size of the individual voxels
-        according to :math:`edge \, length = (r_{ext} - r_{int})/shape`.
-        
+        according to :math:`edge \, length = (r_{ext} - r_{int})/shape`.  
     regular : bool, Optional
         If ``True`` and ``voxelize`` is False, the mesh us a result of an extrusion
         applied to a trianglarion, and as a consequence it returns a more or 
         less regular mesh. Otherwise the cylinder is created from a surface
         trangulation using the ``tetgen`` package. Default is ``True``.
-
     voxelize : bool, Optional.
         If ``True``, the cylinder gets voxelized to a collection of H8 cells.
         In this case the size of a voxel can be controlled by specifying a 
         flaot or an integer as the second parameter ``size``.
         Default is ``False``.
-
     celltype
         Specifies the celltype to be used.
     

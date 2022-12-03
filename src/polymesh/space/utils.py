@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from numpy import ndarray
-from numpy.linalg import norm
 from numba import njit, prange
 
 from neumann import squeeze
@@ -52,7 +51,6 @@ def frames_of_surfaces(coords: ndarray, topo: ndarray):
     ----------
     coords : numpy.ndarray
         2d coordinate array
-
     topo : numpy.ndarray
         2d point-based topology array
 
@@ -77,15 +75,14 @@ def frames_of_surfaces(coords: ndarray, topo: ndarray):
 def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
     """
     Returns the coordinates of the cells in their local coordinate
-    system, the coordinates of their centers and the coordinates of the 
-    axes forming their local coordinate system. The local coordinate systems 
-    are located at the centers of the cells.
+    system, the coordinates of their centers and the coordinates of 
+    the axes forming their local coordinate system. The local coordinate 
+    systems are located at the centers of the cells.
 
     Parameters
     ----------
     coords : numpy.ndarray
         2d coordinate array
-
     topo : numpy.ndarray
         2d point-based topology array
 
@@ -93,10 +90,8 @@ def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
     -------
     numpy.ndarray
         2d coordinate array of local coordinates
-
     numpy.ndarray
         2d array of cell centers
-
     numpy.ndarray
         3d array of 3x3 transformation matrices
 
@@ -148,7 +143,8 @@ def _frames_of_lines_ref(coords: ndarray, topo: ndarray, refZ: ndarray):
 
 
 @squeeze(True)
-def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None):
+def frames_of_lines(coords: ndarray, topo: ndarray, 
+                    refZ: ndarray = None) -> ndarray:
     """
     Returns coordinate frames of line elements defined by a coordinate array
     and a topology array. The cross-sections of the line elements are
@@ -162,10 +158,8 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None):
     ----------
     coords : numpy.ndarray
         2d coordinate array
-
     topo : numpy.ndarray
         2d point-based topology array
-
     refZ : numpy.ndarray, Optional
         1d or 2d float array of reference points. If it is 2d, it must
         contain values for all lines defined by `topo`. 
@@ -199,7 +193,6 @@ def is_planar_surface(normals: ndarray, tol: float = 1e-8) -> bool:
     ----------
     normals : numpy.ndarray
         2d float array of surface normals
-
     tol : float
         Floating point tolerance as maximum deviation.
 
@@ -245,7 +238,6 @@ def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
     ----------
     coords : numpy.ndarray
         2d float array of vertex coordinates.
-
     target : numpy.ndarray
         1d or 2d coordinate array of the target point(s).
 
@@ -274,7 +266,6 @@ def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
     ----------
     coords : numpy.ndarray
         2d float array of vertex coordinates.
-
     target : numpy.ndarray
         1d or 2d coordinate array of the target point(s).
 
@@ -314,7 +305,6 @@ def is_line(coords: ndarray, tol=1e-8) -> bool:
     ----------
     coords : numpy.ndarray
         2d float array of point coordinates
-
     tol : float
         Floating point tolerance as maximum deviation.
 
@@ -343,7 +333,6 @@ def is_planar(coords: ndarray, tol: float = 1e-8) -> bool:
     ----------
     coords : numpy.ndarray
         2d float array of point coordinates
-
     tol : float
         Floating point tolerance as maximum deviation.
 

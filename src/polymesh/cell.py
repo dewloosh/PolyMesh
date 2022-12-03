@@ -81,7 +81,6 @@ class PolyCell(CellData):
         -------
         list
             A list of SymPy symbols.
-
         list
             A list of monomials.
 
@@ -178,11 +177,9 @@ class PolyCell(CellData):
         ----------
         dshp : numpy.ndarray
             3d array of shape function derivatives for the master cell.
-
         ecoords : numpy.ndarray, Optional
             3d array of nodal coordinates for all cells. 
             Either 'ecoords' or 'topo' must be provided.
-
         topo : numpy.ndarray, Optional
             2d integer topology array.
             Either 'ecoords' or 'topo' must be provided.
@@ -205,7 +202,6 @@ class PolyCell(CellData):
         ----------
         jac : numpy.ndarray, Optional
             One or more Jacobian matrices. Default is None.
-
         **kwargs : dict
             Forwarded to :func:`jacobian_matrix` if the jacobian
             is not provided by the parameter 'jac'.

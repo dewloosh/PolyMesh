@@ -307,6 +307,10 @@ class H27(TriquadraticHexaHedron):
         11--24---9
         |    |   |
         0----8---1
+        
+    See Also
+    --------
+    :class:`TriquadraticHexaHedron`
 
     """
 
@@ -364,7 +368,8 @@ class H27(TriquadraticHexaHedron):
          
 
     @classmethod
-    def shape_function_derivatives(cls, coords=None, *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, coords:ndarray=None, 
+                                   *args, **kwargs) -> ndarray:
         """
         Returns shape function derivatives wrt. the master element. The points of evaluation 
         should be understood in the master element.
@@ -384,7 +389,7 @@ class H27(TriquadraticHexaHedron):
         """
         return dshp_H27_bulk(coords) if len(coords.shape) == 2 else dshp_H27(coords)
 
-    def volumes(self, coords=None, topo=None) -> ndarray:
+    def volumes(self, coords:ndarray=None, topo:ndarray=None) -> ndarray:
         """
         Returns the volumes of the cells.
 

@@ -13,6 +13,10 @@ __all__ = ['L3']
 class L3(QuadraticLine):
     """
     3-Node line element.
+    
+    See Also
+    --------
+    :class:`QuadraticLine`
     """
     
     shpfnc = None
@@ -27,7 +31,6 @@ class L3(QuadraticLine):
         -------
         list
             A list of SymPy symbols.
-
         list
             A list of monomials.
 
