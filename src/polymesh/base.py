@@ -16,7 +16,7 @@ from linkeddeepdict import LinkedDeepDict
 from .topo import TopologyArray
 
 from .akwrap import AkWrapper
-from .abc import ABC_MeshData
+from .abcdata import ABC_MeshData
 
 
 class PointDataBase(AkWrapper, ABC_MeshData):

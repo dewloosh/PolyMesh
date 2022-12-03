@@ -13,7 +13,6 @@ from neumann.array import matrixform
 from neumann.linalg.sparse import JaggedArray
 from neumann.linalg.sparse.csr import csr_matrix
 
-
 try:
     import sklearn
     __has_sklearn__ = True
@@ -50,32 +49,25 @@ def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
     ----------
     X : numpy.ndarray
         An array of points to build the tree.
-
     Y : numpy.ndarray, Optional
         An array of sampling points to query the tree. If None it is the
         same as the points used to build the tree. Default is None. 
-
     k : int or Sequence[int], Optional
         Either the number of nearest neighbors to return, 
         or a list of the k-th nearest neighbors to return, starting from 1.
-
     leaf_size : positive int, Optional
         The number of points at which the algorithm switches over to brute-force.
         Default is 10.
-
     workers : int, Optional
         Only if backend is 'scipy'.
         Number of workers to use for parallel processing. If -1 is given all 
         CPU threads are used. Default: -1.
-
         New in 'scipy' version 1.6.0.
-
     max_distance : float, Optional
         Return only neighbors within this distance. It can be a single value, or 
         an array of values of shape matching the input, while a None value
         translates to an infinite upper bound.
         Default is None.
-
     tree_kwargs : dict, Optional
         Extra keyword arguments passed to the KDTree creator of the selected
         backend. Default is None.
@@ -85,7 +77,6 @@ def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
     d : float or array of floats
         The distances to the nearest neighbors. Only returned if
         `return_distance==True`.
-
     i : integer or array of integers
         The index of each neighbor.
 
@@ -154,7 +145,8 @@ def cells_around(*args, **kwargs):
 
 
 def points_around(points: np.ndarray, r_max: float, *args,
-                  frmt: str = 'dict', MT: bool = True, n_max: int = 10, **kwargs):
+                  frmt: str = 'dict', MT: bool = True, n_max: int = 10, 
+                  **kwargs):
     """
     Returns neighbouring points for each entry in `points` that are
     closer than the distance `r_max`. The results are returned in
@@ -164,13 +156,10 @@ def points_around(points: np.ndarray, r_max: float, *args,
     ----------
     points : numpy.ndarray
         Coordinates of several points as a 2d float numpy array.
-
     r_max : float
         Maximum distance.
-
     n_max: int, Optional
         Maximum number of neighbours. Default is 10.
-
     frmt : str
         A string specifying the output format. Valid options are
         'jagged', 'csr' and 'dict'. 
@@ -185,7 +174,6 @@ def points_around(points: np.ndarray, r_max: float, *args,
 
     frmt = 'jagged' : dewloosh.math.linalg.sparse.JaggedArray
         A subclass of `awkward.Array`
-
     """
     if MT:
         data, widths = _cells_around_MT_(points, r_max, n_max)
@@ -247,7 +235,8 @@ def _jagged_to_spdata(ja: JaggedArray):
 
 
 @njit(nogil=True, fastmath=True, cache=__cache)
-def _cells_data_to_dict(data: np.ndarray, widths: np.ndarray) -> nbDict:
+def _cells_data_to_dict(data: np.ndarray, 
+                        widths: np.ndarray) -> nbDict:
     dres = dict()
     nE = len(widths)
     for iE in range(nE):
@@ -302,100 +291,32 @@ def _cells_around_MT_(centers: np.ndarray, r_max: float, n_max: int = 10):
     return res, widths
 
 
-# !FIXME : this is duplicated in polymesh.space.utils
-def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
-    """
-    Returs the index of the closes point to a target location.
-
-    Parameters
-    ----------
-    coords : numpy.ndarray
-        2d float array of (nP, nD) of vertex coordinates.
-
-        nP : number of points
-
-        nD : number of dimensions of the model space
-
-    target : numpy.ndarray
-        Coordinate array of the target point.
-
-    Returns
-    -------
-    int
-        The index of 'coords', for which the distance from
-        'target' is minimal.
-
-    """
-    warnings.warn("This is deprecated, use polymesh.space.index_of_closest_point instaead.",
-                  warnings.DeprecationWarning)
-    assert coords.shape[1] == target.shape[0], \
-        "The dimensions of `coords` and `target` are not compatible."
-    return np.argmin(norm(coords - target, axis=1))
-
-
-# !FIXME : this is duplicated in polymesh.space.utils
-def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
-    """
-    Returs the index of the furthest point to a target location.
-
-    Parameters
-    ----------
-    coords : numpy.ndarray
-        2d float array of (nP, nD) of vertex coordinates.
-
-        nP : number of points
-
-        nD : number of dimensions of the model space
-
-    target : numpy.ndarray
-        Coordinate array of the target point.
-
-    Returns
-    -------
-    int
-        The index of 'coords', for which the distance from
-        'target' is maximal.
-
-    """
-    warnings.warn("This is deprecated, use polymesh.space.index_of_furthest_point instaead.",
-                  warnings.DeprecationWarning)
-    assert coords.shape[1] == target.shape[0], \
-        "The dimensions of `coords` and `target` are not compatible."
-    return np.argmax(norm(coords - target, axis=1))
-
-
 def points_of_cells(coords: ndarray, topo: ndarray, *args,
                     local_axes: ndarray = None, centralize: bool = True,
                     **kwargs) -> ndarray:
     """
     Returns an explicit representation of coordinates of the cells from a 
-    pointset and a topology. If coordinate frames are provided, the coorindates 
-    are returned with  respect to those frames.
+    pointset and a topology. If coordinate frames are provided, the 
+    coorindates are returned with  respect to those frames.
 
     Parameters
     ----------
     coords : numpy.ndarray
         2d float array of shape (nP, nD) of vertex coordinates.
-
         nP : number of points
-
         nD : number of dimensions of the model space
-
     topo : numpy.ndarray
-        A 2D array of shape (nE, nNE) of vertex indices. The i-th row contains the 
-        vertex indices of the i-th element.
-
+        A 2D array of shape (nE, nNE) of vertex indices. The i-th row 
+        contains the vertex indices of the i-th element.
         nE : number of elements
-
         nNE : number of nodes per element
-
     local_axes : numpy.ndarray
-        Reference frames as a3d array of shape (..., 3, 3). A single 3x3 numpy array 
-        or matrices for all elements in 'topo' must be provided.
-
+        Reference frames as a3d array of shape (..., 3, 3). A single 
+        3x3 numpy array or matrices for all elements in 'topo' must be 
+        provided.
     centralize : bool, Optional
-        If True, and 'frame' is not None, the local coordinates are returned
-        with respect to the geometric center of each element.
+        If True, and 'frame' is not None, the local coordinates are 
+        returned with respect to the geometric center of each element.
 
     Returns
     -------
@@ -406,7 +327,6 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
     -----
     It is assumed that all entries in 'coords' are coordinates of
     points in the same frame.
-
     """
     if local_axes is not None:
         return cells_coords_tr(cells_coords(coords, topo),
@@ -442,30 +362,24 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
     ----------
     coords : numpy.ndarray
         2d float array of shape (nP, nD) of vertex coordinates.
-
         nP : number of points
-
         nD : number of dimensions of the model space
-
     topo : numpy.ndarray
-        A 2D array of shape (nE, nNE) of vertex indices. The i-th row contains 
-        the vertex indices of the i-th element.
-
+        A 2D array of shape (nE, nNE) of vertex indices. The i-th 
+        row contains the vertex indices of the i-th element.
         nE : number of elements
-
         nNE : number of nodes per element
 
     Returns
     -------
     numpy.ndarray
-        A 3d array of shape (nE, nNE, nD) that contains coordinates for all nodes 
-        of all cells according to the argument 'topo'.
+        A 3d array of shape (nE, nNE, nD) that contains coordinates 
+        for all nodes of all cells according to the argument 'topo'.
 
     Notes
     -----
-    The array 'coords' must be fully populated up to the maximum index
-    in 'topo'. (len(coords) >= (topo.max() + 1))
-
+    The array 'coords' must be fully populated up to the maximum 
+    index in 'topo'. (len(coords) >= (topo.max() + 1))
     """
     nE, nNE = topo.shape
     res = np.zeros((nE, nNE, coords.shape[1]), dtype=coords.dtype)
@@ -485,14 +399,10 @@ def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:
     ----------
     coords : numpy.ndarray
         2d array of shape (nP, nD) of vertex coordinates.
-
         nP : number of points
-
         nD : number of dimensions of the model space
-
     topo : (nNE) numpy.ndarray
         1D array of vertex indices.
-
         nNE : number of nodes per element
 
     Returns
@@ -505,7 +415,6 @@ def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:
     -----
     The array 'coords' must be fully populated up to the maximum index
     in 'topo'. (len(coords) >= (topo.max() + 1))
-
     """
     nNE = len(topo)
     res = np.zeros((nNE, coords.shape[1]), dtype=coords.dtype)
@@ -529,7 +438,6 @@ def cell_center_2d(ecoords: np.ndarray):
     -------
     numpy.ndarray
         1d coordinate array.
-
     """
     return np.array([np.mean(ecoords[:, 0]), np.mean(ecoords[:, 1])],
                     dtype=ecoords.dtype)
@@ -550,7 +458,6 @@ def cell_center(coords: np.ndarray):
     -------
     numpy.ndarray
         1d coordinate array.
-
     """
     return np.array([np.mean(coords[:, 0]), np.mean(coords[:, 1]),
                      np.mean(coords[:, 2])], dtype=coords.dtype)
@@ -564,7 +471,6 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
     ----------
     coords : numpy.ndarray
         2d coordinate array.
-
     topo : numpy.ndarray
         2d point-based topology array.
 
@@ -572,7 +478,6 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
     -------
     numpy.ndarray
         2d coordinate array.
-
     """
     return np.mean(cells_coords(coords, topo), axis=1)
 
@@ -594,7 +499,8 @@ def nodal_distribution_factors(topo: ndarray, volumes: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, ndf: ndarray):
+def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, 
+                               ndf: ndarray):
     """
     Distributes nodal data to the cells. The parameter 'ndf' controls
     the behaviour of the distribution.
@@ -603,10 +509,8 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, ndf: ndarray):
     ----------
     data : numpy.ndarray
         2d array of shape (nP, nX), the data defined on points.
-
     topo : numpy.ndarray
         2d integer array of shape (nE, nNE), describing the topology.
-
     ndf : numpy.ndarray, Optional
         2d float array of shape (nE, nNE), describing the distribution
         of cells to the nodes.
@@ -650,7 +554,8 @@ def explode_mesh_bulk(coords: ndarray, topo: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def explode_mesh_data_bulk(coords: ndarray, topo: ndarray, data: ndarray):
+def explode_mesh_data_bulk(coords: ndarray, topo: ndarray, 
+                           data: ndarray):
     nE, nNE = topo.shape
     nD = coords.shape[1]
     coords_ = np.zeros((nE*nNE, nD), dtype=coords.dtype)
@@ -665,7 +570,7 @@ def explode_mesh_data_bulk(coords: ndarray, topo: ndarray, data: ndarray):
     return coords_, topo_, data_
 
 
-def explode_mesh(coords: ndarray, topo: ndarray, *args, data=None, **kwargs):
+def explode_mesh(coords: ndarray, topo: ndarray, *, data=None):
     if data is None:
         return explode_mesh_bulk(coords, topo)
     elif isinstance(data, ndarray):
@@ -712,11 +617,20 @@ def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray):
     """
     Returns Jacobian matrices of local to global transformation 
     for several cells.
+    
+    Parameters
+    ----------
+    dshp : numpy.ndarray
+        A 3d numpy array of shape (nG, nNE, nD), where nG, nNE and nD
+        are the number of integration points, nodes and spatial dimensions.
+    ecoords : numpy.ndarray
+        A 3d numpy array of shape (nE, nNE, nD), where nE, nNE and nD
+        are the number of elements, nodes and spatial dimensions.
 
-    dshp (nG, nN, nD)
-    ecoords  (nE, nNE, nD)
-    ---
-    (nE, nG, nD, nD)
+    Returns
+    -------
+    numpy.ndarray
+        A 4d array of shape (nE, nG, nD, nD).
     """
     nE = ecoords.shape[0]
     nG, _, nD = dshp.shape
@@ -730,6 +644,21 @@ def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray):
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def jacobian_det_bulk_1d(jac: ndarray):
+    """
+    Calculates Jacobian determinants for 1d cells.
+    
+    Parameters
+    ----------
+    jac : numpy.ndarray
+        4d float array of shape (nE, nG, 1, 1) for an nE number of 
+        elements and nG number of evaluation points.
+        
+    Returns
+    -------
+    numpy.ndarray
+        A 2d array of shape (nE, nG) of jacobian determinants calculated 
+        for each element and evaluation points.
+    """
     nE, nG = jac.shape[:2]
     res = np.zeros((nE, nG), dtype=jac.dtype)
     for iE in prange(nE):
@@ -738,18 +667,20 @@ def jacobian_det_bulk_1d(jac: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray):
+def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns the Jacobian matrix for multiple cells (nE), evaluated at
     multiple (nP) points.
-    ---
-    (nE, nP, 1, 1)
+    
+    Returns        
+    -------
+    A 4d NumPy array of shape (nE, nP, 1, 1).
 
     Notes
     -----
     As long as the line is straight, it is a constant metric element,
-    and 'dshp' is only required here to provide an output with a correct shape.
-
+    and 'dshp' is only required here to provide an output with a correct 
+    shape.
     """
     lengths = lengths_of_lines2(ecoords)
     nE = ecoords.shape[0]
@@ -766,7 +697,10 @@ def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def center_of_points(coords: ndarray):
+def center_of_points(coords: ndarray) -> ndarray:
+    """
+    Returns the center of several points.
+    """
     res = np.zeros(coords.shape[1], dtype=coords.dtype)
     for i in prange(res.shape[0]):
         res[i] = np.mean(coords[:, i])
@@ -774,7 +708,10 @@ def center_of_points(coords: ndarray):
 
 
 @njit(nogil=True, cache=__cache)
-def centralize(coords: ndarray):
+def centralize(coords: ndarray) -> ndarray:
+    """
+    Centralizes coordinates of a point cloud.
+    """
     nD = coords.shape[1]
     center = center_of_points(coords)
     coords[:, 0] -= center[0]
@@ -785,7 +722,11 @@ def centralize(coords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def lengths_of_lines(coords: ndarray, topo: ndarray):
+def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
+    """
+    Returns lengths of several lines, where the geometry is
+    defined implicitly.
+    """
     nE, nNE = topo.shape
     res = np.zeros(nE, dtype=coords.dtype)
     for i in prange(nE):
@@ -795,6 +736,10 @@ def lengths_of_lines(coords: ndarray, topo: ndarray):
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def lengths_of_lines2(ecoords: ndarray):
+    """
+    Returns lengths of several lines, where line cooridnates
+    are specified explicitly.
+    """
     nE, nNE = ecoords.shape[:2]
     res = np.zeros(nE, dtype=ecoords.dtype)
     _nNE = nNE - 1
@@ -817,7 +762,6 @@ def distances_of_points(coords: ndarray):
     -------
     numpy.ndarray
         1d float array of shape (nP,).
-
     """
     nP = coords.shape[0]
     res = np.zeros(nP, dtype=coords.dtype)
@@ -838,7 +782,6 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray):
     ----------
     pcoords : numpy.ndarray
         1d float array of length nP, coordinates in the range [-1 , 1].
-
     ecoords : numpy.ndarray
         3d float array of shape (nE, 2+, nD) of cell coordinates.
 
@@ -851,7 +794,6 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray):
     -------
     numpy.ndarray
         2d float array of shape (nE * nP, nD). 
-
     """
     nP = pcoords.shape[0]
     nE = ecoords.shape[0]
@@ -879,7 +821,6 @@ def norms(a: ndarray):
     -------
     numpy.ndarray
         1d float array of shape (N, ).
-
     """
     nI = len(a)
     res = np.zeros(nI)
@@ -889,7 +830,11 @@ def norms(a: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def homogenize_nodal_values(data: ndarray, measure: ndarray):
+def homogenize_nodal_values(data: ndarray, measure: ndarray) -> ndarray:
+    """
+    Calculates constant values for cells from existing data defined for
+    each nodes, according to some measure.
+    """
     nE, _, nDATA = data.shape  # nE, nNE, nDATA
     res = np.zeros((nE, nDATA), dtype=data.dtype)
     for i in prange(nE):

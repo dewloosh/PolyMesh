@@ -108,7 +108,7 @@ class Q9(BiQuadraticQuadrilateral):
 
     See Also
     --------
-    :class:`polymesh.polygon.BiQuadraticQuadrilateral`
+    :class:`BiQuadraticQuadrilateral`
     
     """
     
@@ -141,7 +141,8 @@ class Q9(BiQuadraticQuadrilateral):
         return np.array([0., 0.])
 
     @classmethod
-    def shape_function_values(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, pcoords: ndarray, 
+                              *args, **kwargs) -> ndarray:
         """
         Evaluates the shape functions. The points of evaluation should be 
         understood in the range [-1, 1].
@@ -162,7 +163,8 @@ class Q9(BiQuadraticQuadrilateral):
         return shp_Q9_bulk(pcoords) if len(pcoords.shape) == 2 else shp_Q9(pcoords)
 
     @classmethod
-    def shape_function_derivatives(cls, pcoords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, pcoords: ndarray, 
+                                   *args, **kwargs) -> ndarray:
         """
         Returns shape function derivatives wrt. the master element. The points of 
         evaluation should be understood in the range [-1, 1].

@@ -60,7 +60,6 @@ class PointCloud(Vector):
     frame : numpy.ndarray, Optional
         A numpy array representing coordinate axes of a reference frame.
         Default is None.
-
     inds : numpy.ndarray, Optional
         An 1d integer array specifying point indices. Default is None.
 
@@ -222,7 +221,6 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
@@ -246,7 +244,6 @@ class PointCloud(Vector):
             Vectors or coordinates of one or more points. If provided as 
             an array, the `frame` argument can be used to specify the 
             parent frame in which the coordinates are to be understood.
-
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
@@ -270,7 +267,6 @@ class PointCloud(Vector):
             Vectors or coordinates of one or more points. If provided as 
             an array, the `frame` argument can be used to specify the 
             parent frame in which the coordinates are to be understood.
-
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
@@ -290,12 +286,10 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         p : Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as 
             an array, the `frame` argument can be used to specify the 
             parent frame in which the coordinates are to be understood.
-
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
@@ -322,12 +316,10 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         p : Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as 
             an array, the `frame` argument can be used to specify the 
             parent frame in which the coordinates are to be understood.
-
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
@@ -355,7 +347,6 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
@@ -377,12 +368,10 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         v : Vector or Array, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
-
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
@@ -425,7 +414,6 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-
         target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 

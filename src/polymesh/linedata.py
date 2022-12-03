@@ -32,7 +32,7 @@ class LineData(PolyData):
             else:
                 assert len(areas.shape) == 1, \
                     "'areas' must be a 1d float or integer numpy array!"
-            dbkey = self.celldata.__class__._attr_map_['areas']
+            dbkey = self.celldata._dbkey_areas_
             self.celldata.db[dbkey] = areas
 
     def _init_config_(self):

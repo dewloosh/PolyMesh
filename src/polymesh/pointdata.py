@@ -2,6 +2,7 @@
 import numpy as np
 from numpy import ndarray
 
+from dewloosh.core import classproperty
 from neumann.linalg import ReferenceFrame as FrameLike
 from neumann.logical import isboolarray
 
@@ -95,6 +96,22 @@ class PointData(PointDataBase):
 
         super().__init__(*args, wrap=wrap, fields=fields, **kwargs)
     
+    @classproperty
+    def _dbkey_id_(cls) -> str:
+        return cls._attr_map_['id']
+    
+    @classproperty
+    def _dbkey_x_(cls) -> str:
+        return cls._attr_map_['x']
+    
+    @classproperty
+    def _dbkey_activity_(cls) -> str:
+        return cls._attr_map_['activity']
+    
+    @property
+    def has_id(self) -> ndarray:
+        return self._dbkey_id_ in self._wrapped.fields
+    
     @property
     def frame(self) -> FrameLike:
         """
@@ -108,28 +125,28 @@ class PointData(PointDataBase):
 
     @property
     def activity(self) -> ndarray:
-        return self._wrapped[self.__class__._attr_map_['activity']].to_numpy()
+        return self._wrapped[self._dbkey_activity_].to_numpy()
 
     @activity.setter
     def activity(self, value: ndarray):
         assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['activity']] = value
+        self._wrapped[self._dbkey_activity_] = value
 
     @property
     def x(self) -> ndarray:
-        return self._wrapped[self.__class__._attr_map_['x']].to_numpy()
+        return self._wrapped[self._dbkey_x_].to_numpy()
 
     @x.setter
     def x(self, value: ndarray):
         assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['x']] = value
+        self._wrapped[self._dbkey_x_] = value
 
     @property
     def id(self) -> ndarray:
-        return self._wrapped[self.__class__._attr_map_['id']].to_numpy()
+        return self._wrapped[self._dbkey_id_].to_numpy()
 
     @id.setter
     def id(self, value: ndarray):
         assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['id']] = value
+        self._wrapped[self._dbkey_id_] = value
         

@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
-from typing import Iterable
+from typing import Iterable, Union
 import numpy as np
+from numpy import ndarray
 import awkward as ak
+from awkward import Array as akArray, Record as akRecord
 
 from dewloosh.core.wrapping import Wrapper
+
+AwkwardLike = Union[akArray, akRecord]
 
 
 class AkWrapper(Wrapper):
     """
-    A wrapper for Awkward objects. This is for example the master class
-    of all finite element classes.
-    
-    Although is is not likely, it can be used directly and enjoy the input/output
-    capabilities of the class.
-    
+    A wrapper for Awkward objects. This is the base class of most
+    database classes in DewLoosh projects.
+
     """
-    
+
     _attr_map_ = {}
 
     def __init__(self, *args, wrap=None, fields=None, **kwargs):
@@ -32,38 +33,64 @@ class AkWrapper(Wrapper):
         super().__init__(*args, wrap=wrap, **kwargs)
 
     @property
-    def db(self):
+    def db(self) -> akRecord:
         """
         Returns the wrapped Awkward object.
         """
         return self._wrapped
 
-    def to_numpy(self, key):
+    def to_numpy(self, key: str) -> ndarray:
         """
-        Returns a data with the specified key as a numpy array, if possible.
+        Returns a data with the specified key as a numpy array, if 
+        possible.
         """
         return self._wrapped[key].to_numpy()
-    
+
     def to_pandas(self, *args, fields: Iterable[str] = None, **kwargs):
         """
         Returns the data contained within the database as a DataFrame.
 
         Parameters
         ----------
-        path_pd : str
-            File path for point-related data.
-
-        path_cd : str
-            File path for cell-related data.
-
+        *args: tuple, Optional
+            Positional arguments to specify fields.
         fields : Iterable[str], Optional
             Valid field names to include in the parquet files.
+        **kwargs: dict, Optional
+            Keyword arguments forwarded to :func:`awkward.to_pandas`.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+        akdb = self.to_ak(*args, fields=fields)
+        return ak.to_pandas(akdb, **kwargs)
+
+    def to_parquet(self, path: str, *args, fields: Iterable[str] = None,
+                   **kwargs):
+        """
+        Saves the data contained within the database to a parquet file.
+
+        Parameters
+        ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
+        path : str
+            Path of the file being created.
+        fields : Iterable[str], Optional
+            Valid field names to include in the parquet files.
+        **kwargs: dict, Optional
+            Keyword arguments forwarded to :func:`awkward.to_parquet`.
 
         """
-        akdb = self.to_ak(*args, fields=fields, **kwargs)
-        return ak.to_pandas(akdb)
+        if fields is None and len(args) == 0:
+            ak.to_parquet(self.db, path, **kwargs)
+        else:
+            akdb = self.to_ak(*args, fields=fields, asarray=False)
+            ak.to_parquet(akdb, path, **kwargs)
 
-    def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs):
+    @classmethod
+    def from_parquet(cls, path: str) -> 'AkWrapper':
         """
         Saves the data contained within the database to a parquet file.
 
@@ -71,56 +98,135 @@ class AkWrapper(Wrapper):
         ----------
         path : str
             Path of the file being created.
-
-        fields : Iterable[str], Optional
-            Valid field names to include in the parquet files.
-
         """
-        akdb = self.to_ak(*args, fields=fields, **kwargs)
-        ak.to_parquet(akdb, path)
+        return cls(wrap=ak.from_parquet(path))
 
-    def to_ak(self, *args, fields: Iterable[str] = None, **kwargs):
+    def to_ak(self, *args, fields: Iterable[str] = None,
+              asarray: bool = False) -> Union[akArray, akRecord]:
+        """
+        Returns the database with a specified set of fields as either
+        an Awkward Record, or an Awkward Array. If there are no fields
+        specified and the output is a record, the original database is 
+        returned.
+
+        .. versionchanged:: 0.0.10
+
+        Parameters
+        ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
+        fields : Iterable[str], Optional
+            Valid field names to include in the returned objects.
+        asarray : bool, Optional
+            If True, the database is turned onto an Awkward Array before
+            saving to file. Default is False.
+            .. versionadded:: 0.0.10
+        """
+        if asarray:
+            return self.to_akarray(*args, fields=fields)
+        else:
+            return self.to_akrecord(*args, fields=fields)
+
+    def to_akarray(self, *args, fields: Iterable[str] = None) -> akArray:
         """
         Returns the data contained within the mesh as an Awkward array.
 
+        .. versionadded:: 0.0.10
+
         Parameters
         ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
         fields : Iterable[str], Optional
             Valid field names to include in the returned objects.
         """
-        ldb = self.to_list(*args, fields=fields, **kwargs)
+        ldb = self.to_list(*args, fields=fields)
         return ak.from_iter(ldb)
 
-    def to_list(self, *args, fields: Iterable[str] = None, **kwargs) -> list:
+    def to_akrecord(self, *args, fields: Iterable[str] = None) -> akRecord:
         """
-        Returns data of the object as a lists. Unless specified by 'fields', 
-        all fields are returned.
+        Returns the data contained within the mesh as an Awkward record.
+
+        .. versionadded:: 0.0.10
 
         Parameters
         ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
         fields : Iterable[str], Optional
-            A list of keys that might identify data in a database. Default is None.
+            Valid field names to include in the returned objects.
+        """
+        d = self.to_dict(*args, fields=fields)
+        return ak.zip(d, depth_limit=1)
 
+    def to_dict(self, *args, fields: Iterable[str] = None) -> dict:
+        """
+        Returns data of the object as a dictionary. Unless fields 
+        are specified, all fields are returned.
+
+        .. versionadded:: 0.0.10
+
+        Parameters
+        ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
+        fields : Iterable[str], Optional
+            A list of keys that might identify data in a database. 
+            Default is None.
         """
         db = self.db
         res = None
-        if fields is not None:
+        if fields is None:
+            fields = []
+        fields.extend(args)
+        if len(fields) == 0:
+            fields = db.fields
+        res = {}
+        for f in fields:
+            if f in db.fields:
+                res[f] = db[f]
+            else:
+                raise KeyError(f"Field {f} not found.")
+        return res
+
+    def to_list(self, *args, fields: Iterable[str] = None) -> list:
+        """
+        Returns data of the object as lists. Unless fields are
+        specified, all fields are returned.
+
+        Parameters
+        ----------
+        *args: tuple, Optional
+            Positional arguments to specify fields.
+        fields : Iterable[str], Optional
+            A list of keys that might identify data in a database. 
+            Default is None.
+        """
+        db = self.db
+        res = None
+        if fields is None:
+            if len(args) > 0:
+                fields = []
+        if isinstance(fields, Iterable):
+            fields.extend(args)
             db_ = {}
             for f in fields:
                 if f in db.fields:
                     db_[f] = db[f]
+                else:
+                    raise KeyError(f"Field {f} not found.")
             res = AkWrapper(fields=db_).to_list()
         else:
             res = db.to_list()
         return res
-    
+
     def __len__(self):
         return len(self._wrapped)
-    
+
     def __hasattr__(self, attr):
         if attr in self.__class__._attr_map_:
-            attr = self.__class__._attr_map_[attr]            
-        return any([attr in self.__dict__, 
+            attr = self.__class__._attr_map_[attr]
+        return any([attr in self.__dict__,
                     attr in self._wrapped.__dict__])
 
     def __getattr__(self, attr):
@@ -131,7 +237,6 @@ class AkWrapper(Wrapper):
         try:
             return getattr(self._wrapped, attr)
         except Exception:
-            raise AttributeError("'{}' object has no "\
-                + "attribute called {}".format(self.__class__.__name__, attr))
-
-    
+            name = self.__class__.__name__
+            raise AttributeError("'{}' object has no "
+                                 + "attribute called {}".format(name, attr))

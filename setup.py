@@ -46,7 +46,7 @@ _download_url = _url + '/archive/refs/tags/{}.zip'.format(_version)
 setup(
 	name="polymesh",
     version=_version,                        
-    author="dewloosh",
+    author="Bence Balogh",
     author_email = 'dewloosh@gmail.com',                   
     description=_description,
     long_description=long_description,   
@@ -61,11 +61,30 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",  
         'Programming Language :: Python :: 3 :: Only',
-		'Operating System :: OS Independent'
+		'Operating System :: OS Independent',
+        "Topic :: Scientific/Engineering",
     ],                                      
     python_requires='>=3.7, <3.11',                             
     package_dir={'':'src'},     
     install_requires=required,
 	zip_safe=False,
+    extras_require={
+        "all": [
+            "pyvista",
+            "k3d",
+            "vtk",
+            "networkx",
+            "pyarrow",
+            "tetgen"
+        ],
+        "testing" : [
+            "pytest",
+            "pandas",
+            "pyarrow",
+            "networkx",
+            "pyvista",
+            "tetgen"
+        ]
+    }
 )
 

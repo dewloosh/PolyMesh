@@ -34,7 +34,7 @@ def monoms2(r):
 @njit(nogil=True, cache=__cache)
 def shp2(r):
     """
-    Evaluates the shape functions at one location in the range [-1, 1]
+    Evaluates the shape functions at one location in the range [-1, 1].
     """
     return np.array([1 - r, 1 + r]) / 2
 
@@ -65,6 +65,10 @@ def dshp2_bulk(pcoords: ndarray):
 class L2(Line):
     """
     2-Node line element.
+    
+    See Also
+    --------
+    :class:`Line`
     """
     
     shpfnc = shp2_bulk
@@ -79,7 +83,6 @@ class L2(Line):
         -------
         list
             A list of SymPy symbols.
-
         list
             A list of monomials.
 

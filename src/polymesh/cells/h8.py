@@ -128,6 +128,10 @@ class H8(HexaHedron):
         3--2  
         |  |
         0--1
+        
+    See Also
+    --------
+    :class:`HexaHedron`
 
     """
 
