@@ -69,7 +69,7 @@ jobs:
           pkg-manager: pip
           pip-dependency-file: test-requirements.txt
       - run:
-          command: python setup.py
+          command: python setup.py install
       - run:
           name: Run tests
           # This assumes pytest is installed via the install-package step above
