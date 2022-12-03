@@ -508,10 +508,6 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        path_pd : str
-            File path for point-related data.
-        path_cd : str
-            File path for cell-related data.
         point_fields : Iterable[str], Optional
             A list of keys that might identify data in a database for the
             points in the mesh. Default is None.
