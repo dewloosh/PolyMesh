@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple, List, Iterable
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
+from sympy import symbols
 
 from ..polygon import Triangle
 
@@ -74,9 +76,26 @@ class T3(Triangle):
     
     shpfnc = shp_CST_bulk
     dshpfnc = dshp_CST_bulk
+    
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Retruns the polynomial base of the master element.
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+        list
+            A list of monomials.
+
+        """
+        locvars = r, s = symbols('r s', real=True)
+        monoms = [1, r, s]
+        return locvars, monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs) -> ndarray:
+    def lcoords(cls) -> ndarray:
         """
         Returns local coordinates of the cell.
 
@@ -88,7 +107,7 @@ class T3(Triangle):
         return np.array([[0., 0.], [1., 0.], [0., 1.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Returns the local coordinates of the center of the cell.
 
@@ -100,23 +119,23 @@ class T3(Triangle):
         return np.array([[1/3, 1/3]])
     
     @classmethod
-    def shape_function_values(cls, coords: ndarray, 
-                              *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, coords: ndarray) -> ndarray:
         """
-        Evaluates the shape functions. The points of evaluation should be 
-        understood on the master element.
+        Evaluates the shape functions. The points of evaluation 
+        should be understood on the master element.
 
         Parameters
         ----------
         coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
+            Points of evaluation. It should be a 1d array for a single 
+            point and a 2d array for several points. In the latter case, 
+            the points should run along the first axis.
 
         Returns
         -------
         numpy.ndarray
-            An array of shape (3,) for a single, (N, 3) for N evaulation points.
+            An array of shape (3,) for a single, (N, 3) for N evaulation 
+            points.
 
         """
         return shp_CST_bulk(coords) if len(coords.shape) == 2 else shp_CST(coords)

@@ -210,24 +210,19 @@ class CellData(CellDataBase):
             A field key to identify data in the database of the attached pointcloud.
             If not specified, use the 'data' parameter to specify the data to pull.
             Default is None.
-
         ndfkey : str, Optional
             A field key to identify the distribution factors to use. If not specified,
             a default key is used. Default is None.
-
         store : bool, Optional
             Stores the pulled values in the database if True. If True, the pulled data
             is either stored with the same key used in the pointcloud, or a key specified
             with the parameter 'storekey'. Default is False.
-
         storekey : str, Optional
             A key used to store the values. If provided, the 'store' parameter is ignored.
             Default is False.
-
         data : numpy.ndarray, Optional
             Used to specify the data to pull, if the parameter 'key' is None.
             Default is None.
-        
         distribute : bool, Optional
             If False, data is simply copied, otherwise it gets distributed according to
             the distribution factors of a measure. In the former case, parameters related

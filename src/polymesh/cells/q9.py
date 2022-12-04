@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple, List, Iterable
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
+from sympy import symbols
 
 from neumann.array import flatten2dC
 
@@ -61,6 +63,15 @@ def shape_function_matrix_Q9(pcoord: np.ndarray):
     return res
 
 
+@njit(nogil=True, parallel=True, cache=__cache)
+def shape_function_matrix_Q9_multi(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 2, 18), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = shape_function_matrix_Q9(pcoords[iP])
+    return res
+
+
 @njit(nogil=True, cache=__cache)
 def dshp_Q9(pcoord: np.ndarray):
     r, s = pcoord[:2]
@@ -114,9 +125,27 @@ class Q9(BiQuadraticQuadrilateral):
     
     shpfnc = shp_Q9_bulk
     dshpfnc = dshp_Q9_bulk
+    
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Retruns the polynomial base of the master element.
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+        list
+            A list of monomials.
+
+        """
+        locvars = r, s = symbols('r, s', real=True)
+        monoms = [1, r, s, r * s, r**2, 
+                  s**2, r * s**2, s * r**2, s**2 * r**2]
+        return locvars, monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs):
+    def lcoords(cls):
         """
         Returns local coordinates of the cell.
 
@@ -125,11 +154,12 @@ class Q9(BiQuadraticQuadrilateral):
         numpy.ndarray
 
         """
-        return np.array([[-1., -1.], [1., -1.], [1., 1.], [-1., 1.],
-                        [0., -1.], [1., 0.], [0., 1.], [-1., 0.], [0., 0.]])
+        return np.array([[-1., -1.], [1., -1.], [1., 1.], 
+                         [-1., 1.], [0., -1.], [1., 0.], 
+                         [0., 1.], [-1., 0.], [0., 0.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Returns the local coordinates of the center of the cell.
 
@@ -141,45 +171,78 @@ class Q9(BiQuadraticQuadrilateral):
         return np.array([0., 0.])
 
     @classmethod
-    def shape_function_values(cls, pcoords: ndarray, 
-                              *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, pcoords: ndarray) -> ndarray:
         """
-        Evaluates the shape functions. The points of evaluation should be 
-        understood in the range [-1, 1].
+        Evaluates the shape functions.
 
         Parameters
         ----------
         coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
+            Points of evaluation. It should be a 1d array for a single 
+            point and a 2d array for several points. In the latter case, 
+            the points should run along the first axis.
 
         Returns
         -------
         numpy.ndarray
-            An array of shape (9,) for a single, (N, 9) for N evaulation points.
+            An array of shape (9,) for a single, (N, 9) for N evaulation 
+            points.
 
         """
-        return shp_Q9_bulk(pcoords) if len(pcoords.shape) == 2 else shp_Q9(pcoords)
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:
+            return shp_Q9_bulk(pcoords)  
+        else: 
+            return shp_Q9(pcoords)
 
     @classmethod
-    def shape_function_derivatives(cls, pcoords: ndarray, 
-                                   *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, pcoords: ndarray) -> ndarray:
         """
-        Returns shape function derivatives wrt. the master element. The points of 
-        evaluation should be understood in the range [-1, 1].
+        Returns shape function derivatives wrt. the master element. 
 
         Parameters
         ----------
         coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
+            Points of evaluation. It should be a 1d array for a single 
+            point and a 2d array for several points. In the latter case, 
+            the points should run along the first axis.
 
         Returns
         -------
         numpy.ndarray
-            An array of shape (9, 2) for a single, (N, 9, 2) for N evaulation points.
+            An array of shape (9, 2) for a single, (N, 9, 2) for N 
+            evaulation points.
 
         """
-        return dshp_Q9_bulk(pcoords) if len(pcoords.shape) == 2 else dshp_Q9(pcoords)
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:
+            return dshp_Q9_bulk(pcoords)  
+        else: 
+            return dshp_Q9(pcoords)
+
+    @classmethod
+    def shape_function_matrix(cls, pcoords:Iterable[float]) -> ndarray:
+        """
+        Evaluates the shape function matrix at one or multiple points.
+
+        Parameters
+        ----------
+        pcoords : Iterable
+            1d or 2d iterable of location point coordinates. For multuple
+            points, the first axis goes along the points, the second along
+            spatial dimensions.
+
+        Returns
+        -------
+        numpy.ndarray
+            The returned array has a shape of (nDOF, nDOF * nNE), where
+            nNE and nDOF stand for the nodes per element and number of 
+            degrees of freedom respectively. For multiple evaluation
+            points, the shape is (nP, nDOF, nDOF * nNE).
+
+        """
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:
+            return shape_function_matrix_Q9_multi(pcoords)    
+        else:
+            return shape_function_matrix_Q9(pcoords)

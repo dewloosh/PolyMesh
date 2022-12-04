@@ -87,7 +87,7 @@ class Q4(Quadrilateral):
         return locvars, monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs) -> ndarray:
+    def lcoords(cls) -> ndarray:
         """
         Returns local coordinates of the cell.
 
@@ -100,7 +100,7 @@ class Q4(Quadrilateral):
                         [1., 1.], [-1., 1.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Returns the local coordinates of the center of the cell.
 
@@ -112,45 +112,54 @@ class Q4(Quadrilateral):
         return np.array([0., 0.])
 
     @classmethod
-    def shape_function_values(cls, pcoords: ndarray, 
-                              *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, pcoords: ndarray) -> ndarray:
         """
-        Evaluates the shape functions. The points of evaluation should be 
-        understood on the master element
+        Evaluates the shape functions. The points of evaluation 
+        should be understood on the master element
 
         Parameters
         ----------
         coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
+            Points of evaluation. It should be a 1d array for a 
+            single point and a 2d array for several points. In the 
+            latter case, the points should run along the first axis.
 
         Returns
         -------
         numpy.ndarray
-            An array of shape (4,) for a single, (N, 4) for N evaulation points.
+            An array of shape (4,) for a single, (N, 4) for N evaulation 
+            points.
 
         """
-        return shp_Q4_bulk(pcoords) if len(pcoords.shape) == 2 else shp_Q4(pcoords)
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:  
+            return shp_Q4_bulk(pcoords)
+        else: 
+            return shp_Q4(pcoords)
 
     @classmethod
-    def shape_function_derivatives(cls, pcoords: ndarray, 
-                                   *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, pcoords: ndarray) -> ndarray:
         """
-        Returns shape function derivatives wrt. the master element. The points of 
-        evaluation should be understood on the master element.
+        Returns shape function derivatives wrt. the master element. 
+        The points of evaluation should be understood on the master 
+        element.
 
         Parameters
         ----------
         coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
+            Points of evaluation. It should be a 1d array for a single 
+            point and a 2d array for several points. In the latter case, 
+            the points should run along the first axis.
 
         Returns
         -------
         numpy.ndarray
-            An array of shape (4, 2) for a single, (N, 4, 2) for N evaulation points.
+            An array of shape (4, 2) for a single, (N, 4, 2) for N 
+            evaulation points.
 
         """
-        return dshp_Q4_bulk(pcoords) if len(pcoords.shape) == 2 else dshp_Q4(pcoords)
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:  
+            return dshp_Q4_bulk(pcoords)
+        else: 
+            return dshp_Q4(pcoords)

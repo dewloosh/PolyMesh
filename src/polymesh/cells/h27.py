@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Iterable
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
@@ -98,7 +99,7 @@ def shp_H27(pcoord):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shp_H27_bulk(pcoords: np.ndarray):
+def shp_H27_multi(pcoords: np.ndarray):
     nP = pcoords.shape[0]
     res = np.zeros((nP, 27), dtype=pcoords.dtype)
     for iP in prange(nP):
@@ -110,9 +111,18 @@ def shp_H27_bulk(pcoords: np.ndarray):
 def shape_function_matrix_H27(pcoord: np.ndarray):
     eye = np.eye(3, dtype=pcoord.dtype)
     shp = shp_H27(pcoord)
-    res = np.zeros((3, 24), dtype=pcoord.dtype)
-    for i in prange(8):
+    res = np.zeros((3, 81), dtype=pcoord.dtype)
+    for i in prange(27):
         res[:, i*3: (i+1) * 3] = eye*shp[i]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def shape_function_matrix_H27_multi(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 3, 81), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = shape_function_matrix_H27(pcoords[iP])
     return res
 
 
@@ -258,7 +268,7 @@ def dshp_H27(pcoord):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def dshp_H27_bulk(pcoords: ndarray):
+def dshp_H27_multi(pcoords: ndarray):
     nP = pcoords.shape[0]
     res = np.zeros((nP, 27, 3), dtype=pcoords.dtype)
     for iP in prange(nP):
@@ -313,7 +323,7 @@ class H27(TriquadraticHexaHedron):
     :class:`TriquadraticHexaHedron`
 
     """
-
+        
     @classmethod
     def lcoords(cls) -> ndarray:
         """
@@ -346,7 +356,7 @@ class H27(TriquadraticHexaHedron):
         return np.array([0., 0., 0.])
     
     @classmethod
-    def shape_function_values(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, coords: ndarray) -> ndarray:
         """
         Evaluates the shape functions. The points of evaluation should be 
         understood in the master element.
@@ -364,12 +374,15 @@ class H27(TriquadraticHexaHedron):
             An array of shape (27,) for a single, (N, 27) for N evaulation points.
 
         """
-        return shp_H27_bulk(coords) if len(coords.shape) == 2 else shp_H27(coords)
+        coords = np.array(coords)
+        if len(coords.shape) == 2:
+            return shp_H27_multi(coords)  
+        else:
+            return shp_H27(coords)
          
 
     @classmethod
-    def shape_function_derivatives(cls, coords:ndarray=None, 
-                                   *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, coords:ndarray) -> ndarray:
         """
         Returns shape function derivatives wrt. the master element. The points of evaluation 
         should be understood in the master element.
@@ -387,8 +400,39 @@ class H27(TriquadraticHexaHedron):
             An array of shape (27, 3) for a single, (N, 27, 3) for N evaulation points.
 
         """
-        return dshp_H27_bulk(coords) if len(coords.shape) == 2 else dshp_H27(coords)
+        coords = np.array(coords)
+        if len(coords.shape) == 2:
+            return dshp_H27_multi(coords)  
+        else:
+            return dshp_H27(coords)
 
+    @classmethod
+    def shape_function_matrix(cls, pcoords:Iterable[float]) -> ndarray:
+        """
+        Evaluates the shape function matrix at one or multiple points.
+
+        Parameters
+        ----------
+        pcoords : Iterable
+            1d or 2d iterable of location point coordinates. For multuple
+            points, the first axis goes along the points, the second along
+            spatial dimensions.
+
+        Returns
+        -------
+        numpy.ndarray
+            The returned array has a shape of (nDOF, nDOF * nNE), where
+            nNE and nDOF stand for the nodes per element and number of 
+            degrees of freedom respectively. For multiple evaluation
+            points, the shape is (nP, nDOF, nDOF * nNE).
+
+        """
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:
+            return shape_function_matrix_H27_multi(pcoords)    
+        else:
+            return shape_function_matrix_H27(pcoords)
+    
     def volumes(self, coords:ndarray=None, topo:ndarray=None) -> ndarray:
         """
         Returns the volumes of the cells.

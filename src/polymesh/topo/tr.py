@@ -13,8 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from ..tri.triutils import edges_tri
 from ..utils import cells_coords
-from .topodata import edgeIds_TET4, edgeIds_H8
-from .topodata import edges_Q4, edges_H8, faces_H8
+from .topodata import (edgeIds_TET4, edgeIds_H8, edges_Q4,
+                       edges_H8, faces_H8, edges_TET4)
 from .topo import unique_topo_data
 
 __cache = True
@@ -33,7 +33,8 @@ __all__ = [
     'H8_to_Q4',
     'H8_to_H27',
     'H8_to_TET4',
-    'TET4_to_L2'
+    'TET4_to_L2',
+    'TET4_to_TET10'
 ]
 
 
@@ -53,7 +54,8 @@ def transform_topo(topo: ndarray, path: ndarray, data: ndarray = None,
             try:
                 data = data.to_numpy()
             except Exception:
-                raise TypeError("Invalid data type '{}'".format(data.__class__))
+                raise TypeError(
+                    "Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
             data = transform_topo_data(topo, data, path)
             return _transform_topo_(topo, path), data
@@ -323,6 +325,17 @@ def Q4_to_Q9(coords: ndarray, topo: ndarray):
     # assemble
     topo_res = np.hstack((topo, topo_e, topo_c))
     coords_res = np.vstack((coords, coords_e, coords_c))
+    return coords_res, topo_res
+
+
+def TET4_to_TET10(coords: ndarray, topo: ndarray):
+    nP= len(coords)
+    # new nodes on the edges
+    edges, edgeIDs = unique_topo_data(edges_TET4(topo))
+    coords_e = np.mean(coords[edges], axis=1)
+    topo_e = edgeIDs + nP
+    topo_res = np.hstack((topo, topo_e))
+    coords_res = np.vstack((coords, coords_e))
     return coords_res, topo_res
 
 

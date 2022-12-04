@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple, List, Iterable
+from sympy import symbols
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
@@ -40,7 +42,7 @@ def shp_H8(pcoord):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shp_H8_bulk(pcoords: np.ndarray):
+def shp_H8_multi(pcoords: np.ndarray):
     nP = pcoords.shape[0]
     res = np.zeros((nP, 8), dtype=pcoords.dtype)
     for iP in prange(nP):
@@ -55,6 +57,15 @@ def shape_function_matrix_H8(pcoord: np.ndarray):
     res = np.zeros((3, 24), dtype=pcoord.dtype)
     for i in prange(8):
         res[:, i*3: (i+1) * 3] = eye*shp[i]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def shape_function_matrix_H8_multi(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 3, 24), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = shape_function_matrix_H8(pcoords[iP])
     return res
 
 
@@ -90,7 +101,7 @@ def dshp_H8(pcoord):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def dshp_H8_bulk(pcoords: ndarray):
+def dshp_H8_multi(pcoords: ndarray):
     nP = pcoords.shape[0]
     res = np.zeros((nP, 8, 3), dtype=pcoords.dtype)
     for iP in prange(nP):
@@ -134,6 +145,23 @@ class H8(HexaHedron):
     :class:`HexaHedron`
 
     """
+    
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Retruns the polynomial base of the master element.
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+        list
+            A list of monomials.
+
+        """
+        locvars = r, s, t = symbols('r s t', real=True)
+        monoms = [1, r, s, t, r*s, r*t, s*t, r*s*t]
+        return locvars, monoms
 
     @classmethod
     def lcoords(cls) -> ndarray:
@@ -162,7 +190,7 @@ class H8(HexaHedron):
         return np.array([0., 0., 0.])
 
     @classmethod
-    def shape_function_values(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, coords: ndarray) -> ndarray:
         """
         Evaluates the shape functions. The points of evaluation should be 
         understood in the master element.
@@ -177,16 +205,20 @@ class H8(HexaHedron):
         Returns
         -------
         numpy.ndarray
-            An array of shape (8,) for a single, (N, 8) for N evaulation points.
+            An array of shape (8,) for a single, (N, 8) for N 
+            evaulation points.
 
         """
-        return shp_H8_bulk(coords) if len(coords.shape) == 2 else shp_H8(coords)
+        coords = np.array(coords)
+        if len(coords.shape) == 2:
+            return shp_H8_multi(coords)  
+        else:
+            return shp_H8(coords)
 
     @classmethod
-    def shape_function_derivatives(cls, coords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_derivatives(cls, coords: ndarray) -> ndarray:
         """
-        Returns shape function derivatives wrt. the master element. The points of 
-        evaluation should be understood in the master element.
+        Evaluates shape function derivatives wrt. the master element. 
 
         Parameters
         ----------
@@ -198,12 +230,44 @@ class H8(HexaHedron):
         Returns
         -------
         numpy.ndarray
-            An array of shape (8, 3) for a single, (N, 8, 3) for N evaulation points.
+            An array of shape (8, 3) for a single, (N, 8, 3) for N 
+            evaulation points.
 
         """
-        return dshp_H8_bulk(coords) if len(coords.shape) == 2 else dshp_H8(coords)
+        coords = np.array(coords)
+        if len(coords.shape) == 2:
+            return dshp_H8_multi(coords)  
+        else:
+            return dshp_H8(coords)
 
-    def volumes(self, coords=None, topo=None) -> ndarray:
+    @classmethod
+    def shape_function_matrix(cls, pcoords:Iterable[float]) -> ndarray:
+        """
+        Evaluates the shape function matrix at one or multiple points.
+
+        Parameters
+        ----------
+        pcoords : Iterable
+            1d or 2d iterable of location point coordinates. For multuple
+            points, the first axis goes along the points, the second along
+            spatial dimensions.
+
+        Returns
+        -------
+        numpy.ndarray
+            The returned array has a shape of (nDOF, nDOF * nNE), where
+            nNE and nDOF stand for the nodes per element and number of 
+            degrees of freedom respectively. For multiple evaluation
+            points, the shape is (nP, nDOF, nDOF * nNE).
+
+        """
+        pcoords = np.array(pcoords)
+        if len(pcoords.shape) == 2:
+            return shape_function_matrix_H8_multi(pcoords)    
+        else:
+            return shape_function_matrix_H8(pcoords)
+    
+    def volumes(self, coords:ndarray=None, topo:ndarray=None) -> ndarray:
         """
         Returns the volumes of the cells.
 
