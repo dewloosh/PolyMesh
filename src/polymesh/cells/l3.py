@@ -40,7 +40,7 @@ class L3(QuadraticLine):
         return [locvars], monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs) -> ndarray:
+    def lcoords(cls) -> ndarray:
         """
         Returns local coordinates of the cell.
 
@@ -52,7 +52,7 @@ class L3(QuadraticLine):
         return np.array([-1., 0., 1.])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Returns the local coordinates of the center of the cell.
 

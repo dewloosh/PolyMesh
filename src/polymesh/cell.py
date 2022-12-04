@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
-try:
-    from collections.abc import Iterable
-except ImportError:
-    from collections import Iterable
-from typing import Union, MutableMapping
+from typing import Union, MutableMapping, Iterable
 from typing import Tuple, List, Callable
 
 import numpy as np
-from numpy import ndarray
+from numpy import ndarray, squeeze
 from sympy import Matrix, lambdify
 
-from neumann.array import atleast1d, ascont
+from neumann.array import atleast1d, atleast2d, ascont
 from neumann.utils import to_range_1d
 
 from .celldata import CellData
@@ -34,13 +30,13 @@ class PolyCell(CellData):
     for all kinds of geometrical entities.
 
     """
-
     NNODE = None
     NDIM = None
     vtkCellType = None
     _face_cls_ = None
-    shpfnc: Callable = None
-    dshpfnc: Callable = None
+    shpfnc: Callable = None  # evaluator for shape functions
+    shpmfnc: Callable = None  # evaluator for shape function matrices
+    dshpfnc: Callable = None  # evaluator for shape function derivatives
 
     def __init__(self, *args, i: ndarray = None, **kwargs):
         if isinstance(i, ndarray):
@@ -48,7 +44,7 @@ class PolyCell(CellData):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def lcoords(cls, *args, **kwargs) -> ndarray:
+    def lcoords(cls) -> ndarray:
         """
         Ought to return local coordinates of the master element.
 
@@ -60,7 +56,7 @@ class PolyCell(CellData):
         raise NotImplementedError
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Ought to return the local coordinates of the center of the
         master element.
@@ -90,11 +86,12 @@ class PolyCell(CellData):
     @classmethod
     def generate_shape_functions(cls):
         """
-        Generates shape functions for the cell.
+        Generates shape functions for the cell using SymPy.
 
         """
         nN = cls.NNODE
         nD = cls.NDIM
+        nDOF = getattr(cls, 'NDOFN', 3)
         locvars, monoms = cls.polybase()
         monoms.pop(0)
         lcoords = cls.lcoords()
@@ -109,23 +106,49 @@ class PolyCell(CellData):
         monoms.insert(0, 1)
         shp = Matrix([np.dot(coeffs[:, i], monoms) for i in range(nN)])
         dshp = Matrix([[f.diff(m) for m in locvars] for f in shp])
-        _shpf = lambdify([locvars], shp, 'numpy')
+        _shpf = lambdify([locvars], shp[:, 0].T, 'numpy')
         _dshpf = lambdify([locvars], dshp, 'numpy')
 
-        def shpf(p):
-            r = np.squeeze(_shpf([p[..., i] for i in range(nD)])).T
+        def shpf(p:ndarray):
+            """
+            Evaluates the shape functions at multiple points in the 
+            master domain.
+            """
+            #r = np.squeeze(_shpf([p[..., i] for i in range(nD)])).T
+            #return ascont(r)
+            r = np.stack([_shpf(p[i])[0] for i in range(len(p))])
+            return ascont(r)
+        
+        def shpmf(p:ndarray):
+            """
+            Evaluates the shape function matrix at multiple points 
+            in the master domain.
+            """
+            nP = p.shape[0]
+            eye = np.eye(nDOF, dtype=float)
+            shp = shpf(p)
+            res = np.zeros((nP, nDOF, nN * nDOF), dtype=float)
+            for iP in range(nP):
+                for i in range(nN):
+                    res[iP, :, i*nDOF: (i+1) * nDOF] = eye*shp[iP, i]
+            return ascont(res)
+
+        def dshpf(p:ndarray):
+            """
+            Evaluates the shape function derivatives at multiple points 
+            in the master domain.
+            """
+            #r = np.squeeze(_dshpf([p[..., i] for i in range(nD)])).T
+            #return ascont(np.swapaxes(r, -1, -2))
+            r = np.stack([_dshpf(p[i]) for i in range(len(p))])
             return ascont(r)
 
-        def dshpf(p):
-            r = np.squeeze(_dshpf([p[..., i] for i in range(nD)])).T
-            return ascont(np.swapaxes(r, -1, -2))
-
-        return shp, dshp, shpf, dshpf
+        return shp, dshp, shpf, shpmf, dshpf
 
     @classmethod
-    def shape_function_values(self, pcoords: ndarray, *args, **kwargs) -> ndarray:
+    def shape_function_values(cls, pcoords: ndarray) -> ndarray:
         """
-        Evaluates the shape functions at the points specified by 'pcoords'.
+        Evaluates the shape functions at the specified locations.
 
         Parameters
         ----------
@@ -135,10 +158,62 @@ class PolyCell(CellData):
         Returns
         -------
         numpy.ndarray
-            An array of shape (nP, nN).
+            An array of shape (nP, nD) where nP and nD are the number of 
+            evaluation points and spatial dimensions.
 
         """
-        return self.__class__.shpfnc(pcoords).astype(float)
+        if cls.NDIM == 3:
+            if len(pcoords.shape)==1:
+                pcoords = atleast2d(pcoords, front=True)
+                return squeeze(cls.shpfnc(pcoords)).astype(float)
+        return cls.shpfnc(pcoords).astype(float)
+    
+    @classmethod
+    def shape_function_matrix(cls, pcoords: ndarray) -> ndarray:
+        """
+        Evaluates the shape function matrix at the specified locations.
+
+        Parameters
+        ----------
+        pcoords : numpy.ndarray
+            Locations of the evaluation points.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (nP, nDOF, nDOF * nNE) where nP, nDOF and nNE 
+            are the number of evaluation points, degrees of freedom per node 
+            and nodes per cell.
+
+        """
+        if cls.NDIM == 3:
+            if len(pcoords.shape)==1:
+                pcoords = atleast2d(pcoords, front=True)
+                return squeeze(cls.shpmfnc(pcoords)).astype(float)
+        return cls.shpmfnc(pcoords).astype(float)
+    
+    @classmethod
+    def shape_function_derivatives(cls, pcoords: ndarray) -> ndarray:
+        """
+        Evaluates shape function derivatives wrt. the master element. 
+
+        Parameters
+        ----------
+        pcoords : numpy.ndarray
+            Locations of the evaluation points.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of shape (nP, nNE, nD), where nP, nNE and nD are 
+            the number of evaluation points, nodes and spatial dimensions.
+
+        """
+        if cls.NDIM == 3:
+            if len(pcoords.shape)==1:
+                pcoords = atleast2d(pcoords, front=True)
+                return squeeze(cls.dshpfnc(pcoords)).astype(float)
+        return cls.dshpfnc(pcoords).astype(float)
 
     def measures(self, *args, **kwargs):
         """Ought to return measures for each cell in the database."""
@@ -169,7 +244,7 @@ class PolyCell(CellData):
         """Extracts the surface of the mesh. Only for 3d meshes."""
         raise NotImplementedError
 
-    def jacobian_matrix(self, *args, dshp=None, ecoords=None, topo=None, **kwargs):
+    def jacobian_matrix(self, *, dshp=None, ecoords=None, topo=None, **kwargs):
         """
         Returns the jacobian matrix.
 

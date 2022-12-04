@@ -325,7 +325,7 @@ def nat_to_loc_tri(acoord: np.ndarray):
     This function is numba-jittable in 'nopython' mode.
     
     """
-    return lcoords_tri.T @ acoord
+    return acoord.T @ lcoords_tri()
 
 
 @njit(nogil=True, parallel=True, cache=__cache)

@@ -92,7 +92,7 @@ class L2(Line):
         return [locvars], monoms
     
     @classmethod
-    def lcoords(cls, *args, **kwargs) -> ndarray:
+    def lcoords(cls) -> ndarray:
         """
         Returns local coordinates of the cell.
 
@@ -104,7 +104,7 @@ class L2(Line):
         return np.array([-1., 1.])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs) -> ndarray:
+    def lcenter(cls) -> ndarray:
         """
         Returns the local coordinates of the center of the cell.
 

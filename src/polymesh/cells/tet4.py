@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-from ..polyhedron import TetraHedron
+from typing import Tuple, List
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray
+from sympy import symbols
+from ..polyhedron import TetraHedron
 __cache = True
 
 
@@ -37,6 +39,15 @@ def shape_function_matrix_TET4(pcoord: np.ndarray):
     return res
 
 
+@njit(nogil=True, parallel=True, cache=__cache)
+def shape_function_matrix_TET4_multi(pcoords: np.ndarray):
+    nP = pcoords.shape[0]
+    res = np.zeros((nP, 3, 12), dtype=pcoords.dtype)
+    for iP in prange(nP):
+        res[iP] = shape_function_matrix_TET4(pcoords[iP])
+    return res
+
+
 @njit(nogil=True, cache=__cache)
 def dshp_TET4(x):
     return np.array([[-1., -1., -1.], [1., 0., 0.], 
@@ -61,12 +72,29 @@ class TET4(TetraHedron):
     :class:`TetraHedron`
     
     """
-    
     shpfnc = shp_TET4_bulk
+    shpmfnc = shape_function_matrix_TET4_multi
     dshpfnc = dshp_TET4_bulk
+    
+    @classmethod
+    def polybase(cls) -> Tuple[List]:
+        """
+        Retruns the polynomial base of the master element.
+
+        Returns
+        -------
+        list
+            A list of SymPy symbols.
+        list
+            A list of monomials.
+
+        """
+        locvars = r, s, t = symbols('r s t', real=True)
+        monoms = [1, r, s, t, r*s, r*t, s*t, r**2, s**2, t**2]
+        return locvars, monoms
 
     @classmethod
-    def lcoords(cls, *args, **kwargs):
+    def lcoords(cls) -> ndarray:
         return np.array([
             [0., 0., 0.], 
             [1., 0., 0.], 
@@ -74,26 +102,6 @@ class TET4(TetraHedron):
             [0., 0., 1.]])
 
     @classmethod
-    def lcenter(cls, *args, **kwargs):
+    def lcenter(cls) -> ndarray:
         return np.array([[1/3, 1/3, 1/3]])
-
-    def shape_function_derivatives(self, coords=None, *args, **kwargs):
-        """
-        Returns shape function derivatives wrt. the master element. The points of 
-        evaluation should be understood in the master element.
-
-        Parameters
-        ----------
-        coords : numpy.ndarray
-            Points of evaluation. It should be a 1d array for a single point
-            and a 2d array for several points. In the latter case, the points
-            should run along the first axis.
-
-        Returns
-        -------
-        numpy.ndarray
-            An array of shape (4, 3) for a single, (N, 4, 3) for N evaulation points.
-
-        """
-        return dshp_TET4_bulk(coords) if len(coords.shape) == 2 else dshp_TET4(coords)
     
