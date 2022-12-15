@@ -15,7 +15,6 @@ VectorLike = Union[Vector, ndarray]
 
 
 class CartesianFrame(ReferenceFrame):
-
     """
     A field-specific reference frame to be used in problems related to 
     Euclidean geometry.
