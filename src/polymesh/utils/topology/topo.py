@@ -401,11 +401,11 @@ def _nodal_cell_data_to_dicts_(count: ndarray, ereg: ndarray,
                                nodeIDs: ndarray) -> Tuple[Dict, Dict]:
     ereg_d = nbDict.empty(
         key_type=nbint64,
-        value_type=nbint32A,
+        value_type=nbint64A,
     )
     nreg_d = nbDict.empty(
         key_type=nbint64,
-        value_type=nbint32A,
+        value_type=nbint64A,
     )
     #ereg_d = dict()
     #nreg_d = dict()

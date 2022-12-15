@@ -4,3 +4,4 @@ pytest
 pandas
 pyarrow
 networkx
+fsspec  # for ak.to_parquet
