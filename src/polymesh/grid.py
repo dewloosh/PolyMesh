@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 from typing import Tuple, Union, Iterable
 import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
-from .topo import unique_topo_data, detach_mesh_bulk
-from .topo.tr import transform_topo
+from .utils.topology import unique_topo_data, detach_mesh_bulk, transform_topo
 from .utils import center_of_points, k_nearest_neighbours as knn, knn_to_lines
 from .polydata import PolyData
 

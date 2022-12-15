@@ -4,9 +4,9 @@ import unittest
 
 from neumann.linalg import Vector, ReferenceFrame, linspace
 from polymesh import PointCloud, CartesianFrame
-from polymesh.tri import triangulate
+from polymesh.triang import triangulate
 from polymesh.space import StandardFrame
-from polymesh.utils import center_of_points
+from polymesh.utils.utils import center_of_points
 
 
 class TestLinalg(unittest.TestCase):

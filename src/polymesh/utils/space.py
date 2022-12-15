@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
 from neumann import squeeze
 from neumann.linalg import normalize, normalize2d, norm2d
-from neumann.array import atleast2d
+from neumann import atleast2d
 
-from ..utils import center_of_points, cell_center, cell_coords
+from ..utils.utils import center_of_points, cell_center, cell_coords
 
 __cache = True
 

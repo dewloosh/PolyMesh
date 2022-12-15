@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from .utils import lengths_of_lines
+from .utils.utils import lengths_of_lines
 from .cell import PolyCell1d
 import numpy as np
 from numpy import ndarray
 
-from .utils import jacobian_matrix_bulk_1d, jacobian_det_bulk_1d
+from .utils.utils import jacobian_matrix_bulk_1d, jacobian_det_bulk_1d
 
 
 __all__ = ['Line', 'QuadraticLine', 'NonlinearLine']

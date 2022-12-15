@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from ..polydata import PolyData
-from ..cells import Tetra
+from .polydata import PolyData
+from .cells import Tetra
 import numpy as np
 
 

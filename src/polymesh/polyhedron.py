@@ -3,7 +3,7 @@ import numpy as np
 
 from .polygon import Triangle
 from .cell import PolyCell3d
-from .topo.tr import H8_to_TET4
+from .utils.topology import H8_to_TET4
 
 
 class PolyHedron(PolyCell3d):

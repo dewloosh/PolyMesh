@@ -3,9 +3,9 @@ import numpy as np
 from numpy import ndarray as array
 from numba import njit, prange
 
-from neumann.array import minmax
+from neumann import minmax
 
-from .topo import detach_mesh_bulk as detach_mesh, remap_topo
+from .utils.topology import detach_mesh_bulk as detach_mesh, remap_topo
 
 __cache = True
 

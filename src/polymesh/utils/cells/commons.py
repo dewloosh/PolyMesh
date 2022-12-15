@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from typing import Iterable, Callable
+from typing import Callable
 from numba import njit, prange
 import numpy as np
 from numpy import ndarray

@@ -1,23 +1,21 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 from numpy import ndarray
-from numba import njit, prange
-from typing import MutableMapping, Union, Dict, List, Tuple
+from numba import njit, prange, types as nbtypes
+from numba.typed import Dict as nbDict
+from typing import MutableMapping, Union, Dict, List, Tuple, Iterable
 import awkward as ak
 from awkward import Array as akarray
 from scipy.sparse import csr_matrix as csr_scipy
 
 from neumann.linalg.sparse import csr_matrix, JaggedArray
 from neumann.arraysetops import unique2d
-from neumann.array import count_cols
+from neumann import count_cols
 
-from ..space import PointCloud
+from ...space import PointCloud
 from ..utils import explode_mesh_bulk
-from ..config import __hasnx__
-
-from .topoarray import TopologyArray
-from .topodata import faces_TET4, faces_H8
-
+from ...topoarray import TopologyArray
+from ..topodata import faces_TET4, faces_H8
+from ...config import __hasnx__
 
 if __hasnx__:
     import networkx as nx
@@ -25,14 +23,19 @@ if __hasnx__:
 
 __all__ = ['is_regular', 'regularize', 'count_cells_at_nodes', 'cells_at_nodes',
            'nodal_adjacency', 'unique_topo_data', 'remap_topo', 'detach_mesh_bulk',
-           'rewire', 'detach', 'extract_tet_surface']
+           'rewire', 'detach', 'extract_tet_surface', 'detach_mesh_data_bulk']
 
 
 __cache = True
 CoordsLike = Union[ndarray, PointCloud]
-TopoLike = Union[ndarray, JaggedArray, akarray]
+TopoLike = Union[ndarray, akarray, csr_matrix]
 MappingLike = Union[ndarray, MutableMapping]
 DoL = Dict[int, List[int]]
+
+nbint32 = nbtypes.int32
+nbint32A = nbint32[:]
+nbint64 = nbtypes.int64
+nbint64A = nbint64[:]
 
 
 def flatten_line_mesh(coords: ndarray, topo: ndarray):
@@ -139,6 +142,9 @@ def is_regular(topo: TopoLike) -> bool:
         return topo.min() == 0 and len(np.unique(topo)) == topo.max() + 1
     elif isinstance(topo, akarray):
         return np.min(topo) == 0 and len(unique2d(topo)) == np.max(topo) + 1
+    elif isinstance(topo, csr_matrix):
+        t = topo.data.astype(np.int32)
+        return t.min() == 0 and len(np.unique(t)) == t.max() + 1
     else:
         raise NotImplementedError
 
@@ -148,6 +154,16 @@ def regularize(topo: TopoLike) -> Tuple[TopoLike, ndarray]:
     Returns a regularized topology and the unique indices.
     The returned topology array contains indices of the unique
     array.
+    
+    Parameters
+    ----------
+    topo : numpy.array or awkward.Array
+        A topology array.
+        
+    Returns
+    -------
+    numpy.array or awkward.Array
+        An array with a similar type as the input array.
     """
     if isinstance(topo, ndarray):
         unique, regular = np.unique(topo, return_inverse=True)
@@ -156,8 +172,14 @@ def regularize(topo: TopoLike) -> Tuple[TopoLike, ndarray]:
     elif isinstance(topo, akarray):
         unique, regular = unique2d(topo, return_inverse=True)
         return regular, unique
+    elif isinstance(topo, csr_matrix):
+        t = topo.data.astype(np.int32)
+        unique, regular = np.unique(t, return_inverse=True)
+        topo.data[:] = regular
+        return topo, unique
     else:
-        raise NotImplementedError
+        t = type(topo)
+        raise NotImplementedError(f"Unknown type {t}")
 
 
 @njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
@@ -170,21 +192,6 @@ def _count_cells_at_nodes_reg_np_(topo: ndarray) -> ndarray:
     count = np.zeros((nN), dtype=topo.dtype)
     for iE in prange(nE):
         for jNE in prange(nNE):
-            count[topo[iE, jNE]] += 1
-    return count
-
-
-@njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
-def _count_cells_at_nodes_reg_ak_(topo: akarray) -> ndarray:
-    """
-    Assumes a regular topology. Returns an array.
-    """
-    ncols = count_cols(topo)
-    nE = len(ncols)
-    nN = np.max(topo) + 1
-    count = np.zeros((nN), dtype=topo.dtype)
-    for iE in prange(nE):
-        for jNE in prange(ncols[iE]):
             count[topo[iE, jNE]] += 1
     return count
 
@@ -208,6 +215,21 @@ def _count_cells_at_nodes_np_(topo: ndarray, nodeIDs: ndarray) -> Dict[int, int]
 
 
 @njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
+def _count_cells_at_nodes_reg_ak_(topo: akarray) -> ndarray:
+    """
+    Assumes a regular topology. Returns an array.
+    """
+    ncols = count_cols(topo)
+    nE = len(ncols)
+    nN = np.max(topo) + 1
+    count = np.zeros((nN), dtype=topo.dtype)
+    for iE in prange(nE):
+        for jNE in prange(ncols[iE]):
+            count[topo[iE, jNE]] += 1
+    return count
+
+
+@njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
 def _count_cells_at_nodes_ak_(topo: akarray, nodeIDs: ndarray) -> Dict[int, int]:
     """
     Returns a dict{int : int} for the nodes in `nideIDs`.
@@ -226,19 +248,67 @@ def _count_cells_at_nodes_ak_(topo: akarray, nodeIDs: ndarray) -> Dict[int, int]
     return count
 
 
-def count_cells_at_nodes(topo: TopoLike, regular=False):
+@njit(nogil=True, fastmath=True, cache=__cache)
+def _count_cells_at_nodes_reg_csr_(topo: csr_matrix) -> ndarray:
     """
-    Returns an array or a discionary, that counts connecting 
+    Assumes a regular topology. Returns an array.
+    """
+    indptr = topo.indptr
+    data = topo.data.astype(np.int32)
+    nE = indptr.shape[0] - 1
+    nN = np.max(data) + 1
+    count = np.zeros((nN), dtype=indptr.dtype)
+    for iE in range(nE):
+        _i = indptr[iE]
+        i_ = indptr[iE+1]
+        n = i_ - _i
+        for j in range(n):
+            i = _i + j
+            count[data[i]] += 1
+    return count
+
+
+@njit(nogil=True, fastmath=True, cache=__cache)
+def _count_cells_at_nodes_csr_(topo: csr_matrix, nodeIDs: ndarray) -> Dict[int, int]:
+    """
+    Returns a dict{int : int} for the nodes in `nideIDs`.
+    Assumes an irregular topology. The array `topo` must contain 
+    indices relative to `nodeIDs`. If the topology is regular, 
+    `nodeIDs == np.arange(topo.max() + 1)` is `True`.
+    """
+    indptr = topo.indptr
+    data = topo.data.astype(np.int32)
+    nE = indptr.shape[0] - 1
+    count = dict()
+    for i in range(len(nodeIDs)):
+        count[nodeIDs[i]] = 0
+    for iE in range(nE):
+        _i = indptr[iE]
+        i_ = indptr[iE+1]
+        n = i_ - _i
+        for j in range(n):
+            i = _i + j
+            count[nodeIDs[data[i]]] += 1
+    return count
+
+
+def count_cells_at_nodes(topo: TopoLike, regular:bool=False) -> Union[ndarray, dict]:
+    """
+    Returns an array or a dictionary, that counts connecting 
     elements at the nodes of a mesh.
 
     Parameters
     ----------
     topo : TopoLike
-        2d numpy or awkward array describing the topoogy of a mesh.
+        2d numpy array describing the topoogy of a mesh.
+    regular : bool, Optional
+        A True value means that 'topo' has tight and zeroed indexing.
+        In this case, the output is a NumPy array. If False, the output
+        a dictionary.
 
     Returns
     -------
-    count : np.ndarray(nN) or dict[int : int]
+    count : numpy.ndarray or dict
         Number of connecting elements for each node in a mesh.
     """
     if not regular:
@@ -248,6 +318,9 @@ def count_cells_at_nodes(topo: TopoLike, regular=False):
         elif isinstance(topo, akarray):
             topo, nodeIDs = regularize(topo)
             return _count_cells_at_nodes_ak_(topo, nodeIDs)
+        elif isinstance(topo, csr_matrix):
+            topo, nodeIDs = regularize(topo)
+            return _count_cells_at_nodes_csr_(topo, nodeIDs)
         else:
             raise NotImplementedError
     else:
@@ -255,12 +328,112 @@ def count_cells_at_nodes(topo: TopoLike, regular=False):
             return _count_cells_at_nodes_reg_np_(topo)
         elif isinstance(topo, akarray):
             return _count_cells_at_nodes_reg_ak_(topo)
+        elif isinstance(topo, csr_matrix):
+            return _count_cells_at_nodes_reg_csr_(topo)
         else:
             raise NotImplementedError
 
 
-def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
-                   cellIDs=None, return_counts=False, **kwargs):
+@njit(nogil=True, cache=__cache)
+def _cells_at_nodes_reg_np_(topo: ndarray):
+    """Assumes a regular topology."""
+    nE, nNE = topo.shape
+    nN = topo.max() + 1
+    count = _count_cells_at_nodes_reg_np_(topo)
+    cmax = count.max()
+    ereg = np.zeros((nN, cmax), dtype=topo.dtype)
+    nreg = np.zeros((nN, cmax), dtype=topo.dtype)
+    count[:] = 0
+    for iE in range(nE):
+        for jNE in range(nNE):
+            ereg[topo[iE, jNE], count[topo[iE, jNE]]] = iE
+            nreg[topo[iE, jNE], count[topo[iE, jNE]]] = jNE
+            count[topo[iE, jNE]] += 1
+    return count, ereg, nreg
+
+
+@njit(nogil=True, cache=__cache)
+def _cells_at_nodes_reg_ak_(topo: akarray):
+    """Assumes a regular topology."""
+    ncols = count_cols(topo)
+    nE = len(ncols)
+    count = _count_cells_at_nodes_reg_ak_(topo)
+    nN = np.max(topo) + 1
+    cmax = count.max()
+    ereg = np.zeros((nN, cmax), dtype=topo.dtype)
+    nreg = np.zeros((nN, cmax), dtype=topo.dtype)
+    count[:] = 0
+    for iE in range(nE):
+        for jNE in range(ncols[iE]):
+            ereg[topo[iE, jNE], count[topo[iE, jNE]]] = iE
+            nreg[topo[iE, jNE], count[topo[iE, jNE]]] = jNE
+            count[topo[iE, jNE]] += 1
+    return count, ereg, nreg
+
+
+@njit(nogil=True, cache=__cache)
+def _cells_at_nodes_reg_csr_(topo: csr_matrix):
+    """Assumes a regular topology."""
+    indptr = topo.indptr
+    data = topo.data.astype(np.int32)  
+    nE = len(indptr) - 1
+    count = _count_cells_at_nodes_reg_csr_(topo)
+    nN = np.max(data) + 1
+    cmax = count.max()
+    ereg = np.zeros((nN, cmax), dtype=data.dtype)
+    nreg = np.zeros((nN, cmax), dtype=data.dtype)
+    count[:] = 0
+    for iE in range(nE):
+        _i = indptr[iE]
+        i_ = indptr[iE+1]
+        n = i_ - _i
+        for j in prange(n):
+            i = _i + j
+            ereg[data[i], count[data[i]]] = iE
+            nreg[data[i], count[data[i]]] = j
+            count[data[i]] += 1
+    return count, ereg, nreg
+
+
+@njit(nogil=True, cache=__cache)
+def _nodal_cell_data_to_dicts_(count: ndarray, ereg: ndarray,
+                               nreg: ndarray, cellIDs: ndarray,
+                               nodeIDs: ndarray) -> Tuple[Dict, Dict]:
+    ereg_d = nbDict.empty(
+        key_type=nbint64,
+        value_type=nbint32A,
+    )
+    nreg_d = nbDict.empty(
+        key_type=nbint64,
+        value_type=nbint32A,
+    )
+    #ereg_d = dict()
+    #nreg_d = dict()
+    for i in range(len(count)):
+        ereg_d[nodeIDs[i]] = cellIDs[ereg[i, : count[i]]]
+        nreg_d[nodeIDs[i]] = nreg[i, : count[i]]
+    return ereg_d, nreg_d
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _nodal_cell_data_to_spdata_(count: np.ndarray, ereg: np.ndarray,
+                                nreg: np.ndarray) -> tuple:
+    nE = ereg.max() + 1
+    nN = len(count)
+    N = np.sum(count)
+    indices = np.zeros(N, dtype=count.dtype)
+    data = np.zeros(N, dtype=count.dtype)
+    indptr = np.zeros(nN+1, dtype=count.dtype)
+    indptr[1:] = np.cumsum(count)
+    for i in prange(nN):
+        indices[indptr[i]: indptr[i+1]] = ereg[i, : count[i]]
+        data[indptr[i]: indptr[i+1]] = nreg[i, : count[i]]
+    shape = (nN, nE)
+    return data, indices, indptr, shape
+
+
+def cells_at_nodes(topo: TopoLike, *args, frmt:str=None, assume_regular:bool=False,
+                   cellIDs:Iterable=None, return_counts:bool=False, **kwargs):
     """ 
     Returns data about element connectivity at the nodes of a mesh.
 
@@ -358,6 +531,8 @@ def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
         counts, ereg, nreg = _cells_at_nodes_reg_np_(topo)
     elif isinstance(topo, akarray):
         counts, ereg, nreg = _cells_at_nodes_reg_ak_(topo)
+    elif isinstance(topo, csr_matrix):
+        counts, ereg, nreg = _cells_at_nodes_reg_csr_(topo)
     else:
         raise NotImplementedError
 
@@ -377,6 +552,9 @@ def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
             return counts, csr
         return csr
     elif frmt == 'dicts':
+        if isinstance(topo, csr_matrix):
+            if cellIDs is None:
+                cellIDs = np.arange(len(topo.indptr)-1).astype(int)
         cellIDs = np.arange(len(topo)).astype(int) if cellIDs is None else cellIDs
         nodeIDs = np.arange(len(counts)).astype(int) if nodeIDs is None else nodeIDs
         ereg, nreg = _nodal_cell_data_to_dicts_(
@@ -394,74 +572,6 @@ def cells_at_nodes(topo: TopoLike, *args, frmt=None, assume_regular=False,
         return ereg, nreg
 
     return counts, ereg, nreg
-
-
-@njit(nogil=True, cache=__cache)
-def _cells_at_nodes_reg_np_(topo: ndarray):
-    """Returns arrays. Assumes a regular topology."""
-    nE, nNE = topo.shape
-    nN = topo.max() + 1
-    count = _count_cells_at_nodes_reg_np_(topo)
-    cmax = count.max()
-    ereg = np.zeros((nN, cmax), dtype=topo.dtype)
-    nreg = np.zeros((nN, cmax), dtype=topo.dtype)
-    count[:] = 0
-    for iE in range(nE):
-        for jNE in range(nNE):
-            ereg[topo[iE, jNE], count[topo[iE, jNE]]] = iE
-            nreg[topo[iE, jNE], count[topo[iE, jNE]]] = jNE
-            count[topo[iE, jNE]] += 1
-    return count, ereg, nreg
-
-
-@njit(nogil=True, cache=__cache)
-def _cells_at_nodes_reg_ak_(topo: akarray):
-    """
-    Returns arrays. Assumes a regular topology.
-    """
-    ncols = count_cols(topo)
-    nE = len(ncols)
-    count = _count_cells_at_nodes_reg_ak_(topo)
-    nN = np.max(topo) + 1
-    cmax = count.max()
-    ereg = np.zeros((nN, cmax), dtype=topo.dtype)
-    nreg = np.zeros((nN, cmax), dtype=topo.dtype)
-    count[:] = 0
-    for iE in range(nE):
-        for jNE in range(ncols[iE]):
-            ereg[topo[iE, jNE], count[topo[iE, jNE]]] = iE
-            nreg[topo[iE, jNE], count[topo[iE, jNE]]] = jNE
-            count[topo[iE, jNE]] += 1
-    return count, ereg, nreg
-
-
-@njit(nogil=True, cache=__cache)
-def _nodal_cell_data_to_dicts_(count: ndarray, ereg: ndarray,
-                               nreg: ndarray, cellIDs: ndarray,
-                               nodeIDs: ndarray) -> Tuple[Dict, Dict]:
-    ereg_d = dict()
-    nreg_d = dict()
-    for i in range(len(count)):
-        ereg_d[nodeIDs[i]] = cellIDs[ereg[i, : count[i]]]
-        nreg_d[nodeIDs[i]] = nreg[i, : count[i]]
-    return ereg_d, nreg_d
-
-
-@njit(nogil=True, parallel=True, cache=__cache)
-def _nodal_cell_data_to_spdata_(count: np.ndarray, ereg: np.ndarray,
-                                nreg: np.ndarray) -> tuple:
-    nE = ereg.max() + 1
-    nN = len(count)
-    N = np.sum(count)
-    indices = np.zeros(N, dtype=count.dtype)
-    data = np.zeros(N, dtype=count.dtype)
-    indptr = np.zeros(nN+1, dtype=count.dtype)
-    indptr[1:] = np.cumsum(count)
-    for i in prange(nN):
-        indices[indptr[i]: indptr[i+1]] = ereg[i, : count[i]]
-        data[indptr[i]: indptr[i+1]] = nreg[i, : count[i]]
-    shape = (nN, nE)
-    return data, indices, indptr, shape
 
 
 @njit(nogil=True, cache=__cache)
@@ -526,7 +636,7 @@ def dol_to_jagged_data(dol: DoL) -> Tuple[ndarray, ndarray]:
     return widths, data1d
 
 
-def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None, return_indices=False):
+def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None):
     """
     Given a topology array and the coordinate array it refers to, 
     the function returns the coordinate array of the points involved 
@@ -550,9 +660,6 @@ def detach(coords: CoordsLike, topo: TopoLike, inds: ndarray=None, return_indice
 
         where `imap` is a mapping from local to global indices, and gets
         automatically generated from `inds`.  Default is None.
-    return_indices : bool, Optional.
-        If True, an index array for inverse mapping of point indices is returned.
-        Default is False.
     
     Returns
     -------
@@ -602,10 +709,23 @@ def detach_mesh_bulk(coords: ndarray, topo: ndarray):
     the function returns the coordinate array of the points involved 
     in the topology, and a new topology array, with indices referencing 
     the new coordinate array.
-
     """
     inds = np.unique(topo)
     return coords[inds], remap_topo(topo, inds_to_invmap_as_dict(inds))
+
+
+@njit(nogil=True, cache=__cache)
+def detach_mesh_data_bulk(coords: ndarray, topo: ndarray, data: ndarray):
+    """
+    Given a subset of the topology of a mesh, the function returns the 
+    coordinates and nodal data of the points involved in the topology, 
+    and a new topology array, with indices referencing the new coordinate 
+    array.
+    """
+    inds = np.unique(topo)
+    coords_ = coords[inds]
+    data_ = data[inds]
+    return coords_, data_, remap_topo(topo, inds_to_invmap_as_dict(inds))
 
 
 @njit(nogil=True, cache=__cache)
@@ -644,7 +764,6 @@ def inds_to_invmap_as_array(inds: np.ndarray):
     -------
     numpy.ndarray
         Mapping from global to local.
-
     """
     res = np.zeros(inds.max() + 1, dtype=inds.dtype)
     for i in prange(len(inds)):
@@ -687,7 +806,6 @@ def nodal_adjacency(topo: TopoLike, *args, frmt=None,
         A networkx Graph.
     `frmt` = 'jagged'
         A JaggedArray instance.
-
     """
     frmt = '' if frmt is None else frmt
     ereg, _ = cells_at_nodes(topo, frmt='dicts', assume_regular=assume_regular)
@@ -725,7 +843,7 @@ def extract_tet_surface(topo: TopoLike):
             faces3d = faces_H8(topo)
             unique_faces = unique_topo_data(faces3d)[0]
             return Q4_to_T3(None, unique_faces)[1]
-            from .tr import H8_to_TET4
+            from ..topo.tr import H8_to_TET4
             _, topo = H8_to_TET4(None, topo)
             faces3d = faces_TET4(topo)
             return unique_topo_data(faces3d)[0]
@@ -756,8 +874,8 @@ def unique_topo_data(topo3d: TopoLike):
     --------
     Find unique edges of a mesh of Q4 quadrilaterals
 
-    >>> from dewloosh.mesh.rgrid import grid
-    >>> from dewloosh.mesh.topo.topodata import edges_Q4
+    >>> from polymesh.grid import grid
+    >>> from polymesh.utils.topodata import edges_Q4
 
     >>> coords, topo = grid(size=(1, 1), shape=(10, 10), eshape='Q4')
 
@@ -777,7 +895,6 @@ def unique_topo_data(topo3d: TopoLike):
     >>>         edges3d_[i, j, :] = edges[edgeIDs[i, j]]        
     >>> assert np.all(edges3d == edges3d_)
     True
-
     """
     """if isinstance(topo3d, ndarray):
         nE, nD, nN = topo3d.shape

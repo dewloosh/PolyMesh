@@ -5,7 +5,7 @@ from numba import njit, prange, vectorize
 
 from neumann.linalg import normalize, norm
 
-from ..utils import cells_coords, cell_coords
+from ..utils.utils import cells_coords, cell_coords
 
 __cache = True
 
@@ -470,10 +470,10 @@ def tri_glob_to_loc(points: np.ndarray, triangles: np.ndarray):
  
     
 if __name__ == '__main__':
-    from polymesh.tri.triang import triangulate
-    from polymesh.space.utils import frames_of_surfaces, \
+    from polymesh.triang import triangulate
+    from polymesh.utils.space import frames_of_surfaces, \
         is_planar_surface
-    from neumann.array import ascont
+    from neumann import ascont
     from time import time
 
     points, triangles, triobj = triangulate(size=(800, 600),

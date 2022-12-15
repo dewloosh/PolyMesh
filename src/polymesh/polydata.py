@@ -1,25 +1,27 @@
-# -*- coding: utf-8 -*-
 from copy import copy, deepcopy
 from typing import Union, Hashable, Collection, Iterable, Tuple, Any
+from collections import defaultdict
+import functools
+import warnings
+
 from numpy import ndarray
 import numpy as np
 import awkward as ak
 from awkward import Array as akarray
-import functools
-import warnings
 
 from dewloosh.core.warning import PerformanceWarning
 from linkeddeepdict import DeepDict
-from neumann.linalg.sparse import JaggedArray
+from neumann.linalg.sparse import JaggedArray, csr_matrix
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
-from neumann.array import atleast1d, atleastnd, minmax
+from neumann import atleast1d, minmax
 
 from .akwrap import AkWrapper
-from .topo.topo import inds_to_invmap_as_dict, remap_topo_1d
+from .utils.topology.topo import inds_to_invmap_as_dict, remap_topo_1d
 from .space import CartesianFrame, PointCloud
-from .utils import cells_coords, cells_around, cell_centers_bulk
-from .utils import k_nearest_neighbours as KNN
+from .utils.utils import (cells_coords, cells_around, cell_centers_bulk,
+                          explode_mesh_data_bulk)
+from .utils.knn import k_nearest_neighbours as KNN
 from .vtkutils import (mesh_to_UnstructuredGrid as mesh_to_vtk,
                        PolyData_to_mesh)
 from .cells import (
@@ -30,12 +32,13 @@ from .cells import (
     Q9,
     TET10
 )
-from .utils import nodal_distribution_factors
+from .utils.utils import nodal_distribution_factors
 from .polyhedron import Wedge
-from .space.utils import index_of_closest_point, index_of_furthest_point
-from .topo import (regularize, nodal_adjacency,
-                   detach_mesh_bulk, cells_at_nodes)
-from .topo.topoarray import TopologyArray
+from .utils.space import index_of_closest_point, index_of_furthest_point
+from .utils.topology import (regularize, nodal_adjacency,
+                             detach_mesh_bulk, cells_at_nodes,
+                             detach_mesh_data_bulk)
+from .topoarray import TopologyArray
 from .pointdata import PointData
 from .celldata import CellData
 from .base import PolyDataBase
@@ -55,7 +58,7 @@ NoneType = type(None)
 if __haspyvista__:
     import pyvista as pv
     from pyvista import themes
-    pyVistaLike = Union[pv.PolyData, pv.UnstructuredGrid]
+    pyVistaLike = Union[pv.PolyData, pv.PointGrid]
 else:
     pyVistaLike = NoneType
 
@@ -95,7 +98,7 @@ class PolyData(PolyDataBase):
     Examples
     --------
     To create a simple cube:
-    
+
     >>> from polymesh import PolyData, PointData
     >>> from polymesh.grid import grid
     >>> from polymesh.space import StandardFrame
@@ -111,16 +114,16 @@ class PolyData(PolyDataBase):
     >>> mesh['A']['Part2'] = PolyData(cd=H27(topo=topo[10:-10], frames=frame))
     >>> mesh['A']['Part3'] = PolyData(cd=H27(topo=topo[-10:], frames=frame))
     >>> mesh.plot()
-    
+
     Load a mesh from a PyVista object:
-    
+
     >>> from pyvista import examples
     >>> from polymesh import PolyData
     >>> bunny = examples.download_bunny_coarse()
     >>> mesh = PolyData.from_pv(bunny)
-    
+
     Read from a .vtk file:
-    
+
     >>> from polymesh import PolyData
     >>> from dewloosh.core.downloads import download_stand
     >>> vtkpath = download_stand()
@@ -152,8 +155,8 @@ class PolyData(PolyDataBase):
     _pv_config_key_ = ('pv', 'default')
     _k3d_config_key_ = ('k3d', 'default')
 
-    def __init__(self, pd: Union[PointData, CellData] = None, cd: CellData = None, *args,
-                 coords: ndarray = None, topo: ndarray = None, celltype=None,
+    def __init__(self, pd: Union[PointData, CellData] = None, cd: CellData = None,
+                 *args, coords: ndarray = None, topo: ndarray = None, celltype=None,
                  frame: FrameLike = None, newaxis: int = 2, cell_fields: dict = None,
                  point_fields: dict = None, parent: 'PolyData' = None, **kwargs):
         self._reset_point_data()
@@ -191,6 +194,7 @@ class PolyData(PolyDataBase):
             N = len(self.pointdata)
             GIDs = self.root().pim.generate_np(N)
             self.pd[pidkey] = GIDs
+            self.pd.container = self
 
         if self.celldata is not None:
             N = len(self.celldata)
@@ -286,13 +290,13 @@ class PolyData(PolyDataBase):
 
         # children
         l0 = len(self.address)
-        for b in self.blocks(inclusive=False):
-            pd, cd = None, None
+        for b in self.blocks(inclusive=False, deep=True):
+            pd, cd, bframe = None, None, None
             addr = b.address
             if len(addr) > l0:
                 # pointdata
                 if b.pointdata is not None:
-                    f = b.frame
+                    f = b.pd.frame
                     ax = cfoo(f.axes)
                     if memo is not None:
                         memo[id(f.axes)] = ax
@@ -304,6 +308,12 @@ class PolyData(PolyDataBase):
                         frame=frame,
                         db=db
                     )
+                    # block frame
+                    f = b.frame
+                    ax = cfoo(f.axes)
+                    if memo is not None:
+                        memo[id(f.axes)] = ax
+                    bframe = framecls(ax, f.parent, order=f.order)
                 # celldata
                 if b.celldata is not None:
                     cellcls = b.celltype
@@ -311,11 +321,11 @@ class PolyData(PolyDataBase):
                     if memo is not None:
                         memo[id(b.cd.db)] = db
                     cd = cellcls(
-                        pointdata=b.source(),
+                        pointdata=pd,
                         db=db
                     )
-                    ct = b.celltype
-                result[addr[l0:]] = PolyData(pd, cd, celltype=ct)
+                # mesh object
+                result[addr[l0:]] = PolyData(pd, cd, frame=bframe)
                 # other data
                 for k, v in b.items():
                     if not isinstance(v, PolyData):
@@ -432,16 +442,16 @@ class PolyData(PolyDataBase):
     def read(cls, *args, **kwargs) -> 'PolyData':
         """
         Reads from a file using PyVista.
-        
+
         Example
         -------
         Download a .vtk file and read it:
-        
+
         >>> from polymesh import PolyData
         >>> from dewloosh.core.downloads import download_stand
         >>> vtkpath = download_stand()
         >>> mesh = PolyData.read(vtkpath)
-        
+
         """
         try:
             return cls.from_pv(pv.read(*args, **kwargs))
@@ -461,7 +471,7 @@ class PolyData(PolyDataBase):
         >>> from polymesh import PolyData
         >>> bunny = examples.download_bunny_coarse()
         >>> mesh = PolyData.from_pv(bunny)
-        
+
         """
         celltypes = cls._cell_classes_.values()
         vtk_to_celltype = {v.vtkCellType: v for v in celltypes}
@@ -473,7 +483,7 @@ class PolyData(PolyDataBase):
             elif isinstance(topo, ndarray):
                 ct = cls._cell_classes_[topo.shape[-1]]
                 cells_dict = {ct.vtkCellType: topo}
-        elif isinstance(pvobj, pv.UnstructuredGrid):
+        elif isinstance(pvobj, pv.PointGrid):
             ugrid = pvobj.cast_to_unstructured_grid()
             coords = pvobj.points.astype(float)
             cells_dict = ugrid.cells_dict
@@ -482,7 +492,7 @@ class PolyData(PolyDataBase):
                 ugrid = pvobj.cast_to_unstructured_grid()
                 return cls.from_pv(ugrid)
             except Exception:
-                raise TypeError
+                raise TypeError("Invalid inut type!")
 
         A = CartesianFrame(dim=3)
         pd = PolyData(coords=coords, frame=A)  # this fails without a frame
@@ -514,7 +524,7 @@ class PolyData(PolyDataBase):
         cell_fields : Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
-            
+
         Example
         -------
         >>> from polymesh.examples import stand_vtk
@@ -543,7 +553,7 @@ class PolyData(PolyDataBase):
         cell_fields : Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
-            
+
         Example
         -------
         >>> from polymesh.examples import stand_vtk
@@ -569,7 +579,7 @@ class PolyData(PolyDataBase):
         cell_fields : Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
-            
+
         Example
         -------
         >>> from polymesh.examples import stand_vtk
@@ -596,7 +606,7 @@ class PolyData(PolyDataBase):
         cell_fields : Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
-            
+
         Example
         -------
         >>> from polymesh.examples import stand_vtk
@@ -653,7 +663,7 @@ class PolyData(PolyDataBase):
         -------
         >>> from polymesh.examples import stand_vtk
         >>> mesh = stand_vtk(read=True)
-        
+
         To set configuration values related to plotting with `pyVista`,
         do the following:
 
@@ -693,7 +703,7 @@ class PolyData(PolyDataBase):
         """Sets the parent."""
         self._parent = value
 
-    def is_source(self, key) -> bool:
+    def is_source(self, key: str = None) -> bool:
         """
         Returns `True`, if the object is a valid source of data 
         specified by `key`.
@@ -701,18 +711,19 @@ class PolyData(PolyDataBase):
         Parameters
         ----------
         key : str
-            A valid key to an `awkward` record.
+            A valid key to the PointData of the mesh. If not specified
+            the key is the key used for storing coorindates.
 
         """
-        key = 'x' if key is None else key
+        key = PointData._dbkey_x_ if key is None else key
         return self.pointdata is not None and key in self.pointdata.fields
 
-    def source(self, key=None) -> 'PolyData':
+    def source(self, key: str = None) -> 'PolyData':
         """
         Returns the closest (going upwards in the hierarchy) block that holds 
-        on to data. If called without arguments, it is looking for a block with 
-        a valid pointcloud, definition, otherwise the field specified by the 
-        argument `key`.
+        on to data with a certain field name. If called without arguments, 
+        it is looking for a block with a valid pointcloud, definition, otherwise 
+        the field specified by the argument `key`.
 
         Parameters
         ----------
@@ -720,7 +731,7 @@ class PolyData(PolyDataBase):
             A valid key in any of the blocks with data. Default is None.
 
         """
-        key = 'x' if key is None else key
+        key = PointData._dbkey_x_ if key is None else key
         if self.pointdata is not None:
             if key in self.pointdata.fields:
                 return self
@@ -729,11 +740,11 @@ class PolyData(PolyDataBase):
         else:
             raise KeyError("No data found with key '{}'".format(key))
 
-    def blocks(self, *, inclusive:bool=False, blocktype:Any=None, 
-               deep:bool=True, **kw) -> Collection['PolyData']:
+    def blocks(self, *, inclusive: bool = False, blocktype: Any = None,
+               deep: bool = True, **kw) -> Collection['PolyData']:
         """
         Returns an iterable over nested blocks.
-        
+
         Parameters
         ----------
         inclusive : bool, Optional
@@ -745,7 +756,7 @@ class PolyData(PolyDataBase):
         deep : bool, Optional
             If True, parsing goes into deep levels. If False, only the level
             of the current object is handled.
-            
+
         Yields
         ------
         Any
@@ -760,27 +771,35 @@ class PolyData(PolyDataBase):
         """
         Returns an iterable over blocks with PointData. All arguments
         are forwarded to :func:`blocks`.
-        
+
         Yields
         ------
         Any
             A PolyData instance with a PointData.
+
+        See also
+        --------
+        :func:`blocks`
+        :class:`~polymesh.pointdata.PointData`
         """
-        return filter(lambda i: i.pointdata is not None,
-                      self.blocks(*args, **kwargs))
+        return filter(lambda i: i.pd is not None, self.blocks(*args, **kwargs))
 
     def cellblocks(self, *args, **kwargs) -> Iterable['PolyData']:
         """
         Returns an iterable over blocks with CellData. All arguments
         are forwarded to :func:`blocks`.
-        
+
         Yields
         ------
         Any
-            A CellData instance with a CellData.        
+            A CellData instance with a CellData.
+
+        See also
+        --------
+        :func:`blocks`
+        :class:`~polymesh.celldata.CellData`
         """
-        return filter(lambda i: i.celldata is not None,
-                      self.blocks(*args, **kwargs))
+        return filter(lambda i: i.cd is not None, self.blocks(*args, **kwargs))
 
     @property
     def point_fields(self):
@@ -791,7 +810,6 @@ class PolyData(PolyDataBase):
         -------
         numpy.ndaray
             NumPy array of data keys.
-
         """
         pointblocks = list(self.pointblocks())
         m = map(lambda pb: pb.pointdata.fields, pointblocks)
@@ -806,7 +824,6 @@ class PolyData(PolyDataBase):
         -------
         numpy.ndaray
             NumPy array of data keys.
-
         """
         cellblocks = list(self.cellblocks())
         m = map(lambda cb: cb.celldata.fields, cellblocks)
@@ -889,7 +906,9 @@ class PolyData(PolyDataBase):
                  cb in self.cellblocks(inclusive=True)]
         return self
 
-    def to_standard_form(self, inplace=True) -> 'PolyData':
+    def to_standard_form(self, inplace: bool = True,
+                         default_point_fields: dict = None,
+                         default_cell_fields: dict = None) -> 'PolyData':
         """
         Transforms the problem to standard form, which means
         a centralized pointdata and regular cell indices.
@@ -903,67 +922,72 @@ class PolyData(PolyDataBase):
         ----------
         inplace : bool, Optional
             Performs the operations inplace. Default is True.
+        default_point_fields : dict, Optional
+            A dictionary to define default values for missing fields
+            for point related data. If not specified, the default 
+            is `numpy.nan`.
+        default_cell_fields : dict, Optional
+            A dictionary to define default values for missing fields
+            for cell related data. If not specified, the default 
+            is `numpy.nan`.
 
         """
-        if not self.is_root():
-            raise NotImplementedError
+        assert self.is_root(), "This must be called on he root object!"
         if not inplace:
             return deepcopy(self).to_standard_form(inplace=True)
         # merge points and point related data
         # + decorate the points with globally unique ids
-        im = IndexManager()
+        dpf = defaultdict(lambda: np.nan)
+        if isinstance(default_point_fields, dict):
+            dpf.update(default_point_fields)
+        pim = IndexManager()
         pointtype = self.__class__._point_class_
-        pointblocks = list(self.pointblocks(inclusive=True))
+        pointblocks = list(self.pointblocks(inclusive=True, deep=True))
         m = map(lambda pb: pb.pointdata.fields, pointblocks)
-        fields = np.unique(np.array(list(m)).flatten())
-        m = map(lambda pb: pb.pointdata.x, pointblocks)
-        X, frame, axis = np.vstack(list(m)), self._frame, self._newaxis
-        if len(fields) > 0:
-            point_fields = {}
-            data = {f: [] for f in fields}
-            for pb in pointblocks:
-                GIDs = im.generate_np(len(pb.pointdata))
-                pb.pointdata['id'] = GIDs
-                for f in fields:
-                    if f in pb.pointdata.fields:
-                        data[f].append(pb.pointdata[f].to_numpy())
-                    else:
-                        data[f].append(np.zeros(len(pb.pointdata)))
-            data.pop('x', None)
-            for f in data.keys():
-                nd = np.max([len(d.shape) for d in data[f]])
-                fdata = list(map(lambda arr: atleastnd(arr, nd), data[f]))
-                point_fields[f] = np.concatenate(fdata, axis=0)
-        else:
-            point_fields = None
+        #fields = np.unique(np.array(list(m)).flatten())
+        fields = set(np.concatenate(list(m)))
+        frame, axis = self._frame, self._newaxis
+        point_fields = {}
+        data = {f: [] for f in fields}
+        for pb in pointblocks:
+            id = pim.generate_np(len(pb.pointdata))
+            if pb.celldata is not None:
+                pb.rewire(deep=True, imap=id)
+            pb.pointdata.id = id
+            pb.pd.x = Vector(pb.pd.x, frame=pb.frame).show(frame)
+            for f in fields:
+                if f in pb.pd.fields:
+                    data[f].append(pb.pointdata[f].to_numpy())
+                else:
+                    data[f].append(np.full(len(pb.pd), dpf[f]))
+        X = np.concatenate(data.pop(PointData._dbkey_x_), axis=0)
+        for f in data.keys():
+            point_fields[f] = np.concatenate(data[f], axis=0)
         self.pointdata = pointtype(coords=X, frame=frame, newaxis=axis,
-                                   stateful=True, fields=point_fields)
+                                   fields=point_fields, container=self)
         # merge cells and cell related data
         # + rewire the topology based on the ids set in the previous block
-        cellblocks = list(self.cellblocks(inclusive=True))
+        dcf = defaultdict(lambda: np.nan)
+        if isinstance(default_cell_fields, dict):
+            dcf.update(default_cell_fields)
+        cim = IndexManager()
+        cellblocks = list(self.cellblocks(inclusive=True, deep=True))
         m = map(lambda pb: pb.celldata.fields, cellblocks)
-        fields = np.unique(np.array(list(m)).flatten())
-        if len(fields) > 0:
-            ndim = {f: [] for f in fields}
-            for cb in cellblocks:
-                imap = cb.source().pointdata.id
-                # cb.celldata.rewire(imap=imap)  # this has been done at joining parent
-                for f in fields:
-                    if f in cb.celldata.fields:
-                        ndim[f].append(len(cb.celldata[f].to_numpy().shape))
-                    else:
-                        cb.celldata[f] = np.zeros(len(cb.celldata))
-                        ndim[f].append(1)
-            ndim = {f: np.max(v) for f, v in ndim.items()}
-            for cb in cellblocks:
-                cb.celldata[f] = atleastnd(cb.celldata[f].to_numpy(), ndim[f])
+        #fields = np.unique(np.array(list(m)).flatten())
+        fields = set(np.concatenate(list(m)))
+        for cb in cellblocks:
+            cb.cd.id = cim.generate_np(len(cb.celldata))
+            for f in fields:
+                if f not in cb.celldata.fields:
+                    cb.celldata[f] = np.full(len(cb.cd), dcf[f])
+            cb.cd.pointdata = None
         # free resources
-        for pb in self.pointblocks(inclusive=False):
+        for pb in self.pointblocks(inclusive=False, deep=True):
             pb._reset_point_data()
         return self
 
-    def points(self, *, return_inds=False, from_cells=False,
-               **kwargs) -> PointCloud:
+    def points(self, *, return_inds: bool = False,
+               from_cells: bool = False) -> PointCloud:
         """
         Returns the points as a :class:`..mesh.space.PointCloud` instance.
 
@@ -976,7 +1000,6 @@ class PolyData(PolyDataBase):
         --------
         :class:`.space.PointCloud`
         :func:`coords`
-
         """
         target = self.frame
         if from_cells:
@@ -1003,7 +1026,7 @@ class PolyData(PolyDataBase):
             return points, inds
         return points
 
-    def coords(self, *args, return_inds: bool = False, 
+    def coords(self, *args, return_inds: bool = False,
                from_cells: bool = False, **kwargs) -> VectorBase:
         """
         Returns the coordinates as an array.
@@ -1020,7 +1043,6 @@ class PolyData(PolyDataBase):
         Returns
         -------
         :class:`neumann.linalg.vector.VectorBase`
-
         """
         if return_inds:
             p, inds = self.points(return_inds=True, from_cells=from_cells)
@@ -1055,18 +1077,10 @@ class PolyData(PolyDataBase):
         cd = Triangle(topo=topo, pointdata=pd)
         return self.__class__(pd, cd, frame=frame)
 
-    def cells(self):
-        # This should be the same to topology, what point is to coords,
-        # with no need to copy the underlying mechanism.
-        #
-        # The relationship of resulting object to the topology of a mesh should
-        # be similar to that of `PointCloud` and the points in 3d space.
-        pass
-
     def topology(self, *args, return_inds=False, jagged=None,
                  **kwargs) -> Union[ndarray, akarray]:
         """
-        Returns the topology as either a `numpy` or an `awkward` array.
+        Returns the topology as either a `NumPy` or an `Awkward` array.
 
         Parameters
         ----------
@@ -1080,7 +1094,6 @@ class PolyData(PolyDataBase):
         -------
         Union[numpy.ndarray, awkward.Array]
             The topology as a 2d integer array.
-
         """
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
         topo = list(map(lambda i: i.celldata.topology(), blocks))
@@ -1088,9 +1101,12 @@ class PolyData(PolyDataBase):
         jagged = False if not isinstance(jagged, bool) else jagged
         needs_jagged = not np.all(widths == widths[0])
         if jagged or needs_jagged:
+            topo = TopologyArray(*topo)
             if return_inds:
-                raise NotImplementedError
-            return TopologyArray(*topo)
+                inds = list(map(lambda i: i.celldata.id, blocks))
+                return topo, np.concatenate(inds)
+            else:
+                return topo
         else:
             topo = np.vstack([t.to_numpy() for t in topo])
             if return_inds:
@@ -1107,9 +1123,9 @@ class PolyData(PolyDataBase):
         ----------
         nummrg: bool, Optional
             If True, merges node numbering. Default is False.
-
         """
-        pd = PolyData(self.root().pd, frame=self.frame)
+        s = self.source()
+        pd = PolyData(s.pd, frame=s.frame)
         l0 = len(self.address)
         if self.celldata is not None:
             db = deepcopy(self.cd.db)
@@ -1128,35 +1144,32 @@ class PolyData(PolyDataBase):
             pd.nummrg()
         return pd
 
-    def nummrg(self, store_indices: bool = True):
+    def nummrg(self):
         """
         Merges node numbering.
-        
+
         Parameters
         ----------
         store_indices: bool, Optional
             If True, original indices are stored with the key 'gid'. 
             Default is True.
-            
         """
-        if not self.is_root():
-            self.root().nummrg()
-            return self
+        assert self.is_root(), "This must be called on he root object!"
         topo = self.topology()
         inds = np.unique(topo)
         pointtype = self.__class__._point_class_
         self.pointdata = pointtype(db=self.pd[inds])
-        if store_indices:
-            self.pointdata._wrapped['gid'] = self.pd.id
+        """if store_indices:
+            self.pointdata._wrapped['gid'] = self.pd.id"""
         imap = inds_to_invmap_as_dict(self.pd.id)
         [cb.rewire(imap=imap) for cb in self.cellblocks(inclusive=True)]
-        self.pointdata._wrapped['id'] = np.arange(len(self.pd))
+        self.pointdata.id = np.arange(len(self.pd))
         return self
 
     def move(self, v: VectorLike, frame: FrameLike = None) -> 'PolyData':
         """
         Moves and returns the object.
-        
+
         Parameters
         ----------
         v: bool, Optional
@@ -1164,7 +1177,7 @@ class PolyData(PolyDataBase):
         frame : FrameLike, Optional
             If `v` is only an array, this can be used to specify
             a frame in which the components should be understood.
-            
+
         """
         if self.is_root():
             pc = self.points()
@@ -1195,24 +1208,29 @@ class PolyData(PolyDataBase):
     def cells_at_nodes(self, *args, **kwargs) -> Iterable:
         """
         Returns the neighbouring cells of nodes.
-        
+
         Returns
         -------
         object
             Some kind of iterable, depending on the inputs. 
             See the docs below for further details.
-            
+
         See Also
         --------
         :func:`cells_at_nodes`
         """
         topo = self.topology()
+        if isinstance(topo, TopologyArray):
+            if topo.is_jagged():
+                topo = topo.to_csr()
+            else:
+                topo = topo.to_numpy()
         return cells_at_nodes(topo, *args, **kwargs)
 
-    def cells_around_cells(self, radius:float, frmt:str='dict'):
+    def cells_around_cells(self, radius: float, frmt: str = 'dict'):
         """
         Returns the neares cells to cells.
-        
+
         Parameters
         ----------
         radius : float
@@ -1220,11 +1238,11 @@ class PolyData(PolyDataBase):
         frmt : str, Optional
             A string specifying the type of the result. Valid
             options are 'jagged', 'csr' and 'dict'.
-            
+
         See Also
         --------
         :func:`cells_around`
-            
+
         """
         return cells_around(self.centers(), radius, frmt=frmt)
 
@@ -1287,7 +1305,7 @@ class PolyData(PolyDataBase):
         self.pointdata['x'] = pc.show(self.frame)
         return self
 
-    def k_nearest_cell_neighbours(self, k, *args, knn_options:dict=None, 
+    def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None,
                                   **kwargs):
         """
         Returns the k closest neighbours of the cells of the mesh, based
@@ -1305,7 +1323,7 @@ class PolyData(PolyDataBase):
         >>> grid = Grid(size=size, shape=shape, eshape='H8')
         >>> X = grid.centers()
         >>> i = KNN(X, X, k=3, max_distance=10.0)
-        
+
         See Also
         --------
         :func:`KNN`
@@ -1316,10 +1334,9 @@ class PolyData(PolyDataBase):
 
     def areas(self, *args, **kwargs) -> ndarray:
         """Returns the areas."""
-        coords = self.root().coords()
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
         blocks2d = filter(lambda b: b.celltype.NDIM < 3, blocks)
-        amap = map(lambda b: b.celldata.areas(coords=coords), blocks2d)
+        amap = map(lambda b: b.celldata.areas(), blocks2d)
         return np.concatenate(list(amap))
 
     def area(self, *args, **kwargs) -> float:
@@ -1328,9 +1345,8 @@ class PolyData(PolyDataBase):
 
     def volumes(self, *args, **kwargs) -> ndarray:
         """Returns the volumes of the cells."""
-        coords = self.root().coords()
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
-        vmap = map(lambda b: b.celldata.volumes(coords=coords), blocks)
+        vmap = map(lambda b: b.celldata.volumes(), blocks)
         return np.concatenate(list(vmap))
 
     def volume(self, *args, **kwargs) -> float:
@@ -1340,7 +1356,7 @@ class PolyData(PolyDataBase):
     def index_of_closest_point(self, target: Iterable) -> int:
         """Returns the index of the closest point to a target."""
         return index_of_closest_point(self.coords(), target)
-    
+
     def index_of_furthest_point(self, target: Iterable) -> int:
         """
         Returns the index of the furthest point to a target.
@@ -1351,7 +1367,7 @@ class PolyData(PolyDataBase):
     def index_of_closest_cell(self, target: Iterable) -> int:
         """Returns the index of the closest cell to a target."""
         return index_of_closest_point(self.centers(), target)
-    
+
     def index_of_furthest_cell(self, target: Iterable) -> int:
         """
         Returns the index of the furthest cell to a target.
@@ -1359,149 +1375,166 @@ class PolyData(PolyDataBase):
         """
         return index_of_furthest_point(self.centers(), target)
 
-    def set_nodal_distribution_factors(self, *args, **kwargs):
-        self.nodal_distribution_factors(*args, store=True, **kwargs)
-
-    def nodal_distribution_factors(self, *, assume_regular=False,
-                                   key='ndf', store=False, measure='volume',
-                                   load=None, weights=None, **kwargs) -> ndarray:
-        if load is not None:
-            if isinstance(load, str):
-                blocks = self.cellblocks(inclusive=True)
-                def foo(b): return b.celldata._wrapped[load].to_numpy()
-                return np.vstack(list(map(foo, blocks)))
-
-        topo, inds = self.topology(return_inds=True)
-
-        if measure == 'volume':
-            weights = self.volumes()
-        elif measure == 'uniform':
-            weights = np.ones(topo.shape[0], dtype=float)
-
-        argsort = np.argsort(inds)
-        topo = topo[argsort]
-        weights = weights[argsort]
-        if not assume_regular:
-            topo, _ = regularize(topo)
-        factors = nodal_distribution_factors(topo, weights)
-        if store:
-            blocks = self.cellblocks(inclusive=True)
-
-            def foo(b): return b.celldata.set_nodal_distribution_factors(
-                factors, key=key)
-            list(map(foo, blocks))
-        return factors
-
-    def to_vtk(self, *, deepcopy:bool=True, fuse:bool=True, deep:bool=True,
-               scalars=None, detach:bool=True, **kwargs):
+    def nodal_distribution_factors(self, weights: Union[str, ndarray] = 'volume') \
+            -> Union[ndarray, csr_matrix]:
         """
-        Returns the mesh as a `vtk` oject.
+        Retruns nodal distribution factors for all nodes of all cells
+        as a 2d array. The returned array has the same shape as the
+        topology array, where the j-th factor of the i-th row is the 
+        contribution of element i to the j-th node of the cell.
+
+        Parameters
+        ----------
+        weights : Union[str, numpy.ndarray], Optional
+            The metric which is used to calculate the factors. Valid
+            strings are 'volume' and 'uniform'. If it is an array, it
+            must be an 1d array with a length matching the number of 
+            cells. Default is 'volume'.
+
+        Returns
+        -------
+        numpy.ndarray or csr_matrix
+            An array with the same shape as the topology.
+
+        Note
+        ----
+        For a given node, the sum of all contribution factors from all
+        the cells that meet at that node is one.
+
+        See also
+        --------
+        :func:`~polymesh.utils.utils.nodal_distribution_factors`
+        """
+        assert self.is_source(), "This can only be called on objects with PointData."
+        topo = self.topology()
+        if isinstance(topo, TopologyArray):
+            if topo.is_jagged():
+                topo = topo.to_csr()
+            else:
+                topo = topo.to_numpy()
+        if isinstance(weights, str):
+            if weights == 'volume':
+                weights = self.volumes()
+            elif weights == 'uniform':
+                weights = np.ones(len(topo), dtype=float)
+        assert isinstance(weights, ndarray), "'weights' must be a NumPy array!"
+        assert len(weights) == topo.shape[0], \
+            "Mismatch in shape. The weights must have the same number of " + \
+            "values as cells in the block."
+        return nodal_distribution_factors(topo, weights)
+
+    def _detach_block_data_(self, data: Union[str, ndarray] = None) -> Tuple:
+        source = self.source()
+        coords = source.coords()
+        point_data = None
+        if isinstance(data, ndarray):
+            assert data.shape[0] == len(source.pd), \
+                "The length of scalars must match the number of points."
+            point_data = data
+        else:
+            if data is not None:
+                assert isinstance(data, str), \
+                    "Data must be a NumPy array or a string."
+        blocks = self.cellblocks(inclusive=True, deep=True)
+        for block in blocks:
+            topo = block.topology()
+            if point_data is not None:
+                c, d, t = detach_mesh_data_bulk(coords, topo, point_data)
+                yield block, c, t, d
+            else:
+                c, t = detach_mesh_bulk(coords, topo)
+                if data is not None:
+                    assert data in block.cd.fields, \
+                        f"Unable to find data with key '{data}'."
+                    d = block.cd.db[data].to_numpy()
+                    if len(d.shape) == 2:
+                        c, t, d = explode_mesh_data_bulk(c, t, d)
+                    else:
+                        assert len(d.shape) == 1, "Cell data must be 1d or 2d."
+                    yield block, c, t, d
+                else:
+                    yield block, c, t, None
+
+    def to_vtk(self, deepcopy: bool = False, multiblock: bool = False):
+        """
+        Returns the mesh as a `VTK` object.
 
         Parameters
         ----------
         deepcopy : bool, Optional
-            Obviously. Default is True.
-        fuse : bool, Optional
-            Wether to fuse submeshes into one object. Default is False.
-        deep : bool, Optional
-            Wether to into submeshes or not. Default is True.
-        scalars : ndarray, None
-            Scalars to decorate the object with. Default is None.
-        detach : bool, Optional
-            If True, the mesh is detached. Default is True.
-
+            Default is False.
+        multiblock : bool, Optional
+            Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
+            of `vtkUnstructuredGrid` instances. Default is False.
         """
         if not __hasvtk__:
-            raise ImportError
-        coords = self.root().coords()
-        blocks = list(self.cellblocks(inclusive=True, deep=deep))
-        def mesh(c, t): return detach_mesh_bulk(c, t) if detach else (c, t)
-        if fuse:
-            if len(blocks) == 1:
-                topo = blocks[0].celldata.nodes.astype(np.int64)
-                ugrid = mesh_to_vtk(*mesh(coords, topo),
-                                    blocks[0].celltype.vtkCellType, deepcopy)
-                return ugrid
+            raise ImportError("VTK must be installed for this!")
+        ugrids = []
+        for block, c, t, _ in self._detach_block_data_():
+            vtkct = block.celltype.vtkCellType
+            ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
+            ugrids.append(ugrid)
+        if multiblock:
             mb = vtk.vtkMultiBlockDataSet()
-            mb.SetNumberOfBlocks(len(blocks))
-            for i, block in enumerate(blocks):
-                topo = block.celldata.nodes.astype(np.int64)
-                ugrid = mesh_to_vtk(*mesh(coords, topo),
-                                    block.celltype.vtkCellType, deepcopy)
+            mb.SetNumberOfBlocks(len(ugrids))
+            for i, ugrid in enumerate(ugrids):
                 mb.SetBlock(i, ugrid)
             return mb
         else:
-            needsdata = isinstance(scalars, str)
-            res, plotdata = [], []
-            for i, block in enumerate(blocks):
-                if needsdata:
-                    pdata = None
-                    if block.pointdata is not None:
-                        if scalars in block.pointdata.fields:
-                            pdata = block.pointdata[scalars].to_numpy()
-                    if pdata is None and scalars in block.celldata.fields:
-                        pdata = block.celldata[scalars].to_numpy()
-                    if pdata is None:
-                        # fetch nodal celldata from pointdata of the root object
-                        """root = self.root()
-                        if root.pointdata is not None:
-                            if scalars in root.pointdata.fields:
-                                pdata_root = self.pointdata[scalars].to_numpy()"""
-                        pass
-                    plotdata.append(pdata)
-                # the next line handles regular topologies only
-                topo = block.celldata.topology().to_numpy().astype(np.int64)
-                ugrid = mesh_to_vtk(*mesh(coords, topo),
-                                    block.celltype.vtkCellType, deepcopy)
-                res.append(ugrid)
-
-            if needsdata:
-                return res, plotdata
+            if len(ugrids) > 1:
+                return ugrids
             else:
-                return res
+                return ugrids[0]
 
-    def to_pv(self, *, fuse:bool=True, deep:bool=True, 
-              scalars:Union['str', Iterable]=None, **kwargs):
+    def to_pv(self, deepcopy: bool = False, multiblock: bool = False,
+              scalars: Union[str, ndarray] = None):
         """
-        Returns the mesh as a `pyVista` oject, optionally set up with data.
+        Returns the mesh as a `PyVista` oject, optionally set up with data.
 
         Parameters
         ----------
-        fuse : bool, Optional
-            If True, the blocks are fused into a MultiBLockDataset, oterwise
-            a list of separate PyVista objects are returned for each block.
-            Default is True.
-        
-        See Also
-        --------
-        :func:`to_vtk`
+        deepcopy : bool, Optional
+            Default is False.
+        multiblock : bool, Optional
+            Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
+            of `vtkUnstructuredGrid` instances. Default is False.
+        scalars : str or numpy.ndarray, Optional
+            A string or an array describing scalar data. Default is None.
         """
+        if not __hasvtk__:
+            raise ImportError("VTK must be installed for this!")
         if not __haspyvista__:
-            raise ImportError
-        data = None
-        if isinstance(scalars, str) and not fuse:
-            vtkobj, data = self.to_vtk(fuse=False, deep=deep,
-                                       scalars=scalars, **kwargs)
-        else:
-            vtkobj = self.to_vtk(fuse=fuse, deep=deep, **kwargs)
-            data = None
-        if fuse:
-            assert data is None
-            multiblock = pv.wrap(vtkobj)
+            raise ImportError("PyVista must be installed for this!")
+        ugrids = []
+        data = []
+        for block, c, t, d in self._detach_block_data_(scalars):
+            vtkct = block.celltype.vtkCellType
+            ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
+            ugrids.append(ugrid)
+            data.append(d)
+        if multiblock:
+            mb = vtk.vtkMultiBlockDataSet()
+            mb.SetNumberOfBlocks(len(ugrids))
+            for i, ugrid in enumerate(ugrids):
+                mb.SetBlock(i, ugrid)
+            mb = pv.wrap(mb)
             try:
-                multiblock.wrap_nested()
+                mb.wrap_nested()
             except AttributeError:
                 pass
-            return multiblock
+            return mb
         else:
-            if data is None:
-                return [pv.wrap(i) for i in vtkobj]
+            if scalars is None:
+                return [pv.wrap(ugrid) for ugrid in ugrids]
             else:
                 res = []
-                for ugrid, d in zip(vtkobj, data):
+                for ugrid, d in zip(ugrids, data):
                     pvobj = pv.wrap(ugrid)
                     if isinstance(d, ndarray):
-                        pvobj[scalars] = d
+                        if isinstance(scalars, str):
+                            pvobj[scalars] = d
+                        else:
+                            pvobj['scalars'] = d
                     res.append(pvobj)
                 return res
 
@@ -1510,11 +1543,16 @@ class PolyData(PolyDataBase):
                show_edges=True, **kwargs):
         """
         Returns the mesh as a k3d mesh object.
+        
+        :: warning:
+            Calling this method raises a UserWarning inside the `traittypes`
+            package saying "Given trait value dtype 'float32' does not match 
+            required type 'float32'."
 
         Returns
         -------
         Plot
-            Plot Widget.
+            K3D Plot Widget.
 
         """
         assert __hask3d__, "The python package 'k3d' must be installed for this"
@@ -1522,12 +1560,12 @@ class PolyData(PolyDataBase):
             scene = k3d.plot(menu_visibility=menu_visibility)
         vertices = self.root().coords().astype(np.float32)
 
-        pvparams = dict(wireframe=False)
+        k3dparams = dict(wireframe=False)
         if config_key is None:
             config_key = self.__class__._k3d_config_key_
 
         for b in self.cellblocks(inclusive=True, deep=deep):
-            params = copy(pvparams)
+            params = copy(k3dparams)
             params.update(b.config[config_key])
             if 'color' in params:
                 if isinstance(params['color'], str):
@@ -1536,41 +1574,35 @@ class PolyData(PolyDataBase):
             if color_map is not None:
                 params['color_map'] = color_map
             if b.celltype.NDIM == 1:
-                i = b.cd.topology().to_numpy()
-                scene += k3d.lines(vertices, i.astype(np.uint32),
-                                   indices_type='segment', **params)
+                i = b.cd.topology().to_numpy().astype(np.uint32)
+                scene += k3d.lines(vertices, i, indices_type='segment', **params)
             elif b.celltype.NDIM == 2:
-                i = b.cd.to_triangles()
+                i = b.cd.to_triangles().astype(np.uint32)
                 if 'side' in params:
                     if params['side'].lower() == 'both':
                         params['side'] = 'front'
-                        scene += k3d.mesh(vertices,
-                                          i.astype(np.uint32), **params)
+                        scene += k3d.mesh(vertices, i, **params)
                         params['side'] = 'back'
-                        scene += k3d.mesh(vertices,
-                                          i.astype(np.uint32), **params)
+                        scene += k3d.mesh(vertices, i, **params)
                     else:
-                        scene += k3d.mesh(vertices,
-                                          i.astype(np.uint32), **params)
+                        scene += k3d.mesh(vertices, i, **params)
                 else:
-                    scene += k3d.mesh(vertices, i.astype(np.uint32), **params)
+                    scene += k3d.mesh(vertices, i, **params)
                 if show_edges:
-                    scene += k3d.mesh(vertices, i.astype(np.uint32),
-                                      wireframe=True, color=0)
+                    scene += k3d.mesh(vertices, i, wireframe=True, color=0)
             elif b.celltype.NDIM == 3:
-                i = b.surface().topology()
+                i = b.surface().topology().astype(np.uint32)
                 #i = b.surface(detach=False, triangulate=True).topology()
-                scene += k3d.mesh(vertices, i.astype(np.uint32), **params)
+                scene += k3d.mesh(vertices, i, **params)
                 if show_edges:
-                    scene += k3d.mesh(vertices, i.astype(np.uint32),
-                                      wireframe=True, color=0)
+                    scene += k3d.mesh(vertices, i, wireframe=True, color=0)
         return scene
 
-    def plot(self, *, notebook:bool=False, backend:str='pyvista', 
-             config_key:str=None, **kwargs):
+    def plot(self, *, notebook: bool = False, backend: str = 'pyvista',
+             config_key: str = None, **kwargs):
         """
         Plots the mesh using supported backends. The default backend is PyVista.
-        
+
         Parameters
         ----------
         notebook : bool, Optional
@@ -1585,7 +1617,7 @@ class PolyData(PolyDataBase):
         **kwargs : dict, Optional
             Extra keyword arguments forwarded to the plotter function according
             to the selected backend.
-        
+
         See Also
         --------
         :func:`pvplot`
@@ -1600,7 +1632,12 @@ class PolyData(PolyDataBase):
     def k3dplot(self, scene=None, *, menu_visibility: bool = True, **kwargs):
         """
         Plots the mesh using 'k3d' as the backend.
-        
+
+        .. warning::
+            During this call there is a UserWarning saying 'Given trait value dtype 
+            "float32" does not match required type "float32"'. Although this is weird,
+            plotting seems to be just fine.
+
         Parameters
         ----------
         scene : object, Optional
@@ -1611,7 +1648,7 @@ class PolyData(PolyDataBase):
             Whether to show the menu or not. Default is True.
         **kwargs : dict, Optional
             Extra keyword arguments forwarded to :func:`to_k3d`.
-            
+
         See Also
         --------
         :func:`k3d.plot`
@@ -1620,14 +1657,16 @@ class PolyData(PolyDataBase):
             scene = k3d.plot(menu_visibility=menu_visibility)
         return self.to_k3d(scene=scene, **kwargs)
 
-    def pvplot(self, *args, deepcopy=True, jupyter_backend='pythreejs',
-               show_edges=True, notebook=False, theme='document',
-               scalars=None, window_size=None, return_plotter=False,
-               config_key=None, plotter=None, cmap=None, camera_position=None,
-               lighting=False, edge_color=None, return_img=False, **kwargs):
+    def pvplot(self, *, deepcopy: bool = False, jupyter_backend='pythreejs',
+               show_edges: bool = True, notebook: bool = False, theme: str = 'document',
+               scalars: Union[str, ndarray] = None, window_size: Tuple = None,
+               return_plotter: bool = False, config_key: Tuple = None, plotter=None,
+               cmap: Union[str, Iterable] = None, camera_position: Tuple = None,
+               lighting: bool = False, edge_color: str = None, return_img: bool = False,
+               **kwargs):
         """
         Plots the mesh using PyVista.
-        
+
         See Also
         --------
         :func:`to_pv`
@@ -1635,11 +1674,8 @@ class PolyData(PolyDataBase):
         """
         if not __haspyvista__:
             raise ImportError('You need to install `pyVista` for this.')
-        if scalars is None:
-            polys = self.to_pv(deepcopy=deepcopy, fuse=False)
-        else:
-            polys = self.to_pv(deepcopy=deepcopy, scalars=scalars, fuse=False)
-
+        polys = self.to_pv(deepcopy=deepcopy,
+                           multiblock=False, scalars=scalars)
         if isinstance(theme, str):
             try:
                 pv.set_plot_theme(theme)
@@ -1658,8 +1694,6 @@ class PolyData(PolyDataBase):
 
         if lighting is not None:
             theme.lighting = lighting
-        if show_edges is not None:
-            theme.show_edges = show_edges
         if edge_color is not None:
             theme.edge_color = edge_color
 
@@ -1671,8 +1705,6 @@ class PolyData(PolyDataBase):
             pvparams.update(notebook=notebook)
             pvparams.update(theme=theme)
             plotter = pv.Plotter(**pvparams)
-        else:
-            return_plotter = True
 
         if camera_position is not None:
             plotter.camera_position = camera_position
@@ -1683,6 +1715,9 @@ class PolyData(PolyDataBase):
             config_key = self.__class__._pv_config_key_
         for block, poly in zip(blocks, polys):
             params = copy(pvparams)
+            config = block.config[config_key]
+            if scalars is not None:
+                config.pop('color', None)
             params.update(block.config[config_key])
             if cmap is not None:
                 params['cmap'] = cmap
@@ -1701,25 +1736,14 @@ class PolyData(PolyDataBase):
 
     def __join_parent__(self, parent: DeepDict, key: Hashable = None):
         super().__join_parent__(parent, key)
-        if self.pointdata is not None:
-            if self.pointdata.has_id:
-                if self.celldata is not None:
-                    self.rewire(deep=True, invert=True)
-            GIDs = self.root().pim.generate_np(len(self.pointdata))
-            self.pointdata.id = GIDs
         if self.celldata is not None:
             GIDs = self.root().cim.generate_np(len(self.celldata))
             self.celldata.id = GIDs
             if self.celldata.pd is None:
                 self.celldata.pd = self.source().pd
             self.celldata.container = self
-            self.rewire(deep=True)
 
     def __leave_parent__(self):
-        if self.pointdata is not None:
-            self.root().pim.recycle(self.poitdata.id)
-            dbkey = self.pointdata._dbkey_id_
-            del self.pointdata._wrapped[dbkey]
         if self.celldata is not None:
             self.root().cim.recycle(self.celldata.id)
             dbkey = self.celldata._dbkey_id_

@@ -2,10 +2,10 @@
 import numpy as np
 from numba import njit
 
-from neumann.array import tile
+from neumann import tile
 
-from .tri.triutils import edges_tri
-from .topo import unique_topo_data
+from .utils.tri import edges_tri
+from .utils.topology import unique_topo_data
 
 __cache = True
 

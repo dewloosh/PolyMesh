@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from polymesh.tri import triangulate
+from polymesh.triang import triangulate
 from polymesh.grid import grid
-from polymesh.topo.tr import (T3_to_T6, T6_to_T3, Q9_to_Q4, Q4_to_T3,
-                              Q4_to_Q9, H8_to_H27, Q4_to_Q8, Q9_to_T6, 
-                              H8_to_TET4, TET4_to_TET10, H8_to_L2, 
-                              TET4_to_L2, L2_to_L3, Q4_to_Q8, Q8_to_T3)
+from polymesh.utils.topology import (T3_to_T6, T6_to_T3, Q9_to_Q4, Q4_to_T3,
+                                     Q4_to_Q9, H8_to_H27, Q4_to_Q8, Q9_to_T6,
+                                     H8_to_TET4, TET4_to_TET10, H8_to_L2,
+                                     TET4_to_L2, L2_to_L3, Q4_to_Q8, Q8_to_T3)
 
 
 class TestTopoTR(unittest.TestCase):
@@ -84,7 +84,7 @@ class TestTopoTR(unittest.TestCase):
             nE2 = topo.shape[0]
             return nE1*5 == nE2
         assert test_6(1, 1, 1, 2, 2, 2)
-        
+
     def test_7(self):
         def test_7(Lx, Ly, Lz, nx, ny, nz):
             """H8 -> TET4 -> L2 -> L3"""

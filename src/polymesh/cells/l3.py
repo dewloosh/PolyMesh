@@ -18,10 +18,7 @@ class L3(QuadraticLine):
     --------
     :class:`QuadraticLine`
     """
-    
-    shpfnc = None
-    dshpfnc = None
-    
+        
     @classmethod
     def polybase(cls) -> Tuple[List]:
         """
@@ -62,15 +59,3 @@ class L3(QuadraticLine):
 
         """
         return np.array([0.])
-
-    """def shape_function_values(self, coords, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return shp3_bulk(coords)
-        else:
-            return shp3(coords)
-
-    def shape_function_derivatives(self, coords, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return dshp3_bulk(coords)
-        else:
-            return dshp3(coords)"""

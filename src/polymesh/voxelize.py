@@ -7,7 +7,7 @@ from numpy import ndarray
 from .polydata import PolyData
 from .cells import H8
 from .grid import grid
-from .topo import detach_mesh_bulk
+from .utils.topology import detach_mesh_bulk
 from .space import CartesianFrame
 
 

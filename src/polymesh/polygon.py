@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from .utils import cells_coords
-from .tri.triutils import area_tri_bulk
-from .topo.tr import T6_to_T3, Q4_to_T3, Q9_to_Q4, T3_to_T6
+from .utils.utils import cells_coords
+from .utils.tri import area_tri_bulk
+from .utils.topology import T6_to_T3, Q4_to_T3, Q9_to_Q4, T3_to_T6
 from .cell import PolyCell2d
 
 
@@ -33,7 +33,7 @@ class Triangle(PolyGon):
 
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
-        from polymesh.tri.trimesh import TriMesh
+        from polymesh.trimesh import TriMesh
         if len(args) > 0 and isinstance(args[0], TriMesh):
             mesh = args[0]
             return mesh.coords(), mesh.topology().to_numpy()
@@ -64,7 +64,7 @@ class QuadraticTriangle(PolyGon):
 
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
-        from polymesh.tri.trimesh import TriMesh
+        from polymesh.trimesh import TriMesh
         if len(args) > 0 and isinstance(args[0], TriMesh):
             return T3_to_T6(TriMesh.coords(), TriMesh.topology())
         elif coords is not None and topo is not None:

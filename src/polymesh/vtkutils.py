@@ -13,18 +13,16 @@ if __hasvtk__:
 def mesh_to_vtkdata(coords, topo, deepcopy=True):
     if not __hasvtk__:
         raise ImportError
-
     # points
     vtkpoints = vtk.vtkPoints()
     vtkpoints.SetData(np2vtk(coords, deep=deepcopy))
-
     # cells
     topo_vtk = np.concatenate((np.ones((topo.shape[0], 1), dtype=int) *
                                topo.shape[1], topo), axis=1).ravel()
     vtkcells = vtk.vtkCellArray()
     vtkcells.SetNumberOfCells(topo.shape[0])
     vtkcells.SetCells(topo.shape[0], np2vtkId(topo_vtk, deep=deepcopy))
-
+    # return points and cells
     return vtkpoints, vtkcells
 
 

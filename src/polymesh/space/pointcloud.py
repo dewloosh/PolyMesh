@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from numba.core import types as nbtypes, cgutils
 from numba.extending import (typeof_impl, models,
                              make_attribute_wrapper, register_model, box,
@@ -13,13 +12,14 @@ from typing import Union
 
 from dewloosh.core.typing import issequence
 
-from neumann.array import minmax
+from neumann import minmax
 from neumann.linalg.vector import VectorBase, Vector
 from neumann.linalg.frame import ReferenceFrame as FrameLike
 
 from .frame import CartesianFrame
 from .point import Point
-from .utils import index_of_closest_point, index_of_furthest_point
+from ..utils.space import (index_of_closest_point, 
+                           index_of_furthest_point)
 
 __cache = True
 
@@ -68,7 +68,7 @@ class PointCloud(Vector):
     Collect the points of a simple triangulation and get the center:
 
     >>> from polymesh.space import PointCloud
-    >>> from polymesh.tri import triangulate
+    >>> from polymesh.triang import triangulate
     >>> coords, *_ = triangulate(size=(800, 600), shape=(10, 10))
     >>> coords = PointCloud(coords)
     >>> coords.center()
@@ -114,14 +114,12 @@ class PointCloud(Vector):
     >>> coords[10:50][[1, 2, 10]].inds
     array([11, 12, 20])
 
-    The instances are available in numba-jitted functions:
+    The instances are available in Numba-jitted functions, with
+    the coordinates and indices available as 'data' and 'inds':
 
-    >>> from numba import njit
-
-    >>> @njit
-    >>> def foo(arr): 
-    >>>     return arr.inds
-
+    >>> from numba import jit
+    >>> @jit(nopython=True)
+    >>> def foo(arr): return arr.data, arr.inds
     >>> c = np.array([[0, 0, 0], [0, 0, 1.], [0, 0, 0]])
     >>> COORD = PointCloud(c, inds=np.array([0, 1, 2, 3]))
     >>> foo(COORD)
@@ -234,7 +232,7 @@ class PointCloud(Vector):
         def foo(i): return np.mean(arr[:, i])
         return np.array(list(map(foo, range(self.shape[1]))))
 
-    def id_of_closest(self, p: VectorLike, frame: FrameLike = None):
+    def index_of_closest(self, p: VectorLike, frame: FrameLike = None):
         """
         Returns the index of the point being closest to `p`.
 
@@ -257,7 +255,7 @@ class PointCloud(Vector):
             p = Vector(p, frame=frame)
         return index_of_closest_point(self.show(), p.show())
     
-    def id_of_furthest(self, p: VectorLike, frame: FrameLike = None):
+    def index_of_furthest(self, p: VectorLike, frame: FrameLike = None):
         """
         Returns the index of the point being furthest from `p`.
 
@@ -299,7 +297,7 @@ class PointCloud(Vector):
         Point
 
         """
-        id = self.id_of_closest(p, frame)
+        id = self.index_of_closest(p, frame)
         arr = self._array[id, :]
         if isinstance(self.inds, np.ndarray):
             gid = self.inds[id]
@@ -329,7 +327,7 @@ class PointCloud(Vector):
         Point
 
         """
-        id = self.id_of_furthest(p, frame)
+        id = self.index_of_furthest(p, frame)
         arr = self._array[id, :]
         if isinstance(self.inds, np.ndarray):
             gid = self.inds[id]
@@ -393,7 +391,7 @@ class PointCloud(Vector):
 
         Move the points and get the center again:
 
-        d = np.array(0., 1., 0.)
+        d = np.array([0., 1., 0.])
         >>> coords.move(d).move(d)
         >>> coords.center()
         array([400., 302.,   0.])
@@ -445,6 +443,29 @@ class PointCloud(Vector):
         else:
             target = self.frame.orient_new(*args, **kwargs)
             return self.rotate(target)
+        
+    def idsort(self) -> ndarray:
+        """
+        Returns the indices that would sort the array according to
+        their indices.
+        """
+        return np.argsort(self.inds)
+    
+    def sort_indices(self) -> 'PointCloud':
+        """
+        Sorts the points according to their indices and returns the
+        object.
+        """
+        s = self.idsort()
+        self._array = self._array[s]
+        self.inds = self.inds[s]
+        return self
+            
+    def __repr__(self):
+        return f"PointCloud({self._wrapped})"
+
+    def __str__(self):
+        return f"PointCloud({self._wrapped})"
 
 
 class PointCloudType(nbtypes.Type):

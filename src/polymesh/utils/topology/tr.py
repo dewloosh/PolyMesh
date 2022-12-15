@@ -11,9 +11,9 @@ except ImportError:
 from numpy import ndarray, newaxis
 from concurrent.futures import ThreadPoolExecutor
 
-from ..tri.triutils import edges_tri
+from ..tri import edges_tri
 from ..utils import cells_coords
-from .topodata import (edgeIds_TET4, edgeIds_H8, edges_Q4,
+from ..topodata import (edgeIds_TET4, edgeIds_H8, edges_Q4,
                        edges_H8, faces_H8, edges_TET4)
 from .topo import unique_topo_data
 
@@ -29,7 +29,7 @@ __all__ = [
     'Q8_to_T3',
     'Q9_to_T6',
     'Q4_to_T3',
-    'H8_to_L2'
+    'H8_to_L2',
     'H8_to_Q4',
     'H8_to_H27',
     'H8_to_TET4',
@@ -170,8 +170,8 @@ def H8_to_TET4(coords: ndarray, topo: ndarray, data: DataLike = None,
         assert path.shape[1] == 4
     else:
         if path is None:
-            path = np.array([[0, 1, 2, 5], [0, 2, 3, 7], [4, 5, 7, 0],
-                             [5, 6, 7, 2], [0, 2, 7, 5]], dtype=topo.dtype)
+            path = np.array([[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0],
+                             [6, 5, 7, 2], [0, 2, 7, 5]], dtype=topo.dtype)
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:

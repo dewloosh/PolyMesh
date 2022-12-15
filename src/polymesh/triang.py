@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 import scipy.spatial
 try:
@@ -6,10 +5,10 @@ try:
 except Exception:
     from scipy.spatial.qhull import Delaunay as spDelaunay
     
-from ..topo import unique_topo_data
-from .triutils import edges_tri
+from .utils.topology import unique_topo_data
+from .utils.tri import edges_tri
 
-from ..config import __hasvtk__, __haspyvista__, __hasmatplotlib__
+from .config import __hasvtk__, __haspyvista__, __hasmatplotlib__
 if __hasvtk__:
     from vtk import vtkIdList
 if __haspyvista__:
@@ -33,33 +32,26 @@ def triangulate(*args, points=None, size: tuple = None,
     points : numpy.ndarray, Optional
         A 2d array of coordinates of a flat surface. This or `shape` 
         must be provided. 
-
     size : tuple, Optional
         A 2-tuple, containg side lengths of a rectangular domain. 
         Should be provided alongside `shape`. Must be provided if 
         points is None.
-
     shape : tuple or int, Optional
         A 2-tuple, describing subdivisions along coordinate directions,  
         or the number of base points used for triangulation. 
         Should be provided alongside `size`.
-        
     origo: numpy.ndarray, Optional
         1d float array, specifying the origo of the mesh.
-        
     backend : str, Optional
         The backend to use. It can be 'mpl' (matplotlib), 'pv' (pyvista), 
-        or 'scipy'. Default is 'mpl'.
-        
+        or 'scipy'. Default is 'mpl'.       
     random : bool, Optional
         If `True`, and points are provided by `shape`, it creates random 
         points in the region defined by `size`. Default is False.
-        
     triangles : numpy.ndarray
         2d integer array of vertex indices. If both `points` and 
         `triangles` are specified, the only thing this function does is to 
         create a triangulation object according to the argument `backend`.
-        
     triobj : object
         An object representing a triangulation. It can be 
         - a result of a call to matplotlib.tri.Triangulation 
@@ -67,7 +59,6 @@ def triangulate(*args, points=None, size: tuple = None,
         - an instance of pyvista.PolyData 
         In this case, the function can be used to transform between 
         the supported backends.
-        
     return_lines : bool, Optional
         If `True` the function return the unique edges of the 
         triangulation and the indices of the edges for each triangle.
@@ -76,10 +67,8 @@ def triangulate(*args, points=None, size: tuple = None,
     -------
     numpy.ndarray
         A 2d float array of coordinates of points.
-        
     numpy.ndarray
         A 2d integer array representing the topology.
-    
     MeshLike
         An object representing the triangulation, according to the specified backend.
     

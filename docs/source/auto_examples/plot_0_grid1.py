@@ -23,7 +23,7 @@ coordsQ4, topoQ4 = grid(**gridparams)
 # ## Step 2 : Transform the mesh to triangles
 
 # %%
-from polymesh.topo.tr import Q4_to_T3
+from polymesh.utils.tr import Q4_to_T3
 from polymesh.tri.trimesh import triangulate
 
 points, triangles = Q4_to_T3(coordsQ4, topoQ4, path='grid')

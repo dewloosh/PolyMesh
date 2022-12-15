@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from neumann.array import ascont
+from neumann import ascont
 
-from ..polydata import PolyData
-from ..cells import T3, T6, TET4
-from ..space.utils import frames_of_surfaces, is_planar_surface as is_planar
-from ..extrude import extrude_T3_TET4
-from ..tri.triang import triangulate
-from ..tri.triutils import edges_tri
-from ..topo import unique_topo_data
-from ..topo.tr import T3_to_T6, T6_to_T3
+from .polydata import PolyData
+from .cells import T3, T6, TET4
+from .utils.space import frames_of_surfaces, is_planar_surface as is_planar
+from .extrude import extrude_T3_TET4
+from .triang import triangulate
+from .utils.tri import edges_tri
+from .utils.topology import unique_topo_data, T3_to_T6, T6_to_T3
 
 
 class TriMesh(PolyData):
@@ -21,7 +20,6 @@ class TriMesh(PolyData):
     ----------
     points : numpy.ndarray, Optional.
         2d numpy array of floats, describing a pointcloud. Default is None.
-
     triangles : numpy.ndarray, Optional.
         2d numpy array of integers, describing the topology of a polygonal mesh. 
         Default is None.
@@ -124,7 +122,6 @@ class TriMesh(PolyData):
         ----------
         h : float
             Size perpendicular to the plane of the surface to be extruded.
-
         N : Int
             Number of subdivisions along the perpendicular direction.
 
@@ -138,7 +135,7 @@ class TriMesh(PolyData):
         :class:`polymesh.tet.tetmesh.TetMesh`
 
         """
-        from ..tet.tetmesh import TetMesh
+        from .tetmesh import TetMesh
         if not self.is_planar():
             raise RuntimeError("Only planar surfaces can be extruded!")
         assert celltype is None, "Currently only TET4 element is supported!"

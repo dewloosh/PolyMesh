@@ -2,15 +2,15 @@
 import numpy as np
 import unittest
 
-from polymesh.tri.trimesh import TriMesh
+from polymesh.trimesh import TriMesh
 from polymesh.grid import Grid
 from polymesh import PolyData
 from polymesh.recipes import circular_disk
 from polymesh.voxelize import voxelize_cylinder
 from polymesh.cells import H8, TET4
-from polymesh.topo import detach_mesh_bulk
+from polymesh.utils.topology import detach_mesh_bulk
 from polymesh.extrude import extrude_T3_TET4
-from polymesh.tet.tetmesh import TetMesh
+from polymesh.tetmesh import TetMesh
 
 
 class TestMeshing(unittest.TestCase):

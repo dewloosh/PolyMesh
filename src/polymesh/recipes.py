@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
 from typing import Union
 import numpy as np
 from numpy import ndarray
 
-from ..polydata import PolyData
-from ..tri.trimesh import TriMesh
-from ..cells import H8, TET4, T3
-from ..space import CartesianFrame
-from ..tri.triang import triangulate
-from ..topo import detach_mesh_bulk
-from ..extrude import extrude_T3_TET4
-from ..voxelize import voxelize_cylinder
+from .polydata import PolyData
+from .trimesh import TriMesh
+from .cells import H8, TET4, T3
+from .space import CartesianFrame
+from .triang import triangulate
+from .utils.topology import detach_mesh_bulk
+from .extrude import extrude_T3_TET4
+from .voxelize import voxelize_cylinder
 
 
 def circular_helix(a=None, b=None, *args, slope=None, pitch=None):

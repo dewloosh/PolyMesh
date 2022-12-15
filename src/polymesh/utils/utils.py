@@ -1,140 +1,19 @@
-# -*- coding: utf-8 -*-
+from typing import Union, Tuple
+
 import numpy as np
 from numpy import ndarray
 from numpy.linalg import norm
 from numba import njit, prange
 from numba.typed import Dict as nbDict
 from numba import types as nbtypes
-import scipy as sp
-from packaging import version
-import warnings
 
-from neumann.array import matrixform
-from neumann.linalg.sparse import JaggedArray
-from neumann.linalg.sparse.csr import csr_matrix
+from neumann import matrixform
+from neumann.linalg.sparse import JaggedArray, csr_matrix
 
-try:
-    import sklearn
-    __has_sklearn__ = True
-except Exception:
-    __has_sklearn__ = False
-
-__scipy_version__ = sp.__version__
 __cache = True
-
 nbint64 = nbtypes.int64
 nbint64A = nbint64[:]
 nbfloat64A = nbtypes.float64[:]
-
-
-def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
-                         k=1, workers=-1, tree_kwargs=None, query_kwargs=None,
-                         leaf_size=30, return_distance=False,
-                         max_distance=None, **kwargs):
-    """
-    Returns the k nearest neighbours (KNN) of a KDTree for a pointcloud using `scipy`
-    or `sklearn`. The function acts as a uniform interface for similar functionality
-    of `scipy` and `sklearn`. The most important parameters are highlighted, for the 
-    complete list of arguments, see the corresponding docs:
-
-    https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.html#scipy.spatial.KDTree
-
-    https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KDTree.html  
-
-    To learn more about nearest neighbour searches in general:
-
-    https://scikit-learn.org/stable/modules/neighbors.html
-
-    Parameters
-    ----------
-    X : numpy.ndarray
-        An array of points to build the tree.
-    Y : numpy.ndarray, Optional
-        An array of sampling points to query the tree. If None it is the
-        same as the points used to build the tree. Default is None. 
-    k : int or Sequence[int], Optional
-        Either the number of nearest neighbors to return, 
-        or a list of the k-th nearest neighbors to return, starting from 1.
-    leaf_size : positive int, Optional
-        The number of points at which the algorithm switches over to brute-force.
-        Default is 10.
-    workers : int, Optional
-        Only if backend is 'scipy'.
-        Number of workers to use for parallel processing. If -1 is given all 
-        CPU threads are used. Default: -1.
-        New in 'scipy' version 1.6.0.
-    max_distance : float, Optional
-        Return only neighbors within this distance. It can be a single value, or 
-        an array of values of shape matching the input, while a None value
-        translates to an infinite upper bound.
-        Default is None.
-    tree_kwargs : dict, Optional
-        Extra keyword arguments passed to the KDTree creator of the selected
-        backend. Default is None.
-
-    Returns
-    -------
-    d : float or array of floats
-        The distances to the nearest neighbors. Only returned if
-        `return_distance==True`.
-    i : integer or array of integers
-        The index of each neighbor.
-
-    Raises
-    ------
-    ImportError
-        In the abscence of a usable backend.
-
-    Examples
-    --------
-    >>> from sigmaepsilon.mesh.grid import Grid
-    >>> from sigmaepsilon.mesh import KNN
-    >>> size = 80, 60, 20
-    >>> shape = 10, 8, 4
-    >>> grid = Grid(size=size, shape=shape, eshape='H8')
-    >>> X = grid.centers()
-    >>> i = KNN(X, X, k=3, max_distance=10.0)
-
-    """
-    tree_kwargs = {} if tree_kwargs is None else tree_kwargs
-    query_kwargs = {} if query_kwargs is None else query_kwargs
-    if backend == 'scipy':
-        from scipy.spatial import KDTree
-        tree = KDTree(X, leafsize=leaf_size, **tree_kwargs)
-        max_distance = np.inf if max_distance is None else max_distance
-        query_kwargs['distance_upper_bound'] = max_distance
-        if version.parse(__scipy_version__) < version.parse("1.6.0"):
-            warnings.warn("Multithreaded execution of a KNN search is " +
-                          "running on a single thread in scipy<1.6.0. Install a newer" +
-                          "version or use `backend=sklearn` if scikit is installed.")
-            d, i = tree.query(Y, k=k, **query_kwargs)
-        else:
-            d, i = tree.query(Y, k=k, workers=workers)
-    elif backend == 'sklearn':
-        if not __has_sklearn__:
-            raise ImportError("'sklearn' must be installed for this!")
-        from sklearn.neighbors import KDTree
-        tree = KDTree(X, leaf_size=leaf_size, **tree_kwargs)
-        if max_distance is None:
-            d, i = tree.query(Y, k=k, **query_kwargs)
-        else:
-            r = max_distance
-            d, i = tree.query_radius(Y, r, k=k, **query_kwargs)
-    else:
-        raise ImportError(
-            "Either `sklearn` or `scipy` must be present for this!")
-    return (d, i) if return_distance else i
-
-
-@njit(nogil=True, parallel=True, cache=__cache)
-def knn_to_lines(inds: ndarray):
-    nN, nK = inds.shape
-    res = np.zeros((nN, nK, 2), dtype=inds.dtype)
-    for i in prange(nN):
-        for j in prange(nK):
-            res[i, j, 0] = i
-            res[i, j, 1] = inds[i, j]
-    return res
 
 
 def cells_around(*args, **kwargs):
@@ -143,10 +22,8 @@ def cells_around(*args, **kwargs):
     """
     return points_around(*args, **kwargs)
 
-
-def points_around(points: np.ndarray, r_max: float, *args,
-                  frmt: str = 'dict', MT: bool = True, n_max: int = 10, 
-                  **kwargs):
+def points_around(points: np.ndarray, r_max: float, *,
+                  frmt: str = 'dict', MT: bool = True, n_max: int = 10):
     """
     Returns neighbouring points for each entry in `points` that are
     closer than the distance `r_max`. The results are returned in
@@ -167,12 +44,12 @@ def points_around(points: np.ndarray, r_max: float, *args,
 
     Returns
     -------
-    if frmt = 'csr' : dewloosh.math.linalg.sparse.csr.csr_matrix
+    if frmt = 'csr' : neumann.linalg.sparse.csr.csr_matrix
         A numba-jittable sparse matrix format.                      
 
     frmt = 'dict' : numba Dict(int : int[:])
 
-    frmt = 'jagged' : dewloosh.math.linalg.sparse.JaggedArray
+    frmt = 'jagged' : neumann.linalg.sparse.JaggedArray
         A subclass of `awkward.Array`
     """
     if MT:
@@ -235,7 +112,7 @@ def _jagged_to_spdata(ja: JaggedArray):
 
 
 @njit(nogil=True, fastmath=True, cache=__cache)
-def _cells_data_to_dict(data: np.ndarray, 
+def _cells_data_to_dict(data: np.ndarray,
                         widths: np.ndarray) -> nbDict:
     dres = dict()
     nE = len(widths)
@@ -329,15 +206,15 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
     points in the same frame.
     """
     if local_axes is not None:
-        return cells_coords_tr(cells_coords(coords, topo),
-                               local_axes, centralize=centralize)
+        return _cells_coords_tr_(cells_coords(coords, topo),
+                                 local_axes, centralize=centralize)
     else:
         return cells_coords(coords, topo)
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def cells_coords_tr(ecoords: ndarray, local_axes: ndarray,
-                    centralize: bool = True) -> ndarray:
+def _cells_coords_tr_(ecoords: ndarray, local_axes: ndarray,
+                      centralize: bool = True) -> ndarray:
     nE, nNE, _ = ecoords.shape
     res = np.zeros_like(ecoords)
     for i in prange(nE):
@@ -465,7 +342,7 @@ def cell_center(coords: np.ndarray):
 
 def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
     """
-    Returns coordinates of the centers of the provided cells.
+    Returns coordinates of the centers of cells of the same kind.
 
     Parameters
     ----------
@@ -483,27 +360,102 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def nodal_distribution_factors(topo: ndarray, volumes: ndarray):
+def _nodal_distribution_factors_csr_(topo: csr_matrix,
+                                     w: ndarray) -> ndarray:
     """
     The j-th factor of the i-th row is the contribution of
-    element i to the j-th node. Assumes a regular topology.
+    element i to the j-th node. Assumes zeroed and tight indexing.
+
+    Parameters
+    ----------
+    topo : csr_matrix
+        2d integer topology array as a CSR matrix.
+    w : numpy.ndarray
+        The weights of the cells.
     """
-    factors = np.zeros(topo.shape, dtype=volumes.dtype)
-    nodal_volumes = np.zeros(topo.max() + 1, dtype=volumes.dtype)
-    for iE in range(topo.shape[0]):
-        nodal_volumes[topo[iE]] += volumes[iE]
-    for iE in prange(topo.shape[0]):
-        for jNE in prange(topo.shape[1]):
-            factors[iE, jNE] = volumes[iE] / nodal_volumes[topo[iE, jNE]]
+    nE = topo.shape[0]
+    indptr = topo.indptr
+    data = topo.data.astype(np.int32)
+    factors = np.zeros(len(data), dtype=w.dtype)
+    nodal_w = np.zeros(data.max() + 1, dtype=w.dtype)
+    for iE in range(nE):
+        nodal_w[data[indptr[iE]:indptr[iE+1]]] += w[iE]
+    for iE in prange(nE):
+        _i = indptr[iE]
+        i_ = indptr[iE+1]
+        n = i_ - _i
+        for j in prange(n):
+            i = _i + j
+            factors[i] = w[iE] / nodal_w[data[i]]
     return factors
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, 
-                               ndf: ndarray):
+def _nodal_distribution_factors_dense_(topo: ndarray,
+                                       w: ndarray) -> ndarray:
     """
-    Distributes nodal data to the cells. The parameter 'ndf' controls
-    the behaviour of the distribution.
+    The j-th factor of the i-th row is the contribution of
+    element i to the j-th node. Assumes zeroed and tight indexing.
+
+    Parameters
+    ----------
+    topo : numpy.ndarray
+        2d integer topology array.
+    w : numpy.ndarray
+        The weights of the cells.
+    """
+    factors = np.zeros(topo.shape, dtype=w.dtype)
+    nodal_w = np.zeros(topo.max() + 1, dtype=w.dtype)
+    for iE in range(topo.shape[0]):
+        nodal_w[topo[iE]] += w[iE]
+    for iE in prange(topo.shape[0]):
+        for jNE in prange(topo.shape[1]):
+            factors[iE, jNE] = w[iE] / nodal_w[topo[iE, jNE]]
+    return factors
+
+
+def nodal_distribution_factors(topo: Union[csr_matrix, ndarray],
+                               weights: ndarray) -> Union[csr_matrix, ndarray]:
+    """
+    The j-th factor of the i-th row is the contribution of
+    element i to the j-th node. Assumes zeroed and tight indexing.
+
+    Parameters
+    ----------
+    topo : numpy.ndarray or csr_matrix
+        2d integer topology array.
+    w : numpy.ndarray
+        The weights of the cells.
+
+    Returns
+    -------
+    numpy.ndarray or csr_matrix
+        A 2d matrix with a matching shape to 'topo'.
+
+    See also
+    --------
+    :func:`polymesh.PolyData.nodal_distribution_factors`
+    """
+    if isinstance(topo, ndarray):
+        return _nodal_distribution_factors_dense_(topo, weights)
+    elif isinstance(topo, csr_matrix):
+        data = _nodal_distribution_factors_csr_(topo, weights)
+        indptr = topo.indptr
+        indices = topo.indices
+        shape = topo.shape
+        return csr_matrix(data, indices, indptr, shape)
+    else:
+        t = type(topo)
+        raise TypeError(f"Type {t} is not recognized as a topology.")
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
+                               ndf: ndarray) -> ndarray:
+    """
+    Distributes nodal data to the cells for the case when the topology
+    of the mesh is dense. The parameter 'ndf' controls the behaviour 
+    of the distribution.
 
     Parameters
     ----------
@@ -511,7 +463,7 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
         2d array of shape (nP, nX), the data defined on points.
     topo : numpy.ndarray
         2d integer array of shape (nE, nNE), describing the topology.
-    ndf : numpy.ndarray, Optional
+    ndf : numpy.ndarray
         2d float array of shape (nE, nNE), describing the distribution
         of cells to the nodes.
 
@@ -519,7 +471,6 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
     -------
     numpy.ndarray
         A 3d float array of shape (nE, nNE, nX).
-
     """
     nE, nNE = topo.shape
     res = np.zeros((nE, nNE, data.shape[1]))
@@ -529,18 +480,100 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
     return res
 
 
-@njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
-def collect_nodal_data_bulk(celldata: ndarray, topo: ndarray, N: int):
+@njit(nogil=True, parallel=True, cache=__cache)
+def distribute_nodal_data_sparse(data: ndarray, topo: ndarray, cids: ndarray,
+                                 ndf: csr_matrix) -> ndarray:
+    """
+    Distributes nodal data to the cells for the case when the topology of the
+    mesh is sparse. The parameter 'ndf' controls the behaviour of the distribution.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        2d array of shape (nP, nX), the data defined on points.
+    topo : numpy.ndarray
+        2d integer array of shape (nE, nNE), describing the topology.
+    cids : numpy.ndarray
+        A 1d integer array describing the indices of the cells.
+    ndf : csr_matrix
+        2d float array of shape (nE, nNE), describing the distribution
+        of cells to all nodes in the mesh.
+
+    Returns
+    -------
+    numpy.ndarray
+        A 3d float array of shape (nE, nNE, nX).
+    """
     nE, nNE = topo.shape
-    res = np.zeros((N, celldata.shape[2]), dtype=celldata.dtype)
+    indptr = ndf.indptr
+    ndfdata = ndf.data
+    res = np.zeros((nE, nNE, data.shape[1]))
     for iE in prange(nE):
+        ndf_e = ndfdata[indptr[cids[iE]]:indptr[cids[iE]+1]]
         for jNE in prange(nNE):
-            res[topo[iE, jNE]] += celldata[iE, jNE]
+            res[iE, jNE] = data[topo[iE, jNE]] * ndf_e[jNE]
+    return res
+
+
+@njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
+def collect_nodal_data(celldata: ndarray, topo: ndarray, cids: ndarray,
+                       ndf: csr_matrix, res: ndarray) -> ndarray:
+    """
+    Collects nodal data from data defined on nodes of cells.
+
+    Parameters
+    ----------
+    celldata : numpy.ndarray
+        Data defined on nodes of cells. It can be any array with at
+        least 2 dimensions with a shape (nE, nNE, ...), where nE and
+        nNE are the number of cells and nodes per cell.
+    topo : numpy.ndarray
+        A 2d integer array describing the topology of several cells of 
+        the same kind.
+    cids : numpy.ndarray
+        A 1d integer array describing the indices of the cells.
+    ndf : csr_matrix
+        Nodal distribution factors for each node of each cell in 'topo'.
+        This must contain values for all cells in a mesh, not just the
+        ones for which cell data and topology is provided by 'celldata'
+        and 'topo'.
+    res : numpy.ndarray
+        An array for the output. It must have a proper size, at lest up
+        to the maximum node index in 'topo'.
+    """
+    nE, nNE = topo.shape
+    indptr = ndf.indptr
+    ndfdata = ndf.data
+    for iE in range(nE):
+        ndf_e = ndfdata[indptr[cids[iE]]:indptr[cids[iE]+1]]
+        for jNE in prange(nNE):
+            res[topo[iE, jNE]] += celldata[iE, jNE] * ndf_e[jNE]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def explode_mesh_bulk(coords: ndarray, topo: ndarray):
+def explode_mesh_bulk(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
+    """
+    Turns an implicit representation of a mesh into an explicit one.
+    
+    .. note:
+        This function is Numba-jittable in 'nopython' mode.
+    
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        A 2d coordinate array.
+    topo : numpy.ndarray
+        A 2d integer array describing the topology of several cells of 
+        the same kind.
+    
+    Returns
+    -------
+    numpy.ndarray
+        A new coordinate array.
+    numpy.ndarray
+        A new topology array.
+    """
     nE, nNE = topo.shape
     nD = coords.shape[1]
     coords_ = np.zeros((nE*nNE, nD), dtype=coords.dtype)
@@ -554,8 +587,35 @@ def explode_mesh_bulk(coords: ndarray, topo: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def explode_mesh_data_bulk(coords: ndarray, topo: ndarray, 
-                           data: ndarray):
+def explode_mesh_data_bulk(coords: ndarray, topo: ndarray,
+                           data: ndarray) -> Tuple[ndarray]:
+    """
+    Turns an implicit representation of a mesh into an explicit one
+    and also data defined on the nodes of the cells to an 1d data
+    array defined on the points of the new mesh.
+    
+    .. note:
+        This function is Numba-jittable in 'nopython' mode.
+    
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        A 2d coordinate array.
+    topo : numpy.ndarray
+        A 2d integer array describing the topology of several cells of 
+        the same kind.
+    data : numpy.ndarray
+        A 2d array describing data on all nodes of the cells.
+    
+    Returns
+    -------
+    numpy.ndarray
+        A new coordinate array.
+    numpy.ndarray
+        A new topology array.
+    numpy.ndarray
+        A new 1d data array.
+    """
     nE, nNE = topo.shape
     nD = coords.shape[1]
     coords_ = np.zeros((nE*nNE, nD), dtype=coords.dtype)
@@ -582,6 +642,7 @@ def explode_mesh(coords: ndarray, topo: ndarray, *, data=None):
 @njit(nogil=True, parallel=True, cache=__cache)
 def decompose(ecoords, topo, coords_out):
     """
+    Performes the inverse operation to coordinate explosion.
     Example usage at AxisVM domains. Works for all kinds of arrays.
     """
     for iE in prange(len(topo)):
@@ -590,7 +651,7 @@ def decompose(ecoords, topo, coords_out):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def avg_cell_data1d_bulk(data: np.ndarray, topo: np.ndarray):
+def _avg_cell_data_1d_bulk_(data: np.ndarray, topo: np.ndarray):
     nE, nNE = topo.shape
     nD = data.shape[1]
     res = np.zeros((nE, nD), dtype=data.dtype)
@@ -603,21 +664,22 @@ def avg_cell_data1d_bulk(data: np.ndarray, topo: np.ndarray):
     return res
 
 
-def avg_cell_data(data: np.ndarray, topo: np.ndarray, squeeze=True):
+def avg_cell_data(data: np.ndarray, topo: np.ndarray,
+                  squeeze: bool = True) -> ndarray:
     nR = len(data.shape)
     if nR == 2:
-        res = avg_cell_data1d_bulk(matrixform(data), topo)
+        res = _avg_cell_data_1d_bulk_(matrixform(data), topo)
     if squeeze:
         return np.squeeze(res)
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray):
+def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns Jacobian matrices of local to global transformation 
     for several cells.
-    
+
     Parameters
     ----------
     dshp : numpy.ndarray
@@ -635,24 +697,24 @@ def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray):
     nE = ecoords.shape[0]
     nG, _, nD = dshp.shape
     jac = np.zeros((nE, nG, nD, nD), dtype=dshp.dtype)
-    for iE in prange(nE):
-        points = ecoords[iE].T
-        for iG in prange(nG):
-            jac[iE, iG] = points @ dshp[iG]
+    for iG in prange(nG):
+        d = dshp[iG].T
+        for iE in prange(nE):
+            jac[iE, iG] = d @ ecoords[iE]
     return jac
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def jacobian_det_bulk_1d(jac: ndarray):
+def jacobian_det_bulk_1d(jac: ndarray) -> ndarray:
     """
     Calculates Jacobian determinants for 1d cells.
-    
+
     Parameters
     ----------
     jac : numpy.ndarray
         4d float array of shape (nE, nG, 1, 1) for an nE number of 
         elements and nG number of evaluation points.
-        
+
     Returns
     -------
     numpy.ndarray
@@ -671,7 +733,7 @@ def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns the Jacobian matrix for multiple cells (nE), evaluated at
     multiple (nP) points.
-    
+
     Returns        
     -------
     A 4d NumPy array of shape (nE, nP, 1, 1).
@@ -700,6 +762,11 @@ def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray) -> ndarray:
 def center_of_points(coords: ndarray) -> ndarray:
     """
     Returns the center of several points.
+    
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        A 2d coordinate array.
     """
     res = np.zeros(coords.shape[1], dtype=coords.dtype)
     for i in prange(res.shape[0]):
@@ -711,6 +778,11 @@ def center_of_points(coords: ndarray) -> ndarray:
 def centralize(coords: ndarray) -> ndarray:
     """
     Centralizes coordinates of a point cloud.
+    
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        A 2d coordinate array.
     """
     nD = coords.shape[1]
     center = center_of_points(coords)
@@ -726,6 +798,13 @@ def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
     """
     Returns lengths of several lines, where the geometry is
     defined implicitly.
+    
+    Parameters
+    ----------
+    coords : numpy.ndarray
+        A 2d coordinate array.
+    topo : numpy.ndarray
+        A 2d topology array.
     """
     nE, nNE = topo.shape
     res = np.zeros(nE, dtype=coords.dtype)
@@ -735,10 +814,16 @@ def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def lengths_of_lines2(ecoords: ndarray):
+def lengths_of_lines2(ecoords: ndarray) -> ndarray:
     """
     Returns lengths of several lines, where line cooridnates
     are specified explicitly.
+    
+    Parameters
+    ----------
+    ecoords : numpy.ndarray
+        A 3d numpy array of shape (nE, nNE, nD), where nE, nNE and nD
+        are the number of elements, nodes and spatial dimensions.
     """
     nE, nNE = ecoords.shape[:2]
     res = np.zeros(nE, dtype=ecoords.dtype)
@@ -749,7 +834,7 @@ def lengths_of_lines2(ecoords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def distances_of_points(coords: ndarray):
+def distances_of_points(coords: ndarray) -> ndarray:
     """
     Calculates distances between a series of points.
 
@@ -771,7 +856,7 @@ def distances_of_points(coords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray):
+def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns a flattened array of points, evaluated at multiple
     points and cells. 
@@ -807,7 +892,7 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def norms(a: ndarray):
+def norms(a: ndarray) -> ndarray:
     """
     Returns the Euclidean norms for the input data, calculated
     along axis 1.
@@ -833,7 +918,7 @@ def norms(a: ndarray):
 def homogenize_nodal_values(data: ndarray, measure: ndarray) -> ndarray:
     """
     Calculates constant values for cells from existing data defined for
-    each nodes, according to some measure.
+    each node, according to some measure.
     """
     nE, _, nDATA = data.shape  # nE, nNE, nDATA
     res = np.zeros((nE, nDATA), dtype=data.dtype)
