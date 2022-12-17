@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from numba import njit
+
 __cache = True
 
 
@@ -20,12 +21,9 @@ def edges_Q4(quads: np.ndarray):
 
 
 def edgeIds_TET4():
-    return np.array([
-        [0, 1], [1, 2], [2, 0],
-        [0, 3], [1, 3], [2, 3]
-    ], dtype=int)
-    
-    
+    return np.array([[0, 1], [1, 2], [2, 0], [0, 3], [1, 3], [2, 3]], dtype=int)
+
+
 @njit(nogil=True, cache=__cache)
 def edges_TET4(topo: np.ndarray):
     nE = len(topo)
@@ -62,15 +60,27 @@ def faces_TET4(topo: np.ndarray):
     faces[:, 3, 1] = topo[:, 2]
     faces[:, 3, 2] = topo[:, 1]
     return faces
-    
+
 
 def edgeIds_H8():
-    return np.array([
-        [0, 1], [1, 2], [2, 3], [3, 0],
-        [4, 5], [5, 6], [6, 7], [7, 4],
-        [0, 4], [1, 5], [2, 6], [3, 7]
-    ], dtype=int)
-    
+    return np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [3, 0],
+            [4, 5],
+            [5, 6],
+            [6, 7],
+            [7, 4],
+            [0, 4],
+            [1, 5],
+            [2, 6],
+            [3, 7],
+        ],
+        dtype=int,
+    )
+
 
 @njit(nogil=True, cache=__cache)
 def edges_H8(topo: np.ndarray):

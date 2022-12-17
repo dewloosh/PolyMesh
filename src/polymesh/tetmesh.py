@@ -7,7 +7,7 @@ import numpy as np
 class TetMesh(PolyData):
     """
     A class to handle tetrahedral meshes.
-    
+
     Examples
     --------
     >>> from polymesh import TriMesh
@@ -15,10 +15,10 @@ class TetMesh(PolyData):
     >>> tetmesh = trimesh.extrude(h=300, N=5)
     >>> tetmesh.volume()
     144000000.0
-    
+
     """
-    
-    def __init__(self, *args,  celltype=None, topo=None, **kwargs):
+
+    def __init__(self, *args, celltype=None, topo=None, **kwargs):
         if celltype is None and topo is not None:
             if isinstance(topo, np.ndarray):
                 nNode = topo.shape[1]

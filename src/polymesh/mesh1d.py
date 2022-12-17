@@ -12,18 +12,19 @@ from .grid import rgridMT as grid
 __cache = True
 
 
-__all__ = ['mesh1d_uniform']
+__all__ = ["mesh1d_uniform"]
 
 
 @njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
-def _mesh1d_uniform_(coords: ndarray, topo: ndarray, eshape: ndarray, 
-                     N: int, frames: ndarray):
+def _mesh1d_uniform_(
+    coords: ndarray, topo: ndarray, eshape: ndarray, N: int, frames: ndarray
+):
     origo = np.zeros(1)
     subcoords_, subtopo_ = grid((1,), N, eshape, origo, 0)
     num_node_sub = len(subcoords_)
     N_new = len(coords) + len(topo) * (N - 1)
     coords_new = np.zeros((N_new, coords.shape[1]), dtype=coords.dtype)
-    coords_new[:len(coords)] = coords
+    coords_new[: len(coords)] = coords
     frames_new = dict()
     topo_new = dict()
     cN = len(coords)  # node counter
@@ -34,7 +35,7 @@ def _mesh1d_uniform_(coords: ndarray, topo: ndarray, eshape: ndarray,
         p1 = coords[topo[i, 0]]
         p2 = coords[topo[i, -1]]
         for j in range(1, num_node_sub - 1):
-            p = p1 * (1-subcoords_[j]) + p2 * subcoords_[j]
+            p = p1 * (1 - subcoords_[j]) + p2 * subcoords_[j]
             coords_new[cN] = p
             cN += 1
         topo_new[i] = np.copy(subtopo)
@@ -42,8 +43,16 @@ def _mesh1d_uniform_(coords: ndarray, topo: ndarray, eshape: ndarray,
     return coords_new, topo_new, frames_new
 
 
-def mesh1d_uniform(coords: ndarray, topo: ndarray, eshape: ndarray, *args, 
-                   N :int=2, refZ=None, return_frames=False, **kwargs):
+def mesh1d_uniform(
+    coords: ndarray,
+    topo: ndarray,
+    eshape: ndarray,
+    *args,
+    N: int = 2,
+    refZ=None,
+    return_frames=False,
+    **kwargs
+):
     """
     Returns the representation of a uniform 1d mesh as a tuple of numpy arrays.
     """

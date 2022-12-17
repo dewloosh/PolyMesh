@@ -26,7 +26,7 @@ def shape_function_matrix_T3(pcoord: np.ndarray):
     shp = shp_T3(pcoord)
     res = np.zeros((3, 9), dtype=pcoord.dtype)
     for i in prange(3):
-        res[:, i * 3: (i+1) * 3] = eye*shp[i]
+        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
     return res
 
 
@@ -41,7 +41,7 @@ def shape_function_matrix_T3_multi(pcoords: np.ndarray):
 
 @njit(nogil=True, cache=__cache)
 def dshp_T3(x):
-    return np.array([[-1., -1.], [1., 0.], [0., 1.]])
+    return np.array([[-1.0, -1.0], [1.0, 0.0], [0.0, 1.0]])
 
 
 @njit(nogil=True, parallel=True, cache=__cache)

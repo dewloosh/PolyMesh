@@ -9,25 +9,25 @@ __cache = True
 def tet_vol_bulk(ecoords: ndarray) -> ndarray:
     """
     Calculates volumes of several tetrahedra.
-    
+
     Parameters
     ----------
     ecoords : numpy.ndarray
-        A 3d float array of shape (nE, nNE, 3) of 
+        A 3d float array of shape (nE, nNE, 3) of
         nodal coordinates for several elements. Here nE
         is the number of nodes and nNE is the number of
         nodes per element.
-        
+
     Returns
     -------
     numpy.ndarray
         1d float array of volumes.
-        
+
     Note
     ----
-    This only returns exact results for linear cells. For 
+    This only returns exact results for linear cells. For
     nonlinear cells, use objects that calculate the volumes
-    using numerical integration.  
+    using numerical integration.
     """
     nE = len(ecoords)
     res = np.zeros(nE, dtype=ecoords.dtype)
@@ -45,18 +45,15 @@ def lcoords_tet() -> ndarray:
     Returns coordinates of the master element
     of a simplex in 3d.
     """
-    return np.array([
-        [0., 0., 0.],
-        [1., 0., 0.],
-        [0., 1., 0.],
-        [0., 0., 1.]
-    ])
+    return np.array(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    )
 
 
 @njit(nogil=True, cache=__cache)
 def nat_to_loc_tet(acoord: np.ndarray) -> ndarray:
     """
-    Transformation from natural to local coordinates 
+    Transformation from natural to local coordinates
     within a tetrahedra.
 
     Notes

@@ -9,10 +9,20 @@ __cache = True
 def shp_TET10(pcoord: ndarray):
     r, s, t = pcoord
     u = 1 - r - s - t
-    return np.array([u*(2*u-1), r*(2*r-1),
-                     s*(2*s-1), t*(2*t-1),
-                     4*u*r, 4*r*s, 4*s*u,
-                     4*u*t, 4*r*t, 4*s*t])
+    return np.array(
+        [
+            u * (2 * u - 1),
+            r * (2 * r - 1),
+            s * (2 * s - 1),
+            t * (2 * t - 1),
+            4 * u * r,
+            4 * r * s,
+            4 * s * u,
+            4 * u * t,
+            4 * r * t,
+            4 * s * t,
+        ]
+    )
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
@@ -30,7 +40,7 @@ def shape_function_matrix_TET10(pcoord: np.ndarray):
     shp = shp_TET10(pcoord)
     res = np.zeros((3, 30), dtype=pcoord.dtype)
     for i in prange(10):
-        res[:, i * 3: (i+1) * 3] = eye*shp[i]
+        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
     return res
 
 
@@ -45,8 +55,9 @@ def shape_function_matrix_TET10_multi(pcoords: np.ndarray):
 
 @njit(nogil=True, cache=__cache)
 def dshp_TET10(x):
-    return np.array([[-1., -1., -1.], [1., 0., 0.],
-                     [0., 1., 0.], [0., 0., 1.]])
+    return np.array(
+        [[-1.0, -1.0, -1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    )
 
 
 @njit(nogil=True, parallel=True, cache=__cache)

@@ -28,7 +28,7 @@ def shape_function_matrix_L2(pcoord: ndarray) -> ndarray:
     shp = shp_L2(pcoord)
     res = np.zeros((3, 6), dtype=pcoord.dtype)
     for i in prange(2):
-        res[:, i*3: (i+1) * 3] = eye*shp[i]
+        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
     return res
 
 

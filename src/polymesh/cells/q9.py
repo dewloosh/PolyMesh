@@ -5,23 +5,22 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polygon import BiQuadraticQuadrilateral
-from ..utils.cells.q9 import (shp_Q9_multi, dshp_Q9_multi,
-                              shape_function_matrix_Q9_multi)
+from ..utils.cells.q9 import shp_Q9_multi, dshp_Q9_multi, shape_function_matrix_Q9_multi
 
 
 class Q9(BiQuadraticQuadrilateral):
     """
-    Polygon class for 9-noded biquadratic quadrilaterals. 
+    Polygon class for 9-noded biquadratic quadrilaterals.
 
     See Also
     --------
     :class:`BiQuadraticQuadrilateral`
     """
-    
+
     shpfnc = shp_Q9_multi
     shpmfnc = shape_function_matrix_Q9_multi
     dshpfnc = dshp_Q9_multi
-    
+
     @classmethod
     def polybase(cls) -> Tuple[List]:
         """
@@ -35,9 +34,18 @@ class Q9(BiQuadraticQuadrilateral):
             A list of monomials.
 
         """
-        locvars = r, s = symbols('r, s', real=True)
-        monoms = [1, r, s, r * s, r**2, 
-                  s**2, r * s**2, s * r**2, s**2 * r**2]
+        locvars = r, s = symbols("r, s", real=True)
+        monoms = [
+            1,
+            r,
+            s,
+            r * s,
+            r**2,
+            s**2,
+            r * s**2,
+            s * r**2,
+            s**2 * r**2,
+        ]
         return locvars, monoms
 
     @classmethod
@@ -50,9 +58,19 @@ class Q9(BiQuadraticQuadrilateral):
         numpy.ndarray
 
         """
-        return np.array([[-1., -1.], [1., -1.], [1., 1.], 
-                         [-1., 1.], [0., -1.], [1., 0.], 
-                         [0., 1.], [-1., 0.], [0., 0.]])
+        return np.array(
+            [
+                [-1.0, -1.0],
+                [1.0, -1.0],
+                [1.0, 1.0],
+                [-1.0, 1.0],
+                [0.0, -1.0],
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [-1.0, 0.0],
+                [0.0, 0.0],
+            ]
+        )
 
     @classmethod
     def lcenter(cls) -> ndarray:
@@ -64,4 +82,4 @@ class Q9(BiQuadraticQuadrilateral):
         numpy.ndarray
 
         """
-        return np.array([0., 0.])
+        return np.array([0.0, 0.0])

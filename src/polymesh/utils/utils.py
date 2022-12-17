@@ -22,8 +22,15 @@ def cells_around(*args, **kwargs):
     """
     return points_around(*args, **kwargs)
 
-def points_around(points: np.ndarray, r_max: float, *,
-                  frmt: str = 'dict', MT: bool = True, n_max: int = 10):
+
+def points_around(
+    points: np.ndarray,
+    r_max: float,
+    *,
+    frmt: str = "dict",
+    MT: bool = True,
+    n_max: int = 10,
+):
     """
     Returns neighbouring points for each entry in `points` that are
     closer than the distance `r_max`. The results are returned in
@@ -39,13 +46,13 @@ def points_around(points: np.ndarray, r_max: float, *,
         Maximum number of neighbours. Default is 10.
     frmt : str
         A string specifying the output format. Valid options are
-        'jagged', 'csr' and 'dict'. 
+        'jagged', 'csr' and 'dict'.
         See below for the details on the returned object.
 
     Returns
     -------
     if frmt = 'csr' : neumann.linalg.sparse.csr.csr_matrix
-        A numba-jittable sparse matrix format.                      
+        A numba-jittable sparse matrix format.
 
     frmt = 'dict' : numba Dict(int : int[:])
 
@@ -56,15 +63,14 @@ def points_around(points: np.ndarray, r_max: float, *,
         data, widths = _cells_around_MT_(points, r_max, n_max)
     else:
         raise NotImplementedError
-    if frmt == 'dict':
+    if frmt == "dict":
         return _cells_data_to_dict(data, widths)
-    elif frmt == 'jagged':
+    elif frmt == "jagged":
         return _cells_data_to_jagged(data, widths)
-    elif frmt == 'csr':
+    elif frmt == "csr":
         d = _cells_data_to_dict(data, widths)
         data, inds, indptr, shp = _dict_to_spdata(d, widths)
-        return csr_matrix(data=data, indices=inds,
-                          indptr=indptr, shape=shp)
+        return csr_matrix(data=data, indices=inds, indptr=indptr, shape=shp)
     raise RuntimeError("Unhandled case!")
 
 
@@ -74,7 +80,7 @@ def _dict_to_spdata(d: dict, widths: np.ndarray):
     nE = len(widths)
     data = np.zeros(N, dtype=np.int64)
     inds = np.zeros_like(data)
-    indptr = np.zeros(nE+1, dtype=np.int64)
+    indptr = np.zeros(nE + 1, dtype=np.int64)
     _c = 0
     wmax = 0
     for i in range(len(d)):
@@ -82,9 +88,9 @@ def _dict_to_spdata(d: dict, widths: np.ndarray):
         if w > wmax:
             wmax = w
         c_ = _c + w
-        data[_c: c_] = d[i]
-        inds[_c: c_] = np.arange(w)
-        indptr[i+1] = c_
+        data[_c:c_] = d[i]
+        inds[_c:c_] = np.arange(w)
+        indptr[i + 1] = c_
         _c = c_
     return data, inds, indptr, (nE, wmax)
 
@@ -96,7 +102,7 @@ def _jagged_to_spdata(ja: JaggedArray):
     nE = len(widths)
     data = np.zeros(N, dtype=np.int64)
     inds = np.zeros_like(data)
-    indptr = np.zeros(nE+1, dtype=np.int64)
+    indptr = np.zeros(nE + 1, dtype=np.int64)
     _c = 0
     wmax = 0
     for i in range(len(ja)):
@@ -104,20 +110,19 @@ def _jagged_to_spdata(ja: JaggedArray):
         if w > wmax:
             wmax = w
         c_ = _c + w
-        data[_c: c_] = ja[i]
-        inds[_c: c_] = np.arange(w)
-        indptr[i+1] = c_
+        data[_c:c_] = ja[i]
+        inds[_c:c_] = np.arange(w)
+        indptr[i + 1] = c_
         _c = c_
     return data, inds, indptr, (nE, wmax)
 
 
 @njit(nogil=True, fastmath=True, cache=__cache)
-def _cells_data_to_dict(data: np.ndarray,
-                        widths: np.ndarray) -> nbDict:
+def _cells_data_to_dict(data: np.ndarray, widths: np.ndarray) -> nbDict:
     dres = dict()
     nE = len(widths)
     for iE in range(nE):
-        dres[iE] = data[iE, :widths[iE]]
+        dres[iE] = data[iE, : widths[iE]]
     return dres
 
 
@@ -128,7 +133,7 @@ def _flatten_jagged_data(data, widths) -> ndarray:
     inds[1:] = np.cumsum(widths)
     res = np.zeros(np.sum(widths))
     for i in prange(nE):
-        res[inds[i]: inds[i+1]] = data[i, :widths[i]]
+        res[inds[i] : inds[i + 1]] = data[i, : widths[i]]
     return res
 
 
@@ -161,19 +166,24 @@ def _cells_around_MT_(centers: np.ndarray, r_max: float, n_max: int = 10):
     for iE in prange(nE):
         inds = np.where(norms(centers - centers[iE]) <= r_max)[0]
         if inds.shape[0] <= n_max:
-            res[iE, :inds.shape[0]] = inds
+            res[iE, : inds.shape[0]] = inds
         else:
             res[iE, :] = inds[:n_max]
         widths[iE] = len(res[iE])
     return res, widths
 
 
-def points_of_cells(coords: ndarray, topo: ndarray, *args,
-                    local_axes: ndarray = None, centralize: bool = True,
-                    **kwargs) -> ndarray:
+def points_of_cells(
+    coords: ndarray,
+    topo: ndarray,
+    *args,
+    local_axes: ndarray = None,
+    centralize: bool = True,
+    **kwargs,
+) -> ndarray:
     """
-    Returns an explicit representation of coordinates of the cells from a 
-    pointset and a topology. If coordinate frames are provided, the 
+    Returns an explicit representation of coordinates of the cells from a
+    pointset and a topology. If coordinate frames are provided, the
     coorindates are returned with  respect to those frames.
 
     Parameters
@@ -183,16 +193,16 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
         nP : number of points
         nD : number of dimensions of the model space
     topo : numpy.ndarray
-        A 2D array of shape (nE, nNE) of vertex indices. The i-th row 
+        A 2D array of shape (nE, nNE) of vertex indices. The i-th row
         contains the vertex indices of the i-th element.
         nE : number of elements
         nNE : number of nodes per element
     local_axes : numpy.ndarray
-        Reference frames as a 3d array of shape (..., 3, 3). A single 
-        3x3 numpy array or matrices for all elements in 'topo' must be 
+        Reference frames as a 3d array of shape (..., 3, 3). A single
+        3x3 numpy array or matrices for all elements in 'topo' must be
         provided.
     centralize : bool, Optional
-        If True, and 'local_axes' is not None, the local coordinates are 
+        If True, and 'local_axes' is not None, the local coordinates are
         returned with respect to the geometric center of each element.
 
     Returns
@@ -218,7 +228,7 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
             return cells_coords(coords, topo)
 
 
-#@njit(nogil=True, parallel=True, cache=__cache)
+# @njit(nogil=True, parallel=True, cache=__cache)
 def _cells_coords_tr_(ecoords: ndarray, local_axes: ndarray) -> ndarray:
     nE, nNE, _ = ecoords.shape
     res = np.zeros_like(ecoords)
@@ -253,7 +263,7 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
         nP : number of points
         nD : number of dimensions of the model space
     topo : numpy.ndarray
-        A 2D array of shape (nE, nNE) of vertex indices. The i-th 
+        A 2D array of shape (nE, nNE) of vertex indices. The i-th
         row contains the vertex indices of the i-th element.
         nE : number of elements
         nNE : number of nodes per element
@@ -261,12 +271,12 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
     Returns
     -------
     numpy.ndarray
-        A 3d array of shape (nE, nNE, nD) that contains coordinates 
+        A 3d array of shape (nE, nNE, nD) that contains coordinates
         for all nodes of all cells according to the argument 'topo'.
 
     Notes
     -----
-    The array 'coords' must be fully populated up to the maximum 
+    The array 'coords' must be fully populated up to the maximum
     index in 'topo'. (len(coords) >= (topo.max() + 1))
     """
     nE, nNE = topo.shape
@@ -275,12 +285,12 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
         for iNE in prange(nNE):
             res[iE, iNE] = coords[topo[iE, iNE]]
     return res
- 
+
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:
     """
-    Returns coordinates of a single cell from a coordinate 
+    Returns coordinates of a single cell from a coordinate
     array and a topology array.
 
     Parameters
@@ -327,8 +337,9 @@ def cell_center_2d(ecoords: np.ndarray):
     numpy.ndarray
         1d coordinate array.
     """
-    return np.array([np.mean(ecoords[:, 0]), np.mean(ecoords[:, 1])],
-                    dtype=ecoords.dtype)
+    return np.array(
+        [np.mean(ecoords[:, 0]), np.mean(ecoords[:, 1])], dtype=ecoords.dtype
+    )
 
 
 @njit(nogil=True, cache=__cache)
@@ -347,8 +358,10 @@ def cell_center(coords: np.ndarray):
     numpy.ndarray
         1d coordinate array.
     """
-    return np.array([np.mean(coords[:, 0]), np.mean(coords[:, 1]),
-                     np.mean(coords[:, 2])], dtype=coords.dtype)
+    return np.array(
+        [np.mean(coords[:, 0]), np.mean(coords[:, 1]), np.mean(coords[:, 2])],
+        dtype=coords.dtype,
+    )
 
 
 def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
@@ -371,8 +384,7 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _nodal_distribution_factors_csr_(topo: csr_matrix,
-                                     w: ndarray) -> ndarray:
+def _nodal_distribution_factors_csr_(topo: csr_matrix, w: ndarray) -> ndarray:
     """
     The j-th factor of the i-th row is the contribution of
     element i to the j-th node. Assumes zeroed and tight indexing.
@@ -390,10 +402,10 @@ def _nodal_distribution_factors_csr_(topo: csr_matrix,
     factors = np.zeros(len(data), dtype=w.dtype)
     nodal_w = np.zeros(data.max() + 1, dtype=w.dtype)
     for iE in range(nE):
-        nodal_w[data[indptr[iE]:indptr[iE+1]]] += w[iE]
+        nodal_w[data[indptr[iE] : indptr[iE + 1]]] += w[iE]
     for iE in prange(nE):
         _i = indptr[iE]
-        i_ = indptr[iE+1]
+        i_ = indptr[iE + 1]
         n = i_ - _i
         for j in prange(n):
             i = _i + j
@@ -402,8 +414,7 @@ def _nodal_distribution_factors_csr_(topo: csr_matrix,
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _nodal_distribution_factors_dense_(topo: ndarray,
-                                       w: ndarray) -> ndarray:
+def _nodal_distribution_factors_dense_(topo: ndarray, w: ndarray) -> ndarray:
     """
     The j-th factor of the i-th row is the contribution of
     element i to the j-th node. Assumes zeroed and tight indexing.
@@ -425,8 +436,9 @@ def _nodal_distribution_factors_dense_(topo: ndarray,
     return factors
 
 
-def nodal_distribution_factors(topo: Union[csr_matrix, ndarray],
-                               weights: ndarray) -> Union[csr_matrix, ndarray]:
+def nodal_distribution_factors(
+    topo: Union[csr_matrix, ndarray], weights: ndarray
+) -> Union[csr_matrix, ndarray]:
     """
     The j-th factor of the i-th row is the contribution of
     element i to the j-th node. Assumes zeroed and tight indexing.
@@ -461,11 +473,10 @@ def nodal_distribution_factors(topo: Union[csr_matrix, ndarray],
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
-                               ndf: ndarray) -> ndarray:
+def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, ndf: ndarray) -> ndarray:
     """
     Distributes nodal data to the cells for the case when the topology
-    of the mesh is dense. The parameter 'ndf' controls the behaviour 
+    of the mesh is dense. The parameter 'ndf' controls the behaviour
     of the distribution.
 
     Parameters
@@ -492,8 +503,9 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray,
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def distribute_nodal_data_sparse(data: ndarray, topo: ndarray, cids: ndarray,
-                                 ndf: csr_matrix) -> ndarray:
+def distribute_nodal_data_sparse(
+    data: ndarray, topo: ndarray, cids: ndarray, ndf: csr_matrix
+) -> ndarray:
     """
     Distributes nodal data to the cells for the case when the topology of the
     mesh is sparse. The parameter 'ndf' controls the behaviour of the distribution.
@@ -520,15 +532,16 @@ def distribute_nodal_data_sparse(data: ndarray, topo: ndarray, cids: ndarray,
     ndfdata = ndf.data
     res = np.zeros((nE, nNE, data.shape[1]))
     for iE in prange(nE):
-        ndf_e = ndfdata[indptr[cids[iE]]:indptr[cids[iE]+1]]
+        ndf_e = ndfdata[indptr[cids[iE]] : indptr[cids[iE] + 1]]
         for jNE in prange(nNE):
             res[iE, jNE] = data[topo[iE, jNE]] * ndf_e[jNE]
     return res
 
 
 @njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
-def collect_nodal_data(celldata: ndarray, topo: ndarray, cids: ndarray,
-                       ndf: csr_matrix, res: ndarray) -> ndarray:
+def collect_nodal_data(
+    celldata: ndarray, topo: ndarray, cids: ndarray, ndf: csr_matrix, res: ndarray
+) -> ndarray:
     """
     Collects nodal data from data defined on nodes of cells.
 
@@ -539,7 +552,7 @@ def collect_nodal_data(celldata: ndarray, topo: ndarray, cids: ndarray,
         least 2 dimensions with a shape (nE, nNE, ...), where nE and
         nNE are the number of cells and nodes per cell.
     topo : numpy.ndarray
-        A 2d integer array describing the topology of several cells of 
+        A 2d integer array describing the topology of several cells of
         the same kind.
     cids : numpy.ndarray
         A 1d integer array describing the indices of the cells.
@@ -556,7 +569,7 @@ def collect_nodal_data(celldata: ndarray, topo: ndarray, cids: ndarray,
     indptr = ndf.indptr
     ndfdata = ndf.data
     for iE in range(nE):
-        ndf_e = ndfdata[indptr[cids[iE]]:indptr[cids[iE]+1]]
+        ndf_e = ndfdata[indptr[cids[iE]] : indptr[cids[iE] + 1]]
         for jNE in prange(nNE):
             res[topo[iE, jNE]] += celldata[iE, jNE] * ndf_e[jNE]
     return res
@@ -566,18 +579,18 @@ def collect_nodal_data(celldata: ndarray, topo: ndarray, cids: ndarray,
 def explode_mesh_bulk(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     """
     Turns an implicit representation of a mesh into an explicit one.
-    
+
     .. note:
         This function is Numba-jittable in 'nopython' mode.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
         A 2d coordinate array.
     topo : numpy.ndarray
-        A 2d integer array describing the topology of several cells of 
+        A 2d integer array describing the topology of several cells of
         the same kind.
-    
+
     Returns
     -------
     numpy.ndarray
@@ -587,10 +600,10 @@ def explode_mesh_bulk(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     """
     nE, nNE = topo.shape
     nD = coords.shape[1]
-    coords_ = np.zeros((nE*nNE, nD), dtype=coords.dtype)
+    coords_ = np.zeros((nE * nNE, nD), dtype=coords.dtype)
     topo_ = np.zeros_like(topo)
     for i in prange(nE):
-        ii = i*nNE
+        ii = i * nNE
         for j in prange(nNE):
             coords_[ii + j] = coords[topo[i, j]]
             topo_[i, j] = ii + j
@@ -598,26 +611,27 @@ def explode_mesh_bulk(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def explode_mesh_data_bulk(coords: ndarray, topo: ndarray,
-                           data: ndarray) -> Tuple[ndarray]:
+def explode_mesh_data_bulk(
+    coords: ndarray, topo: ndarray, data: ndarray
+) -> Tuple[ndarray]:
     """
     Turns an implicit representation of a mesh into an explicit one
     and also data defined on the nodes of the cells to an 1d data
     array defined on the points of the new mesh.
-    
+
     .. note:
         This function is Numba-jittable in 'nopython' mode.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
         A 2d coordinate array.
     topo : numpy.ndarray
-        A 2d integer array describing the topology of several cells of 
+        A 2d integer array describing the topology of several cells of
         the same kind.
     data : numpy.ndarray
         A 2d array describing data on all nodes of the cells.
-    
+
     Returns
     -------
     numpy.ndarray
@@ -629,11 +643,11 @@ def explode_mesh_data_bulk(coords: ndarray, topo: ndarray,
     """
     nE, nNE = topo.shape
     nD = coords.shape[1]
-    coords_ = np.zeros((nE*nNE, nD), dtype=coords.dtype)
+    coords_ = np.zeros((nE * nNE, nD), dtype=coords.dtype)
     topo_ = np.zeros_like(topo)
-    data_ = np.zeros(nE*nNE, dtype=coords.dtype)
+    data_ = np.zeros(nE * nNE, dtype=coords.dtype)
     for i in prange(nE):
-        ii = i*nNE
+        ii = i * nNE
         for j in prange(nNE):
             coords_[ii + j] = coords[topo[i, j]]
             data_[ii + j] = data[i, j]
@@ -675,8 +689,7 @@ def _avg_cell_data_1d_bulk_(data: np.ndarray, topo: np.ndarray):
     return res
 
 
-def avg_cell_data(data: np.ndarray, topo: np.ndarray,
-                  squeeze: bool = True) -> ndarray:
+def avg_cell_data(data: np.ndarray, topo: np.ndarray, squeeze: bool = True) -> ndarray:
     nR = len(data.shape)
     if nR == 2:
         res = _avg_cell_data_1d_bulk_(matrixform(data), topo)
@@ -688,7 +701,7 @@ def avg_cell_data(data: np.ndarray, topo: np.ndarray,
 @njit(nogil=True, parallel=True, cache=__cache)
 def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray) -> ndarray:
     """
-    Returns Jacobian matrices of local to global transformation 
+    Returns Jacobian matrices of local to global transformation
     for several cells.
 
     Parameters
@@ -723,13 +736,13 @@ def jacobian_det_bulk_1d(jac: ndarray) -> ndarray:
     Parameters
     ----------
     jac : numpy.ndarray
-        4d float array of shape (nE, nG, 1, 1) for an nE number of 
+        4d float array of shape (nE, nG, 1, 1) for an nE number of
         elements and nG number of evaluation points.
 
     Returns
     -------
     numpy.ndarray
-        A 2d array of shape (nE, nG) of jacobian determinants calculated 
+        A 2d array of shape (nE, nG) of jacobian determinants calculated
         for each element and evaluation points.
     """
     nE, nG = jac.shape[:2]
@@ -745,14 +758,14 @@ def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray) -> ndarray:
     Returns the Jacobian matrix for multiple cells (nE), evaluated at
     multiple (nP) points.
 
-    Returns        
+    Returns
     -------
     A 4d NumPy array of shape (nE, nP, 1, 1).
 
     Notes
     -----
     As long as the line is straight, it is a constant metric element,
-    and 'dshp' is only required here to provide an output with a correct 
+    and 'dshp' is only required here to provide an output with a correct
     shape.
     """
     lengths = lengths_of_lines2(ecoords)
@@ -773,7 +786,7 @@ def jacobian_matrix_bulk_1d(dshp: ndarray, ecoords: ndarray) -> ndarray:
 def center_of_points(coords: ndarray) -> ndarray:
     """
     Returns the center of several points.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
@@ -789,7 +802,7 @@ def center_of_points(coords: ndarray) -> ndarray:
 def centralize(coords: ndarray) -> ndarray:
     """
     Centralizes coordinates of a point cloud.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
@@ -809,7 +822,7 @@ def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
     """
     Returns lengths of several lines, where the geometry is
     defined implicitly.
-    
+
     Parameters
     ----------
     coords : numpy.ndarray
@@ -820,7 +833,7 @@ def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
     nE, nNE = topo.shape
     res = np.zeros(nE, dtype=coords.dtype)
     for i in prange(nE):
-        res[i] = norm(coords[topo[i, nNE-1]] - coords[topo[i, 0]])
+        res[i] = norm(coords[topo[i, nNE - 1]] - coords[topo[i, 0]])
     return res
 
 
@@ -829,7 +842,7 @@ def lengths_of_lines2(ecoords: ndarray) -> ndarray:
     """
     Returns lengths of several lines, where line cooridnates
     are specified explicitly.
-    
+
     Parameters
     ----------
     ecoords : numpy.ndarray
@@ -862,7 +875,7 @@ def distances_of_points(coords: ndarray) -> ndarray:
     nP = coords.shape[0]
     res = np.zeros(nP, dtype=coords.dtype)
     for i in prange(1, nP):
-        res[i] = norm(coords[i] - coords[i-1])
+        res[i] = norm(coords[i] - coords[i - 1])
     return res
 
 
@@ -870,7 +883,7 @@ def distances_of_points(coords: ndarray) -> ndarray:
 def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns a flattened array of points, evaluated at multiple
-    points and cells. 
+    points and cells.
 
     Only for 1d cells.
 
@@ -889,7 +902,7 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
     Returns
     -------
     numpy.ndarray
-        2d float array of shape (nE * nP, nD). 
+        2d float array of shape (nE * nP, nD).
     """
     nP = pcoords.shape[0]
     nE = ecoords.shape[0]
@@ -897,8 +910,9 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
     res = np.zeros((nX, ecoords.shape[2]), dtype=ecoords.dtype)
     for iE in prange(nE):
         for jP in prange(nP):
-            res[iE * nP + jP] = ecoords[iE, 0] * (1-pcoords[jP]) \
-                + ecoords[iE, -1] * pcoords[jP]
+            res[iE * nP + jP] = (
+                ecoords[iE, 0] * (1 - pcoords[jP]) + ecoords[iE, -1] * pcoords[jP]
+            )
     return res
 
 

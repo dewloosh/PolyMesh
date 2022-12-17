@@ -5,22 +5,26 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polyhedron import TetraHedron
-from ..utils.cells.tet4 import (shp_TET4_multi, dshp_TET4_multi,
-                              shape_function_matrix_TET4_multi)
+from ..utils.cells.tet4 import (
+    shp_TET4_multi,
+    dshp_TET4_multi,
+    shape_function_matrix_TET4_multi,
+)
 
 
 class TET4(TetraHedron):
     """
     4-node isoparametric hexahedron.
-    
+
     See Also
     --------
     :class:`TetraHedron`
     """
+
     shpfnc = shp_TET4_multi
     shpmfnc = shape_function_matrix_TET4_multi
     dshpfnc = dshp_TET4_multi
-    
+
     @classmethod
     def polybase(cls) -> Tuple[List]:
         """
@@ -34,19 +38,16 @@ class TET4(TetraHedron):
             A list of monomials.
 
         """
-        locvars = r, s, t = symbols('r s t', real=True)
-        monoms = [1, r, s, t, r*s, r*t, s*t, r**2, s**2, t**2]
+        locvars = r, s, t = symbols("r s t", real=True)
+        monoms = [1, r, s, t, r * s, r * t, s * t, r**2, s**2, t**2]
         return locvars, monoms
 
     @classmethod
     def lcoords(cls) -> ndarray:
-        return np.array([
-            [0., 0., 0.], 
-            [1., 0., 0.], 
-            [0., 1., 0.],
-            [0., 0., 1.]])
+        return np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        )
 
     @classmethod
     def lcenter(cls) -> ndarray:
-        return np.array([[1/3, 1/3, 1/3]])
-    
+        return np.array([[1 / 3, 1 / 3, 1 / 3]])

@@ -12,27 +12,42 @@ NoneType = type(None)
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def processCmdLine():
-    parser = argparse.ArgumentParser(description='Detect peas.')
-    parser.add_argument('--input', help='Name of the input INP file.',
-                        nargs=1, type=str, required=True)
+    parser = argparse.ArgumentParser(description="Detect peas.")
     parser.add_argument(
-        '--output', help='Name of the output STL file.', nargs=1, type=str, required=True)
-    parser.add_argument('--flip', help='Flip normal vectors.', nargs='?',
-                        type=str2bool, required=False, const=True, default=False)
+        "--input", help="Name of the input INP file.", nargs=1, type=str, required=True
+    )
+    parser.add_argument(
+        "--output",
+        help="Name of the output STL file.",
+        nargs=1,
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--flip",
+        help="Flip normal vectors.",
+        nargs="?",
+        type=str2bool,
+        required=False,
+        const=True,
+        default=False,
+    )
     return parser.parse_args()
 
 
 def computeLength(aVector):
-    return math.sqrt(aVector[0] * aVector[0] + aVector[1] * aVector[1] + aVector[2] * aVector[2])
+    return math.sqrt(
+        aVector[0] * aVector[0] + aVector[1] * aVector[1] + aVector[2] * aVector[2]
+    )
 
 
 def computeNormal(p1, p2, p3):
@@ -40,8 +55,11 @@ def computeNormal(p1, p2, p3):
     u = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]]
     v = [p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]]
 
-    normal = [(u[1] * v[2]) - (u[2] * v[1]), (u[2] * v[0]) -
-              (u[0] * v[2]), (u[0] * v[1]) - (u[1] * v[0])]
+    normal = [
+        (u[1] * v[2]) - (u[2] * v[1]),
+        (u[2] * v[0]) - (u[0] * v[2]),
+        (u[0] * v[1]) - (u[1] * v[0]),
+    ]
     vector_length = computeLength(normal)
     normal[0] /= vector_length
     normal[1] /= vector_length
@@ -51,19 +69,18 @@ def computeNormal(p1, p2, p3):
 
 
 def isFileExtensionINF(anInputFileName):
-    return anInputFileName[len(anInputFileName) - 4:].lower() == ".inp"
+    return anInputFileName[len(anInputFileName) - 4 :].lower() == ".inp"
 
 
 def isFileExtensionSTL(anOutputFileName):
-    return anOutputFileName[len(anOutputFileName) - 4:].lower() == ".stl"
+    return anOutputFileName[len(anOutputFileName) - 4 :].lower() == ".stl"
 
 
 def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
 
     # Open the file if it is an INF file
     if not isFileExtensionINF(anInputFileName):
-        raise Exception("The file name \"" + anInputFileName +
-                        "\" is not an .inf file")
+        raise Exception('The file name "' + anInputFileName + '" is not an .inf file')
 
     input_file = open(anInputFileName, "r")
 
@@ -81,15 +98,15 @@ def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
     for line in input_file:
 
         # Change of record type
-        if line[0] == '*':
-            if line[1] != '*':
+        if line[0] == "*":
+            if line[1] != "*":
                 record_type = line.upper()
 
                 # This is a new part
-                if record_type[:len("*PART")] == "*PART":
+                if record_type[: len("*PART")] == "*PART":
                     vertex_set_offset = len(vertex_set)
                 # This is a new mesh
-                elif record_type[:len("*ELEMENT, TYPE=C3D4")] == "*ELEMENT, TYPE=C3D4":
+                elif record_type[: len("*ELEMENT, TYPE=C3D4")] == "*ELEMENT, TYPE=C3D4":
                     triangle_index_set.append([])
 
                     # Material properties are included
@@ -97,49 +114,63 @@ def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
                     if substring in record_type:
                         start = record_type.index(substring) + len(substring)
                         end = len(record_type) - 1
-                        material_set.append(
-                            record_type[start:end].replace("PT_", ""))
+                        material_set.append(record_type[start:end].replace("PT_", ""))
 
-        elif record_type[:len("*HEADING")] == "*HEADING":
+        elif record_type[: len("*HEADING")] == "*HEADING":
             pass
-        elif record_type[:len("*NODE")] == "*NODE" and record_type[:len("*NODE OUTPUT")] != "*NODE OUTPUT":
-            vertex = line.split(',')
+        elif (
+            record_type[: len("*NODE")] == "*NODE"
+            and record_type[: len("*NODE OUTPUT")] != "*NODE OUTPUT"
+        ):
+            vertex = line.split(",")
             if len(vertex) == 4:
-                vertex_set.append([float(vertex[1]),
-                                   float(vertex[2]),
-                                   float(vertex[3])])
+                vertex_set.append(
+                    [float(vertex[1]), float(vertex[2]), float(vertex[3])]
+                )
             else:
                 raise Exception("Cannot interpret this line: ", line)
         # Tetrahedrons, see http://web.mit.edu/calculix_v2.7/CalculiX/ccx_2.7/doc/ccx/node32.html
-        elif record_type[:len("*ELEMENT, TYPE=C3D4")] == "*ELEMENT, TYPE=C3D4":
-            indices = line.split(',')
+        elif record_type[: len("*ELEMENT, TYPE=C3D4")] == "*ELEMENT, TYPE=C3D4":
+            indices = line.split(",")
             if len(indices) == 5:
-                triangle_index_set[-1].append([int(indices[1]) - 1 + vertex_set_offset,
-                                               int(indices[2]) - 1 +
-                                               vertex_set_offset,
-                                               int(indices[3]) - 1 + vertex_set_offset])
+                triangle_index_set[-1].append(
+                    [
+                        int(indices[1]) - 1 + vertex_set_offset,
+                        int(indices[2]) - 1 + vertex_set_offset,
+                        int(indices[3]) - 1 + vertex_set_offset,
+                    ]
+                )
 
-                triangle_index_set[-1].append([int(indices[1]) - 1 + vertex_set_offset,
-                                               int(indices[4]) - 1 +
-                                               vertex_set_offset,
-                                               int(indices[2]) - 1 + vertex_set_offset])
+                triangle_index_set[-1].append(
+                    [
+                        int(indices[1]) - 1 + vertex_set_offset,
+                        int(indices[4]) - 1 + vertex_set_offset,
+                        int(indices[2]) - 1 + vertex_set_offset,
+                    ]
+                )
 
-                triangle_index_set[-1].append([int(indices[4]) - 1 + vertex_set_offset,
-                                               int(indices[3]) - 1 +
-                                               vertex_set_offset,
-                                               int(indices[2]) - 1 + vertex_set_offset])
+                triangle_index_set[-1].append(
+                    [
+                        int(indices[4]) - 1 + vertex_set_offset,
+                        int(indices[3]) - 1 + vertex_set_offset,
+                        int(indices[2]) - 1 + vertex_set_offset,
+                    ]
+                )
 
-                triangle_index_set[-1].append([int(indices[4]) - 1 + vertex_set_offset,
-                                               int(indices[1]) - 1 +
-                                               vertex_set_offset,
-                                               int(indices[3]) - 1 + vertex_set_offset])
+                triangle_index_set[-1].append(
+                    [
+                        int(indices[4]) - 1 + vertex_set_offset,
+                        int(indices[1]) - 1 + vertex_set_offset,
+                        int(indices[3]) - 1 + vertex_set_offset,
+                    ]
+                )
             else:
                 raise Exception("Cannot interpret this line: ", line)
         # Ignore the beam type
-        elif record_type[:len("*ELEMENT, TYPE=B31H")] == "*ELEMENT, TYPE=B31H":
+        elif record_type[: len("*ELEMENT, TYPE=B31H")] == "*ELEMENT, TYPE=B31H":
             pass
         # Ignore this type
-        elif record_type[:len("*ELEMENT, TYPE=S3RS")] == "*ELEMENT, TYPE=S3RS":
+        elif record_type[: len("*ELEMENT, TYPE=S3RS")] == "*ELEMENT, TYPE=S3RS":
             pass
         # Ignore other types
         else:
@@ -169,8 +200,7 @@ def writeStlFile(anOutputFileName, aVertexSet, aTriangleIndexSet):
 
     # Open the file if it is an STL file
     if not isFileExtensionSTL(anOutputFileName):
-        raise Exception("The file name \"" +
-                        anOutputFileName + "\" is not an .stl file")
+        raise Exception('The file name "' + anOutputFileName + '" is not an .stl file')
 
     output_file = open(anOutputFileName, "w")
 
@@ -191,15 +221,25 @@ def writeStlFile(anOutputFileName, aVertexSet, aTriangleIndexSet):
         normal = computeNormal(p1, p2, p3)
 
         output_file.write(
-            "\tfacet normal " + str(normal[0]) + ' ' + str(normal[1]) + ' ' + str(normal[2]) + "\n")
+            "\tfacet normal "
+            + str(normal[0])
+            + " "
+            + str(normal[1])
+            + " "
+            + str(normal[2])
+            + "\n"
+        )
         output_file.write("\touter loop\n")
 
         output_file.write(
-            "\t\tvertex " + str(p1[0]) + ' ' + str(p1[1]) + ' ' + str(p1[2]) + '\n')
+            "\t\tvertex " + str(p1[0]) + " " + str(p1[1]) + " " + str(p1[2]) + "\n"
+        )
         output_file.write(
-            "\t\tvertex " + str(p2[0]) + ' ' + str(p2[1]) + ' ' + str(p2[2]) + '\n')
+            "\t\tvertex " + str(p2[0]) + " " + str(p2[1]) + " " + str(p2[2]) + "\n"
+        )
         output_file.write(
-            "\t\tvertex " + str(p3[0]) + ' ' + str(p3[1]) + ' ' + str(p3[2]) + '\n')
+            "\t\tvertex " + str(p3[0]) + " " + str(p3[1]) + " " + str(p3[2]) + "\n"
+        )
 
         output_file.write("\tendloop\n")
         output_file.write("\tendfacet\n")
@@ -243,8 +283,7 @@ def getBBox(vertex_set, triangle_index_set):
         for i, triangle_index in enumerate(triangle_index_set):
 
             if i == 0:
-                min_corner, max_corner = getMeshBBox(
-                    vertex_set, triangle_index)
+                min_corner, max_corner = getMeshBBox(vertex_set, triangle_index)
             else:
                 temp_min, temp_max = getMeshBBox(vertex_set, triangle_index)
 
@@ -259,7 +298,7 @@ def getBBox(vertex_set, triangle_index_set):
     return min_corner, max_corner
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Load the arguments from the command line
     args = processCmdLine()
@@ -270,8 +309,7 @@ if __name__ == '__main__':
         print("Flip normal vectors")
 
     # Load the data
-    vertex_set, triangle_index_set, material_set = readInpFile(
-        args.input[0], args.flip)
+    vertex_set, triangle_index_set, material_set = readInpFile(args.input[0], args.flip)
     print("len(vertex_set)", len(vertex_set))
     print("Number of meshes in", args.input[0], ": ", len(triangle_index_set))
 
@@ -279,16 +317,15 @@ if __name__ == '__main__':
     min_corner, max_corner = getBBox(vertex_set, triangle_index_set)
 
     # Compute the bounding box
-    bbox_range = [max_corner[0] - min_corner[0],
-                  max_corner[1] - min_corner[1],
-                  max_corner[2] - min_corner[2]]
+    bbox_range = [
+        max_corner[0] - min_corner[0],
+        max_corner[1] - min_corner[1],
+        max_corner[2] - min_corner[2],
+    ]
 
-    print("X Range:", min_corner[0], "to",
-          max_corner[0], "(delta:", bbox_range[0], ")")
-    print("Y Range:", min_corner[1], "to",
-          max_corner[1], "(delta:", bbox_range[1], ")")
-    print("Z Range:", min_corner[2], "to",
-          max_corner[2], "(delta:", bbox_range[2], ")")
+    print("X Range:", min_corner[0], "to", max_corner[0], "(delta:", bbox_range[0], ")")
+    print("Y Range:", min_corner[1], "to", max_corner[1], "(delta:", bbox_range[1], ")")
+    print("Z Range:", min_corner[2], "to", max_corner[2], "(delta:", bbox_range[2], ")")
 
     # There is only one mesh in the INP file
     if len(triangle_index_set) == 1:
@@ -297,15 +334,19 @@ if __name__ == '__main__':
         for i, triangle_index in enumerate(triangle_index_set):
             output_file_prefix = args.output[0]
             if isFileExtensionSTL(args.output[0]):
-                output_file_prefix = output_file_prefix[:len(
-                    output_file_prefix) - 4]
+                output_file_prefix = output_file_prefix[: len(output_file_prefix) - 4]
 
             if i < len(material_set):
-                output_file_name = output_file_prefix + "-" + \
-                    material_set[i] + "-" + str(i + 1) + ".stl"
+                output_file_name = (
+                    output_file_prefix
+                    + "-"
+                    + material_set[i]
+                    + "-"
+                    + str(i + 1)
+                    + ".stl"
+                )
             else:
-                output_file_name = output_file_prefix + \
-                    "-" + str(i + 1) + ".stl"
+                output_file_name = output_file_prefix + "-" + str(i + 1) + ".stl"
 
             print("Output files:", output_file_name)
             writeStlFile(output_file_name, vertex_set, triangle_index)

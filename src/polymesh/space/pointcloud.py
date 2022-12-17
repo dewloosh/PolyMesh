@@ -1,8 +1,17 @@
 from numba.core import types as nbtypes, cgutils
-from numba.extending import (typeof_impl, models,
-                             make_attribute_wrapper, register_model, box,
-                             unbox, NativeValue, type_callable, lower_builtin,
-                             overload, overload_attribute)
+from numba.extending import (
+    typeof_impl,
+    models,
+    make_attribute_wrapper,
+    register_model,
+    box,
+    unbox,
+    NativeValue,
+    type_callable,
+    lower_builtin,
+    overload,
+    overload_attribute,
+)
 import operator
 from typing import Union
 from numpy import ndarray
@@ -18,13 +27,12 @@ from neumann.linalg.frame import ReferenceFrame as FrameLike
 
 from .frame import CartesianFrame
 from .point import Point
-from ..utils.space import (index_of_closest_point, 
-                           index_of_furthest_point)
+from ..utils.space import index_of_closest_point, index_of_furthest_point
 
 __cache = True
 
 
-__all__ = ['PointCloud']
+__all__ = ["PointCloud"]
 
 
 VectorLike = Union[Point, Vector, ndarray]
@@ -52,7 +60,7 @@ def dcoords(coords, v):
 
 class PointCloud(Vector):
     """
-    A numba-jittable class to support calculations related to points 
+    A numba-jittable class to support calculations related to points
     in Euclidean space.
 
     Parameters
@@ -82,7 +90,7 @@ class PointCloud(Vector):
 
     Move the points in the global frame:
 
-    >>> coords.move(np.array([1., 0., 0.]))    
+    >>> coords.move(np.array([1., 0., 0.]))
     >>> coords.center()
         array([1., 0., 0.])
 
@@ -150,7 +158,9 @@ class PointCloud(Vector):
         elif issequence(key[0]):
             inds = key[0]
         elif isinstance(key[0], int):
-            inds = [key[0], ]
+            inds = [
+                key[0],
+            ]
         if inds is not None and self.inds is not None:
             inds = self.inds[inds]
         arr = self._array.__getitem__(key)
@@ -166,7 +176,7 @@ class PointCloud(Vector):
     @frame.setter
     def frame(self, target: FrameLike):
         """
-        Sets the frame. This changes the frame itself and results 
+        Sets the frame. This changes the frame itself and results
         in a transformation of coordinates.
 
         Parameters
@@ -179,7 +189,7 @@ class PointCloud(Vector):
             self._array = self.show(target)
             self._frame = target
         else:
-            raise TypeError('Value must be a {} instance'.format(FrameLike))
+            raise TypeError("Value must be a {} instance".format(FrameLike))
 
     def x(self, target: FrameLike = None):
         """Returns the `x` coordinates."""
@@ -199,7 +209,7 @@ class PointCloud(Vector):
     def bounds(self, target: FrameLike = None) -> ndarray:
         """
         Returns the bounds of the pointcloud as a numpy array with
-        a shape of (N, 2), where N is 2 for 2d problems and 3 for 3d 
+        a shape of (N, 2), where N is 2 for 2d problems and 3 for 3d
         ones.
 
         """
@@ -214,7 +224,7 @@ class PointCloud(Vector):
 
     def center(self, target: FrameLike = None):
         """
-        Returns the center of the points in a specified frame, 
+        Returns the center of the points in a specified frame,
         or the root frame if there is no target provided.
 
         Parameters
@@ -229,7 +239,10 @@ class PointCloud(Vector):
 
         """
         arr = self.show(target)
-        def foo(i): return np.mean(arr[:, i])
+
+        def foo(i):
+            return np.mean(arr[:, i])
+
         return np.array(list(map(foo, range(self.shape[1]))))
 
     def index_of_closest(self, p: VectorLike, frame: FrameLike = None):
@@ -239,8 +252,8 @@ class PointCloud(Vector):
         Parameters
         ----------
         p : Vector or Array, Optional
-            Vectors or coordinates of one or more points. If provided as 
-            an array, the `frame` argument can be used to specify the 
+            Vectors or coordinates of one or more points. If provided as
+            an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -254,7 +267,7 @@ class PointCloud(Vector):
         if not isinstance(p, Vector):
             p = Vector(p, frame=frame)
         return index_of_closest_point(self.show(), p.show())
-    
+
     def index_of_furthest(self, p: VectorLike, frame: FrameLike = None):
         """
         Returns the index of the point being furthest from `p`.
@@ -262,8 +275,8 @@ class PointCloud(Vector):
         Parameters
         ----------
         p : Vector or Array, Optional
-            Vectors or coordinates of one or more points. If provided as 
-            an array, the `frame` argument can be used to specify the 
+            Vectors or coordinates of one or more points. If provided as
+            an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -285,8 +298,8 @@ class PointCloud(Vector):
         Parameters
         ----------
         p : Vector or Array, Optional
-            Vectors or coordinates of one or more points. If provided as 
-            an array, the `frame` argument can be used to specify the 
+            Vectors or coordinates of one or more points. If provided as
+            an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -303,11 +316,11 @@ class PointCloud(Vector):
             gid = self.inds[id]
         else:
             gid = id
-        if isinstance(id, int):      
+        if isinstance(id, int):
             return Point(arr, frame=self.frame, id=id, gid=gid)
         else:
             return PointCloud(arr, frame=self.frame, inds=id)
-        
+
     def furthest(self, p: VectorLike, frame: FrameLike = None) -> Point:
         """
         Returns the point being closest to `p`.
@@ -315,8 +328,8 @@ class PointCloud(Vector):
         Parameters
         ----------
         p : Vector or Array, Optional
-            Vectors or coordinates of one or more points. If provided as 
-            an array, the `frame` argument can be used to specify the 
+            Vectors or coordinates of one or more points. If provided as
+            an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
         frame : ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
@@ -333,14 +346,14 @@ class PointCloud(Vector):
             gid = self.inds[id]
         else:
             gid = id
-        if isinstance(id, int):      
+        if isinstance(id, int):
             return Point(arr, frame=self.frame, id=id, gid=gid)
         else:
             return PointCloud(arr, frame=self.frame, inds=id)
 
     def show(self, target: FrameLike = None):
         """
-        Returns the coordinates of the points in a specified frame, 
+        Returns the coordinates of the points in a specified frame,
         or the root frame if there is no target provided.
 
         Parameters
@@ -360,7 +373,7 @@ class PointCloud(Vector):
 
     def move(self, v: VectorLike, frame: FrameLike = None):
         """
-        Moves the points wrt. to a specified frame, or the root 
+        Moves the points wrt. to a specified frame, or the root
         frame if there is no target provided. Returns the object
         for continuation.
 
@@ -443,15 +456,15 @@ class PointCloud(Vector):
         else:
             target = self.frame.orient_new(*args, **kwargs)
             return self.rotate(target)
-        
+
     def idsort(self) -> ndarray:
         """
         Returns the indices that would sort the array according to
         their indices.
         """
         return np.argsort(self.inds)
-    
-    def sort_indices(self) -> 'PointCloud':
+
+    def sort_indices(self) -> "PointCloud":
         """
         Sorts the points according to their indices and returns the
         object.
@@ -460,7 +473,7 @@ class PointCloud(Vector):
         self._array = self._array[s]
         self.inds = self.inds[s]
         return self
-            
+
     def __repr__(self):
         return f"PointCloud({self._wrapped})"
 
@@ -474,31 +487,34 @@ class PointCloudType(nbtypes.Type):
     def __init__(self, datatype, indstype=nbtypes.NoneType):
         self.data = datatype
         self.inds = indstype
-        super(PointCloudType, self).__init__(name='PointCloud')
+        super(PointCloudType, self).__init__(name="PointCloud")
 
 
-make_attribute_wrapper(PointCloudType, 'data', 'data')
-make_attribute_wrapper(PointCloudType, 'inds', 'inds')
+make_attribute_wrapper(PointCloudType, "data", "data")
+make_attribute_wrapper(PointCloudType, "inds", "inds")
 
 
-@overload_attribute(PointCloudType, 'x')
+@overload_attribute(PointCloudType, "x")
 def attr_x(arr):
     def get(arr):
         return arr.data[:, 0]
+
     return get
 
 
-@overload_attribute(PointCloudType, 'y')
+@overload_attribute(PointCloudType, "y")
 def attr_y(arr):
     def get(arr):
         return arr.data[:, 1]
+
     return get
 
 
-@overload_attribute(PointCloudType, 'z')
+@overload_attribute(PointCloudType, "z")
 def attr_z(arr):
     def get(arr):
         return arr.data[:, 2]
+
     return get
 
 
@@ -514,9 +530,9 @@ def type_of_impl(val, context):
 def type_of_callable(context):
     def typer(data, inds=None):
         datatype = typeof_impl(data, context)
-        indstype = typeof_impl(inds, context) \
-            if inds is not None else nbtypes.NoneType
+        indstype = typeof_impl(inds, context) if inds is not None else nbtypes.NoneType
         return PointCloudType(datatype, indstype)
+
     return typer
 
 
@@ -529,8 +545,8 @@ class StructModel(models.StructModel):
         fe_type is `PointCloudType`
         """
         members = [
-            ('data', fe_type.data),
-            ('inds', fe_type.inds),
+            ("data", fe_type.data),
+            ("inds", fe_type.inds),
         ]
         models.StructModel.__init__(self, dmm, fe_type, members)
 
@@ -572,10 +588,8 @@ def unbox_type(typ, obj, c):
 @box(PointCloudType)
 def box_type(typ, val, c):
     """Convert a numba-native structure to a python object."""
-    native_obj = cgutils.create_struct_proxy(
-        typ)(c.context, c.builder, value=val)
-    class_obj = c.pyapi.unserialize(
-        c.pyapi.serialize_object(PointCloud))
+    native_obj = cgutils.create_struct_proxy(typ)(c.context, c.builder, value=val)
+    class_obj = c.pyapi.unserialize(c.pyapi.serialize_object(PointCloud))
     data_obj = c.box(typ.data, native_obj.data)
     inds_obj = c.box(typ.inds, native_obj.inds)
     python_obj = c.pyapi.call_function_objargs(class_obj, (data_obj, inds_obj))

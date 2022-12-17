@@ -5,22 +5,22 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polygon import Triangle
-from ..utils.cells.t3 import (shp_T3_multi, dshp_T3_multi,
-                              shape_function_matrix_T3_multi)
+from ..utils.cells.t3 import shp_T3_multi, dshp_T3_multi, shape_function_matrix_T3_multi
 
 
 class T3(Triangle):
     """
     A class to handle 3-noded triangles.
-    
+
     See Also
     --------
     :class:`Triangle`
     """
+
     shpfnc = shp_T3_multi
     shpmfnc = shape_function_matrix_T3_multi
     dshpfnc = dshp_T3_multi
-    
+
     @classmethod
     def polybase(cls) -> Tuple[List]:
         """
@@ -34,7 +34,7 @@ class T3(Triangle):
             A list of monomials.
 
         """
-        locvars = r, s = symbols('r s', real=True)
+        locvars = r, s = symbols("r s", real=True)
         monoms = [1, r, s]
         return locvars, monoms
 
@@ -48,7 +48,7 @@ class T3(Triangle):
         numpy.ndarray
 
         """
-        return np.array([[0., 0.], [1., 0.], [0., 1.]])
+        return np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
 
     @classmethod
     def lcenter(cls) -> ndarray:
@@ -60,4 +60,4 @@ class T3(Triangle):
         numpy.ndarray
 
         """
-        return np.array([[1/3, 1/3]])
+        return np.array([[1 / 3, 1 / 3]])

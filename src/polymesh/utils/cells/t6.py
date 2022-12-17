@@ -8,14 +8,17 @@ __cache = True
 @njit(nogil=True, cache=__cache)
 def shp_T6(pcoord: ndarray):
     r, s = pcoord[0:2]
-    return np.array([2.0*r**2 + 4.0*r*s - 3.0*r +
-                     2.0*s**2 - 3.0*s + 1.0,
-                     2.0*r**2 - 1.0*r,
-                     2.0*s**2 - 1.0*s,
-                     -4.0*r**2 - 4.0*r*s + 4.0*r,
-                     4.0*r*s,
-                     -4.0*r*s - 4.0*s**2 + 4.0*s],
-                    dtype=pcoord.dtype)
+    return np.array(
+        [
+            2.0 * r**2 + 4.0 * r * s - 3.0 * r + 2.0 * s**2 - 3.0 * s + 1.0,
+            2.0 * r**2 - 1.0 * r,
+            2.0 * s**2 - 1.0 * s,
+            -4.0 * r**2 - 4.0 * r * s + 4.0 * r,
+            4.0 * r * s,
+            -4.0 * r * s - 4.0 * s**2 + 4.0 * s,
+        ],
+        dtype=pcoord.dtype,
+    )
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
@@ -33,7 +36,7 @@ def shape_function_matrix_T6(pcoord: ndarray):
     shp = shp_T6(pcoord)
     res = np.zeros((3, 18), dtype=pcoord.dtype)
     for i in prange(6):
-        res[:, i * 3: (i+1) * 3] = eye*shp[i]
+        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
     return res
 
 
@@ -49,12 +52,16 @@ def shape_function_matrix_T6_multi(pcoords: np.ndarray):
 @njit(nogil=True, cache=__cache)
 def dshp_T6(pcoord):
     r, s = pcoord[0:2]
-    return np.array([[4.0*r + 4.0*s - 3.0, 4.0*r + 4.0*s - 3.0],
-                     [4.0*r - 1.0, 0],
-                     [0, 4.0*s - 1.0],
-                     [-8.0*r - 4.0*s + 4.0, -4.0*r],
-                     [4.0*s, 4.0*r],
-                     [-4.0*s, -4.0*r - 8.0*s + 4.0]])
+    return np.array(
+        [
+            [4.0 * r + 4.0 * s - 3.0, 4.0 * r + 4.0 * s - 3.0],
+            [4.0 * r - 1.0, 0],
+            [0, 4.0 * s - 1.0],
+            [-8.0 * r - 4.0 * s + 4.0, -4.0 * r],
+            [4.0 * s, 4.0 * r],
+            [-4.0 * s, -4.0 * r - 8.0 * s + 4.0],
+        ]
+    )
 
 
 @njit(nogil=True, parallel=True, cache=__cache)

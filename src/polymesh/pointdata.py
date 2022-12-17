@@ -13,7 +13,8 @@ from .base import PointDataBase, PolyDataBase as PolyData
 from .utils import collect_nodal_data
 
 
-def gen_frame(coords): return CartesianFrame(dim=coords.shape[1])
+def gen_frame(coords):
+    return CartesianFrame(dim=coords.shape[1])
 
 
 class PointData(PointDataBase):
@@ -27,17 +28,29 @@ class PointData(PointDataBase):
     polygonal data structure, it is important to understand how it works.
 
     """
+
     _point_cls_ = PointCloud
     _frame_class_ = CartesianFrame
     _attr_map_ = {
-        'x': 'x',  # coordinates
-        'activity': 'activity',  # activity of the points
-        'id': 'id',  # global indices of the points
+        "x": "x",  # coordinates
+        "activity": "activity",  # activity of the points
+        "id": "id",  # global indices of the points
     }
 
-    def __init__(self, *args, points=None, coords=None, wrap=None, fields=None,
-                 frame: FrameLike = None, newaxis: int = 2, activity=None,
-                 db=None, container: PolyData = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        points=None,
+        coords=None,
+        wrap=None,
+        fields=None,
+        frame: FrameLike = None,
+        newaxis: int = 2,
+        activity=None,
+        db=None,
+        container: PolyData = None,
+        **kwargs
+    ):
         if db is not None:
             wrap = db
         elif wrap is not None:
@@ -61,7 +74,8 @@ class PointData(PointDataBase):
             else:
                 X = points if coords is None else coords
             assert isinstance(
-                X, np.ndarray), 'Coordinates must be specified as a numpy array!'
+                X, np.ndarray
+            ), "Coordinates must be specified as a numpy array!"
             nP, nD = X.shape
             if nD == 2:
                 inds = [0, 1, 2]
@@ -81,8 +95,9 @@ class PointData(PointDataBase):
             if activity is None:
                 activity = np.ones(nP, dtype=bool)
             else:
-                assert isboolarray(activity) and len(activity.shape) == 1, \
-                    "'activity' must be a 1d boolean numpy array!"
+                assert (
+                    isboolarray(activity) and len(activity.shape) == 1
+                ), "'activity' must be a 1d boolean numpy array!"
             fields[self._dbkey_activity_] = activity
 
             for k, v in kwargs.items():
@@ -95,15 +110,15 @@ class PointData(PointDataBase):
 
     @classproperty
     def _dbkey_id_(cls) -> str:
-        return cls._attr_map_['id']
+        return cls._attr_map_["id"]
 
     @classproperty
     def _dbkey_x_(cls) -> str:
-        return cls._attr_map_['x']
+        return cls._attr_map_["x"]
 
     @classproperty
     def _dbkey_activity_(cls) -> str:
-        return cls._attr_map_['activity']
+        return cls._attr_map_["activity"]
 
     @property
     def has_id(self) -> ndarray:
@@ -174,9 +189,9 @@ class PointData(PointDataBase):
         Parameters
         ----------
         key : str
-            A field key to identify data in the databases of the attached 
+            A field key to identify data in the databases of the attached
             CellData instances of the blocks.
-        
+
         See Also
         --------
         :func:`~polymesh.utils.utils.collect_nodal_data`
@@ -204,5 +219,5 @@ class PointData(PointDataBase):
             if len(celldata.shape) == 1:
                 nE, nNE = topo.shape
                 celldata = np.repeat(celldata, nNE).reshape(nE, nNE)
-            collect_nodal_data(celldata, topo, cids, ndf, res)        
+            collect_nodal_data(celldata, topo, cids, ndf, res)
         return res

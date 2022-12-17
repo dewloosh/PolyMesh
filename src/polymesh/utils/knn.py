@@ -7,6 +7,7 @@ import warnings
 
 try:
     import sklearn
+
     __has_sklearn__ = True
 except Exception:
     __has_sklearn__ = False
@@ -15,19 +16,29 @@ __scipy_version__ = sp.__version__
 __cache = True
 
 
-def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
-                         k=1, workers=-1, tree_kwargs=None, query_kwargs=None,
-                         leaf_size=30, return_distance=False,
-                         max_distance=None, **kwargs):
+def k_nearest_neighbours(
+    X: ndarray,
+    Y: ndarray = None,
+    *args,
+    backend="scipy",
+    k=1,
+    workers=-1,
+    tree_kwargs=None,
+    query_kwargs=None,
+    leaf_size=30,
+    return_distance=False,
+    max_distance=None,
+    **kwargs
+):
     """
     Returns the k nearest neighbours (KNN) of a KDTree for a pointcloud using `scipy`
     or `sklearn`. The function acts as a uniform interface for similar functionality
-    of `scipy` and `sklearn`. The most important parameters are highlighted, for the 
+    of `scipy` and `sklearn`. The most important parameters are highlighted, for the
     complete list of arguments, see the corresponding docs:
 
     https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.html#scipy.spatial.KDTree
 
-    https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KDTree.html  
+    https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KDTree.html
 
     To learn more about nearest neighbour searches in general:
 
@@ -39,20 +50,20 @@ def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
         An array of points to build the tree.
     Y : numpy.ndarray, Optional
         An array of sampling points to query the tree. If None it is the
-        same as the points used to build the tree. Default is None. 
+        same as the points used to build the tree. Default is None.
     k : int or Sequence[int], Optional
-        Either the number of nearest neighbors to return, 
+        Either the number of nearest neighbors to return,
         or a list of the k-th nearest neighbors to return, starting from 1.
     leaf_size : positive int, Optional
         The number of points at which the algorithm switches over to brute-force.
         Default is 10.
     workers : int, Optional
         Only if backend is 'scipy'.
-        Number of workers to use for parallel processing. If -1 is given all 
+        Number of workers to use for parallel processing. If -1 is given all
         CPU threads are used. Default: -1.
         New in 'scipy' version 1.6.0.
     max_distance : float, Optional
-        Return only neighbors within this distance. It can be a single value, or 
+        Return only neighbors within this distance. It can be a single value, or
         an array of values of shape matching the input, while a None value
         translates to an infinite upper bound.
         Default is None.
@@ -86,22 +97,26 @@ def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
     """
     tree_kwargs = {} if tree_kwargs is None else tree_kwargs
     query_kwargs = {} if query_kwargs is None else query_kwargs
-    if backend == 'scipy':
+    if backend == "scipy":
         from scipy.spatial import KDTree
+
         tree = KDTree(X, leafsize=leaf_size, **tree_kwargs)
         max_distance = np.inf if max_distance is None else max_distance
-        query_kwargs['distance_upper_bound'] = max_distance
+        query_kwargs["distance_upper_bound"] = max_distance
         if version.parse(__scipy_version__) < version.parse("1.6.0"):
-            warnings.warn("Multithreaded execution of a KNN search is " +
-                          "running on a single thread in scipy<1.6.0. Install a newer" +
-                          "version or use `backend=sklearn` if scikit is installed.")
+            warnings.warn(
+                "Multithreaded execution of a KNN search is "
+                + "running on a single thread in scipy<1.6.0. Install a newer"
+                + "version or use `backend=sklearn` if scikit is installed."
+            )
             d, i = tree.query(Y, k=k, **query_kwargs)
         else:
             d, i = tree.query(Y, k=k, workers=workers)
-    elif backend == 'sklearn':
+    elif backend == "sklearn":
         if not __has_sklearn__:
             raise ImportError("'sklearn' must be installed for this!")
         from sklearn.neighbors import KDTree
+
         tree = KDTree(X, leaf_size=leaf_size, **tree_kwargs)
         if max_distance is None:
             d, i = tree.query(Y, k=k, **query_kwargs)
@@ -109,8 +124,7 @@ def k_nearest_neighbours(X: ndarray, Y: ndarray = None, *args, backend='scipy',
             r = max_distance
             d, i = tree.query_radius(Y, r, k=k, **query_kwargs)
     else:
-        raise ImportError(
-            "Either `sklearn` or `scipy` must be present for this!")
+        raise ImportError("Either `sklearn` or `scipy` must be present for this!")
     return (d, i) if return_distance else i
 
 

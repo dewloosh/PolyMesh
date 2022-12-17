@@ -21,14 +21,14 @@ class TriMesh(PolyData):
     points : numpy.ndarray, Optional
         2d numpy array of floats, describing a pointcloud. Default is None.
     triangles : numpy.ndarray, Optional
-        2d numpy array of integers, describing the topology of a polygonal mesh. 
+        2d numpy array of integers, describing the topology of a polygonal mesh.
         Default is None.
 
     Notes
     -----
-    See the PolyData class for the rest of the possible arguments to the 
+    See the PolyData class for the rest of the possible arguments to the
     creator of this class. Note that, `points` and `triangles` are aliases
-    to `coords` and `topo`, but the original terminology is still available. 
+    to `coords` and `topo`, but the original terminology is still available.
 
     Examples
     --------
@@ -66,17 +66,13 @@ class TriMesh(PolyData):
         6: T6,
     }
 
-    def __init__(self, *args,  points=None, triangles=None,
-                 celltype=None, **kwargs):
+    def __init__(self, *args, points=None, triangles=None, celltype=None, **kwargs):
         # parent class handles pointdata and celldata creation
-        points = points if points is not None else \
-            kwargs.get('coords', None)
-        triangles = triangles if triangles is not None else \
-            kwargs.get('topo', None)
+        points = points if points is not None else kwargs.get("coords", None)
+        triangles = triangles if triangles is not None else kwargs.get("topo", None)
         if triangles is None:
             try:
-                points, triangles, _ = \
-                    triangulate(*args, points=points, **kwargs)
+                points, triangles, _ = triangulate(*args, points=points, **kwargs)
             except Exception:
                 raise RuntimeError
         if celltype is None and triangles is not None:
@@ -136,6 +132,7 @@ class TriMesh(PolyData):
 
         """
         from .tetmesh import TetMesh
+
         if not self.is_planar():
             raise RuntimeError("Only planar surfaces can be extruded!")
         assert celltype is None, "Currently only TET4 element is supported!"
@@ -158,8 +155,8 @@ class TriMesh(PolyData):
         Parameters
         ----------
         return_cells : Bool, Optional
-            If True, returns the edge indices of the triangles, 
-            that can be used to reconstruct the topology. 
+            If True, returns the edge indices of the triangles,
+            that can be used to reconstruct the topology.
             Default is False.
 
         Returns
@@ -168,7 +165,7 @@ class TriMesh(PolyData):
             Integer array of indices, representing point indices of edges.
 
         numpy.ndarray, Optional
-            Integer array of indices, that together with the edge data 
+            Integer array of indices, that together with the edge data
             reconstructs the topology.
 
         """
@@ -182,7 +179,7 @@ class TriMesh(PolyData):
         """
         Returns a triangulation object of a specified backend.
         See :func:`polymesh.tri.triang.triangulate` for the details.
-        
+
         Note
         ----
         During the process, the 6-noded triangles of the section are converted

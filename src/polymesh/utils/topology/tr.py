@@ -3,6 +3,7 @@ import numpy as np
 from awkward import Array
 from numba import njit, prange
 from typing import Union, Sequence
+
 try:
     from collections.abc import Iterable
 except ImportError:
@@ -12,36 +13,51 @@ from concurrent.futures import ThreadPoolExecutor
 
 from ..tri import edges_tri
 from ..utils import cells_coords
-from ..topodata import (edgeIds_TET4, edgeIds_H8, edges_Q4,
-                       edges_H8, faces_H8, edges_TET4)
+from ..topodata import (
+    edgeIds_TET4,
+    edgeIds_H8,
+    edges_Q4,
+    edges_H8,
+    faces_H8,
+    edges_TET4,
+)
 from .topo import unique_topo_data
 
 __cache = True
 
 
 __all__ = [
-    'transform_topo',
-    'L2_to_L3',
-    'T3_to_T6', 'T6_to_T3',
-    'Q4_to_Q8',
-    'Q4_to_Q9', 'Q9_to_Q4',
-    'Q8_to_T3',
-    'Q9_to_T6',
-    'Q4_to_T3',
-    'H8_to_L2',
-    'H8_to_Q4',
-    'H8_to_H27',
-    'H8_to_TET4',
-    'TET4_to_L2',
-    'TET4_to_TET10'
+    "transform_topo",
+    "L2_to_L3",
+    "T3_to_T6",
+    "T6_to_T3",
+    "Q4_to_Q8",
+    "Q4_to_Q9",
+    "Q9_to_Q4",
+    "Q8_to_T3",
+    "Q9_to_T6",
+    "Q4_to_T3",
+    "H8_to_L2",
+    "H8_to_Q4",
+    "H8_to_H27",
+    "H8_to_TET4",
+    "TET4_to_L2",
+    "TET4_to_TET10",
 ]
 
 
 DataLike = Union[ndarray, Sequence[ndarray]]
 
 
-def transform_topo(topo: ndarray, path: ndarray, data: ndarray = None,
-                   *args, MT=True, max_workers=4, **kwargs):
+def transform_topo(
+    topo: ndarray,
+    path: ndarray,
+    data: ndarray = None,
+    *args,
+    MT=True,
+    max_workers=4,
+    **kwargs
+):
     nD = len(path.shape)
     if nD == 1:
         path = path.reshape(1, len(path))
@@ -53,13 +69,15 @@ def transform_topo(topo: ndarray, path: ndarray, data: ndarray = None,
             try:
                 data = data.to_numpy()
             except Exception:
-                raise TypeError(
-                    "Invalid data type '{}'".format(data.__class__))
+                raise TypeError("Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
             data = transform_topo_data(topo, data, path)
             return _transform_topo_(topo, path), data
         elif isinstance(data, Iterable):
-            def foo(d): return transform_topo_data(topo, d, path)
+
+            def foo(d):
+                return transform_topo_data(topo, d, path)
+
             if MT:
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     dmap = executor.map(foo, data)
@@ -97,57 +115,72 @@ def _transform_topo_(topo: ndarray, path: ndarray):
 def repeat_cell_nodal_data(edata: ndarray, path: ndarray):
     nSub, nSubN = path.shape
     nE = edata.shape[0]
-    res = np.zeros((nSub*nE, nSubN) + edata.shape[2:], dtype=edata.dtype)
+    res = np.zeros((nSub * nE, nSubN) + edata.shape[2:], dtype=edata.dtype)
     for i in prange(nE):
-        ii = nSub*i
+        ii = nSub * i
         for j in prange(nSub):
-            jj = ii+j
+            jj = ii + j
             for k in prange(nSubN):
                 res[jj, k] = edata[i, path[j, k]]
     return res
 
 
-def T6_to_T3(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, subdivide=True, **kwargs):
+def T6_to_T3(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    subdivide=True,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
         if path is None:
             if subdivide:
-                path = np.array([[0, 3, 5], [3, 1, 4],
-                                 [5, 4, 2], [5, 3, 4]], dtype=topo.dtype)
+                path = np.array(
+                    [[0, 3, 5], [3, 1, 4], [5, 4, 2], [5, 3, 4]], dtype=topo.dtype
+                )
             else:
                 path = np.array([[0, 1, 2]], dtype=topo.dtype)
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
-def Q9_to_Q4(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, **kwargs):
+def Q9_to_Q4(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
         if path is None:
-            path = np.array([[0, 4, 8, 7], [4, 1, 5, 8],
-                             [8, 5, 2, 6], [7, 8, 6, 3]],
-                            dtype=topo.dtype)
+            path = np.array(
+                [[0, 4, 8, 7], [4, 1, 5, 8], [8, 5, 2, 6], [7, 8, 6, 3]],
+                dtype=topo.dtype,
+            )
         elif isinstance(path, str):
-            if path == 'grid':
-                path = np.array([[0, 3, 4, 1], [3, 6, 7, 4],
-                                 [4, 7, 8, 5], [1, 4, 5, 2]],
-                                dtype=topo.dtype)
+            if path == "grid":
+                path = np.array(
+                    [[0, 3, 4, 1], [3, 6, 7, 4], [4, 7, 8, 5], [1, 4, 5, 2]],
+                    dtype=topo.dtype,
+                )
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
 def Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray = None):
     if path is None:
-        path = np.array([[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]],
-                        dtype=topo.dtype)
+        path = np.array([[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
     return _Q9_to_T6(coords, topo, path)
 
 
@@ -163,41 +196,69 @@ def _Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray):
     return coords, topoT6
 
 
-def H8_to_TET4(coords: ndarray, topo: ndarray, data: DataLike = None,
-               *args, path: ndarray = None, **kwargs):
+def H8_to_TET4(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
         if path is None:
-            path = np.array([[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0],
-                             [6, 5, 7, 2], [0, 2, 7, 5]], dtype=topo.dtype)
+            path = np.array(
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                dtype=topo.dtype,
+            )
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
-def H8_to_Q4(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, **kwargs):
+def H8_to_Q4(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
         if path is None:
-            path = np.array([[0, 4, 7, 3], [1, 2, 6, 5], [0, 1, 5, 4],
-                             [2, 3, 7, 6], [0, 3, 2, 1], [4, 5, 6, 7]],
-                            dtype=topo.dtype)
+            path = np.array(
+                [
+                    [0, 4, 7, 3],
+                    [1, 2, 6, 5],
+                    [0, 1, 5, 4],
+                    [2, 3, 7, 6],
+                    [0, 3, 2, 1],
+                    [4, 5, 6, 7],
+                ],
+                dtype=topo.dtype,
+            )
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
-def TET4_to_L2(coords: ndarray, topo: ndarray, data: DataLike = None,
-               *args, path: ndarray = None, **kwargs):
+def TET4_to_L2(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[0] == 6, "Invalid shape!"
         assert path.shape[1] == 2, "Invalid shape!"
@@ -216,8 +277,14 @@ def TET4_to_L2(coords: ndarray, topo: ndarray, data: DataLike = None,
         raise NotImplementedError("Data conversion is not available here!")
 
 
-def H8_to_L2(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, **kwargs):
+def H8_to_L2(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[0] == 12, "Invalid shape!"
         assert path.shape[1] == 2, "Invalid shape!"
@@ -236,52 +303,67 @@ def H8_to_L2(coords: ndarray, topo: ndarray, data: DataLike = None,
         raise NotImplementedError("Data conversion is not available here!")
 
 
-def Q4_to_T3(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, **kwargs):
+def Q4_to_T3(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
         if path is None:
             path = np.array([[0, 1, 2], [0, 2, 3]], dtype=topo.dtype)
         elif isinstance(path, str):
-            if path == 'grid':
+            if path == "grid":
                 path = np.array([[0, 2, 3], [0, 3, 1]], dtype=topo.dtype)
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
-def Q8_to_T3(coords: ndarray, topo: ndarray, data: DataLike = None,
-             *args, path: ndarray = None, **kwargs):
+def Q8_to_T3(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
         if path is None:
-            path = np.array([
-                [0, 4, 7],
-                [4, 1, 5],
-                [5, 2, 6],
-                [6, 3, 7],
-                [4, 6, 7],
-                [4, 5, 6],
-            ], dtype=topo.dtype)
+            path = np.array(
+                [
+                    [0, 4, 7],
+                    [4, 1, 5],
+                    [5, 2, 6],
+                    [6, 3, 7],
+                    [4, 6, 7],
+                    [4, 5, 6],
+                ],
+                dtype=topo.dtype,
+            )
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, + transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 
 
-def L2_to_L3(coords: ndarray, topo: ndarray, order='ikj'):
+def L2_to_L3(coords: ndarray, topo: ndarray, order="ikj"):
     nP = len(coords)
     nodes, nodeIDs = unique_topo_data(topo[:, newaxis, :])
     new_coords = np.mean(coords[nodes], axis=1)
     new_topo = nodeIDs + nP
     topo = np.hstack((topo, new_topo))
     coords = np.vstack((coords, new_coords))
-    if order == 'ikj':
+    if order == "ikj":
         _buf = np.copy(topo[:, 1])
         topo[:, 1] = topo[:, 2]
         topo[:, 2] = _buf
@@ -328,7 +410,7 @@ def Q4_to_Q9(coords: ndarray, topo: ndarray):
 
 
 def TET4_to_TET10(coords: ndarray, topo: ndarray):
-    nP= len(coords)
+    nP = len(coords)
     # new nodes on the edges
     edges, edgeIDs = unique_topo_data(edges_TET4(topo))
     coords_e = np.mean(coords[edges], axis=1)

@@ -8,8 +8,12 @@ from neumann.numint import GaussPoints as Gauss
 
 from ..polyhedron import TriquadraticHexaHedron
 from ..utils.utils import cells_coords
-from ..utils.cells.h27 import (shp_H27_multi, dshp_H27_multi, volumes_H27,
-                               shape_function_matrix_H27_multi)
+from ..utils.cells.h27 import (
+    shp_H27_multi,
+    dshp_H27_multi,
+    volumes_H27,
+    shape_function_matrix_H27_multi,
+)
 
 
 class H27(TriquadraticHexaHedron):
@@ -43,6 +47,7 @@ class H27(TriquadraticHexaHedron):
     --------
     :class:`TriquadraticHexaHedron`
     """
+
     shpfnc = shp_H27_multi
     shpmfnc = shape_function_matrix_H27_multi
     dshpfnc = dshp_H27_multi
@@ -60,11 +65,36 @@ class H27(TriquadraticHexaHedron):
             A list of monomials.
 
         """
-        locvars = r, s, t = sy.symbols('r s t', real=True)
-        monoms = [1, r, s, t, s*t, r*t, r*s, r*s*t, r**2, s**2, t**2,
-                  r**2*s, r*s**2, r*t**2, r**2*t, s**2*t, s*t**2, r**2*s*t,
-                  r*s**2*t, r*s*t**2, r**2*s**2, s**2*t**2, r**2*t**2,
-                  r**2*s**2*t**2, r**2*s**2*t, r**2*s*t**2, r*s**2*t**2]
+        locvars = r, s, t = sy.symbols("r s t", real=True)
+        monoms = [
+            1,
+            r,
+            s,
+            t,
+            s * t,
+            r * t,
+            r * s,
+            r * s * t,
+            r**2,
+            s**2,
+            t**2,
+            r**2 * s,
+            r * s**2,
+            r * t**2,
+            r**2 * t,
+            s**2 * t,
+            s * t**2,
+            r**2 * s * t,
+            r * s**2 * t,
+            r * s * t**2,
+            r**2 * s**2,
+            s**2 * t**2,
+            r**2 * t**2,
+            r**2 * s**2 * t**2,
+            r**2 * s**2 * t,
+            r**2 * s * t**2,
+            r * s**2 * t**2,
+        ]
         return locvars, monoms
 
     @classmethod
@@ -77,14 +107,37 @@ class H27(TriquadraticHexaHedron):
         numpy.ndarray
 
         """
-        return np.array([
-            [-1., -1., -1], [1., -1., -1.], [1., 1., -1.], [-1., 1., -1.],
-            [-1., -1., 1.], [1., -1., 1.],  [1., 1., 1.],  [-1., 1., 1.],
-            [0., -1., -1.], [1., 0., -1.],  [0., 1., -1.], [-1., 0., -1.],
-            [0., -1., 1.],  [1., 0., 1.],   [0., 1., 1.],  [-1., 0., 1.],
-            [-1., -1., 0.], [1., -1., 0.],  [1., 1., 0.],  [-1., 1., 0.],
-            [-1., 0., 0.],  [1., 0., 0.],   [0., -1., 0.], [0., 1., 0.],
-            [0., 0., -1.],  [0., 0., 1.],   [0., 0., 0.]])
+        return np.array(
+            [
+                [-1.0, -1.0, -1],
+                [1.0, -1.0, -1.0],
+                [1.0, 1.0, -1.0],
+                [-1.0, 1.0, -1.0],
+                [-1.0, -1.0, 1.0],
+                [1.0, -1.0, 1.0],
+                [1.0, 1.0, 1.0],
+                [-1.0, 1.0, 1.0],
+                [0.0, -1.0, -1.0],
+                [1.0, 0.0, -1.0],
+                [0.0, 1.0, -1.0],
+                [-1.0, 0.0, -1.0],
+                [0.0, -1.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [-1.0, 0.0, 1.0],
+                [-1.0, -1.0, 0.0],
+                [1.0, -1.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [-1.0, 1.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0],
+            ]
+        )
 
     @classmethod
     def lcenter(cls) -> ndarray:
@@ -96,7 +149,7 @@ class H27(TriquadraticHexaHedron):
         numpy.ndarray
 
         """
-        return np.array([0., 0., 0.])
+        return np.array([0.0, 0.0, 0.0])
 
     def volumes(self) -> ndarray:
         """

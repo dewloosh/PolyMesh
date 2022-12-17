@@ -13,26 +13,29 @@ from .voxelize import voxelize_cylinder
 
 
 def circular_helix(a=None, b=None, *args, slope=None, pitch=None):
-    """    
+    """
     Returns the function :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`,
     which describes a circular helix of radius a and slope a/b (or pitch 2πb).
-    
+
     """
     if pitch is not None:
         b = b if b is not None else pitch / 2 / np.pi
     if slope is not None:
         a = a if a is not None else slope * b
         b = b if b is not None else slope / a
+
     def inner(t):
         """
         Evaluates :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`.
         """
         return a * np.cos(t), a * np.sin(t), b * t
+
     return inner
 
 
-def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
-                  frame=None) -> TriMesh:
+def circular_disk(
+    nangles: int, nradii: int, rmin: float, rmax: float, frame=None
+) -> TriMesh:
     """
     Returns the triangulation of a circular disk.
 
@@ -54,7 +57,7 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
     Examples
     --------
     >>> from polymesh.recipes import circular_disk
-    >>> mesh = circular_disk(120, 60, 5, 25) 
+    >>> mesh = circular_disk(120, 60, 5, 25)
 
     """
     radii = np.linspace(rmin, rmax, nradii)
@@ -65,12 +68,13 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
     y = (radii * np.sin(angles)).flatten()
     nP = len(x)
     points = np.stack([x, y], axis=1)
-    *_, triang = triangulate(points=points, backend='mpl')
-    #triang = tri.Triangulation(x, y)
+    *_, triang = triangulate(points=points, backend="mpl")
+    # triang = tri.Triangulation(x, y)
     # Mask off unwanted triangles.
-    triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1),
-                             y[triang.triangles].mean(axis=1))
-                    < rmin)
+    triang.set_mask(
+        np.hypot(x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1))
+        < rmin
+    )
     triangles = triang.get_masked_triangles()
     points = np.stack((triang.x, triang.y, np.zeros(nP)), axis=1)
     points, triangles = detach_mesh_bulk(points, triangles)
@@ -78,51 +82,58 @@ def circular_disk(nangles: int, nradii: int, rmin: float, rmax: float,
     return TriMesh(points=points, triangles=triangles, celltype=T3, frame=frame)
 
 
-def cylinder(shape, size:Union[tuple, float, int]=None, *args, 
-             regular=True, voxelize=False, celltype=None, frame=None, 
-             **kwargs) -> PolyData:
+def cylinder(
+    shape,
+    size: Union[tuple, float, int] = None,
+    *args,
+    regular=True,
+    voxelize=False,
+    celltype=None,
+    frame=None,
+    **kwargs
+) -> PolyData:
     """
     Returns the coordinates and the topology of cylinder as numpy arrays.
-    
+
     Parameters
     ----------
     shape : tuple or int, Optional
-        A 2-tuple or a float, describing the shape of the cylinder.    
+        A 2-tuple or a float, describing the shape of the cylinder.
     size : Union[tuple, float, int], Optional
-        Parameter controlling the density of the mesh. Default is None. 
-        
+        Parameter controlling the density of the mesh. Default is None.
+
         If `voxelize` is ``False``, ``size`` must be a tuple of three
         integers, describing the number of angular, radial, and vertical
         divions in this order.
-        
-        If `voxelize` is ``True`` and ``size`` is a ``float``, 
+
+        If `voxelize` is ``True`` and ``size`` is a ``float``,
         the parameter controls the size of the individual voxels.
-        
-        If `voxelize` is ``True`` and ``size`` is an ``int``, 
+
+        If `voxelize` is ``True`` and ``size`` is an ``int``,
         the parameter controls the size of the individual voxels
-        according to :math:`edge \, length = (r_{ext} - r_{int})/shape`.  
+        according to :math:`edge \, length = (r_{ext} - r_{int})/shape`.
     regular : bool, Optional
         If ``True`` and ``voxelize`` is False, the mesh us a result of an extrusion
-        applied to a trianglarion, and as a consequence it returns a more or 
+        applied to a trianglarion, and as a consequence it returns a more or
         less regular mesh. Otherwise the cylinder is created from a surface
         trangulation using the ``tetgen`` package. Default is ``True``.
     voxelize : bool, Optional.
         If ``True``, the cylinder gets voxelized to a collection of H8 cells.
-        In this case the size of a voxel can be controlled by specifying a 
+        In this case the size of a voxel can be controlled by specifying a
         flaot or an integer as the second parameter ``size``.
         Default is ``False``.
     celltype
         Specifies the celltype to be used.
-    
+
     Returns
     -------
     PolyData
-    
+
     Examples
     --------
     >>> from polymesh.recipes import cylinder
     >>> mesh = cylinder(120, 60, 5, 25)
-        
+
     """
     if celltype is None:
         celltype = H8 if voxelize else TET4
@@ -131,7 +142,7 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
         size = [size]
     if voxelize:
         regular = True
-        etype = 'H8'
+        etype = "H8"
     radius, angle, h = shape
     if isinstance(radius, int):
         radius = np.array([0, radius])
@@ -146,7 +157,7 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
         coords, topo = voxelize_cylinder(radius=radius, height=h, size=size_)
     else:
         if regular:
-            if etype == 'TET4':
+            if etype == "TET4":
                 min_radius, max_radius = radius
                 n_radii, n_angles, n_z = size
                 mesh = circular_disk(n_angles, n_radii, min_radius, max_radius)
@@ -157,18 +168,23 @@ def cylinder(shape, size:Union[tuple, float, int]=None, *args,
         else:
             import tetgen
             import pyvista as pv
+
             (rmin, rmax), angle, h = shape
             n_radii, n_angles, n_z = size
-            cyl = pv.CylinderStructured(center=(0.0, 0.0, h/2), direction=(0.0, 0.0, 1.0),
-                                        radius=np.linspace(rmin, rmax, n_radii), height=h,
-                                        theta_resolution=n_angles, z_resolution=n_z)
+            cyl = pv.CylinderStructured(
+                center=(0.0, 0.0, h / 2),
+                direction=(0.0, 0.0, 1.0),
+                radius=np.linspace(rmin, rmax, n_radii),
+                height=h,
+                theta_resolution=n_angles,
+                z_resolution=n_z,
+            )
             cyl_surf = cyl.extract_surface().triangulate()
             tet = tetgen.TetGen(cyl_surf)
-            tet.tetrahedralize(order=1, mindihedral=10,
-                               minratio=1.1, quality=True)
+            tet.tetrahedralize(order=1, mindihedral=10, minratio=1.1, quality=True)
             grid = tet.grid
             coords = np.array(grid.points).astype(float)
             topo = grid.cells_dict[10].astype(int)
-    
+
     frame = CartesianFrame(dim=3) if frame is None else frame
     return PolyData(coords=coords, topo=topo, celltype=celltype, frame=frame)

@@ -10,9 +10,15 @@ from .utils.topology import unique_topo_data
 __cache = True
 
 
-def populate_trimesh_T3(points : np.ndarray, topo : np.ndarray,
-                        dp : np.ndarray, N=1, return_lines=False,
-                        edges=None, edgeIDs=None):
+def populate_trimesh_T3(
+    points: np.ndarray,
+    topo: np.ndarray,
+    dp: np.ndarray,
+    N=1,
+    return_lines=False,
+    edges=None,
+    edgeIDs=None,
+):
     points_pop, topo_pop = populate_trimesh_T3_njit(points, topo, dp, N)
     if return_lines:
         if edges is None or edgeIDs is None:
@@ -27,8 +33,7 @@ def populate_trimesh_T3(points : np.ndarray, topo : np.ndarray,
 
 
 @njit(nogil=True, cache=__cache)
-def populate_trimesh_T3_njit(points : np.ndarray, topo : np.ndarray,
-                             dp : np.ndarray, N=1):
+def populate_trimesh_T3_njit(points: np.ndarray, topo: np.ndarray, dp: np.ndarray, N=1):
     points_pop = tile(points, dp, N)
     topo_pop = tile(topo, len(points), N)
     return points_pop, topo_pop

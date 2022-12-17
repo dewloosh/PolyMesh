@@ -12,6 +12,7 @@ class PolyGon(PolyCell2d):
     Base class for polygons.
 
     """
+
     ...
 
 
@@ -23,11 +24,11 @@ class Triangle(PolyGon):
 
     NNODE = 3
     vtkCellType = 5
-    __label__ = 'T3'
+    __label__ = "T3"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
     @classmethod
     def trimap(cls):
         return np.array([[0, 1, 2]], dtype=int)
@@ -38,6 +39,7 @@ class Triangle(PolyGon):
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
         from polymesh.trimesh import TriMesh
+
         if len(args) > 0 and isinstance(args[0], TriMesh):
             mesh = args[0]
             return mesh.coords(), mesh.topology().to_numpy()
@@ -58,7 +60,7 @@ class QuadraticTriangle(PolyGon):
 
     NNODE = 6
     vtkCellType = 22
-    __label__ = 'T6'
+    __label__ = "T6"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,8 +68,7 @@ class QuadraticTriangle(PolyGon):
     @classmethod
     def trimap(cls, subdivide: bool = True):
         if subdivide:
-            return np.array([[0, 3, 5], [3, 1, 4],
-                             [5, 4, 2], [5, 3, 4]], dtype=int)
+            return np.array([[0, 3, 5], [3, 1, 4], [5, 4, 2], [5, 3, 4]], dtype=int)
         else:
             return np.array([[0, 1, 2]], dtype=int)
 
@@ -77,6 +78,7 @@ class QuadraticTriangle(PolyGon):
     @classmethod
     def from_TriMesh(cls, *args, coords=None, topo=None, **kwargs):
         from polymesh.trimesh import TriMesh
+
         if len(args) > 0 and isinstance(args[0], TriMesh):
             return T3_to_T6(TriMesh.coords(), TriMesh.topology())
         elif coords is not None and topo is not None:
@@ -90,7 +92,7 @@ class Quadrilateral(PolyGon):
 
     NNODE = 4
     vtkCellType = 9
-    __label__ = 'Q4'
+    __label__ = "Q4"
 
     @classmethod
     def trimap(cls):
@@ -105,16 +107,23 @@ class BiQuadraticQuadrilateral(PolyGon):
 
     NNODE = 9
     vtkCellType = 28
-    __label__ = 'Q9'
+    __label__ = "Q9"
 
     @classmethod
     def trimap(cls):
-        return np.array([
-            [0, 4, 8], [0, 8, 7],
-            [4, 1, 5], [4, 5, 8],
-            [8, 5, 2], [8, 2, 6],
-            [7, 8, 6], [7, 6, 3]
-            ], dtype=int)
+        return np.array(
+            [
+                [0, 4, 8],
+                [0, 8, 7],
+                [4, 1, 5],
+                [4, 5, 8],
+                [8, 5, 2],
+                [8, 2, 6],
+                [7, 8, 6],
+                [7, 6, 3],
+            ],
+            dtype=int,
+        )
 
     def to_triangles(self):
         return Q4_to_T3(*Q9_to_Q4(None, self.topology().to_numpy()))[1]

@@ -41,7 +41,7 @@ class AkWrapper(Wrapper):
 
     def to_numpy(self, key: str) -> ndarray:
         """
-        Returns a data with the specified key as a numpy array, if 
+        Returns a data with the specified key as a numpy array, if
         possible.
         """
         return self._wrapped[key].to_numpy()
@@ -66,8 +66,7 @@ class AkWrapper(Wrapper):
         akdb = self.to_ak(*args, fields=fields)
         return ak.to_pandas(akdb, **kwargs)
 
-    def to_parquet(self, path: str, *args, fields: Iterable[str] = None,
-                   **kwargs):
+    def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs):
         """
         Saves the data contained within the database to a parquet file.
 
@@ -90,7 +89,7 @@ class AkWrapper(Wrapper):
             ak.to_parquet(akdb, path, **kwargs)
 
     @classmethod
-    def from_parquet(cls, path: str) -> 'AkWrapper':
+    def from_parquet(cls, path: str) -> "AkWrapper":
         """
         Saves the data contained within the database to a parquet file.
 
@@ -101,12 +100,13 @@ class AkWrapper(Wrapper):
         """
         return cls(wrap=ak.from_parquet(path))
 
-    def to_ak(self, *args, fields: Iterable[str] = None,
-              asarray: bool = False) -> Union[akArray, akRecord]:
+    def to_ak(
+        self, *args, fields: Iterable[str] = None, asarray: bool = False
+    ) -> Union[akArray, akRecord]:
         """
         Returns the database with a specified set of fields as either
         an Awkward Record, or an Awkward Array. If there are no fields
-        specified and the output is a record, the original database is 
+        specified and the output is a record, the original database is
         returned.
 
         .. versionchanged:: 0.0.10
@@ -161,7 +161,7 @@ class AkWrapper(Wrapper):
 
     def to_dict(self, *args, fields: Iterable[str] = None) -> dict:
         """
-        Returns data of the object as a dictionary. Unless fields 
+        Returns data of the object as a dictionary. Unless fields
         are specified, all fields are returned.
 
         .. versionadded:: 0.0.10
@@ -171,7 +171,7 @@ class AkWrapper(Wrapper):
         *args: tuple, Optional
             Positional arguments to specify fields.
         fields : Iterable[str], Optional
-            A list of keys that might identify data in a database. 
+            A list of keys that might identify data in a database.
             Default is None.
         """
         db = self.db
@@ -199,7 +199,7 @@ class AkWrapper(Wrapper):
         *args: tuple, Optional
             Positional arguments to specify fields.
         fields : Iterable[str], Optional
-            A list of keys that might identify data in a database. 
+            A list of keys that might identify data in a database.
             Default is None.
         """
         db = self.db
@@ -226,8 +226,7 @@ class AkWrapper(Wrapper):
     def __hasattr__(self, attr):
         if attr in self.__class__._attr_map_:
             attr = self.__class__._attr_map_[attr]
-        return any([attr in self.__dict__,
-                    attr in self._wrapped.__dict__])
+        return any([attr in self.__dict__, attr in self._wrapped.__dict__])
 
     def __getattr__(self, attr):
         if attr in self.__class__._attr_map_:
@@ -238,5 +237,6 @@ class AkWrapper(Wrapper):
             return getattr(self._wrapped, attr)
         except Exception:
             name = self.__class__.__name__
-            raise AttributeError("'{}' object has no "
-                                 + "attribute called {}".format(name, attr))
+            raise AttributeError(
+                "'{}' object has no " + "attribute called {}".format(name, attr)
+            )

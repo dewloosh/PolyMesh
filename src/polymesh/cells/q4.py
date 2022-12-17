@@ -5,18 +5,18 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polygon import Quadrilateral
-from ..utils.cells.q4 import (shp_Q4_multi, dshp_Q4_multi,
-                              shape_function_matrix_Q4_multi)
+from ..utils.cells.q4 import shp_Q4_multi, dshp_Q4_multi, shape_function_matrix_Q4_multi
 
 
 class Q4(Quadrilateral):
     """
-    Polygon class for 4-noded bilinear quadrilaterals. 
+    Polygon class for 4-noded bilinear quadrilaterals.
 
     See Also
     --------
     :class:`Quadrilateral`
     """
+
     shpfnc = shp_Q4_multi
     shpmfnc = shape_function_matrix_Q4_multi
     dshpfnc = dshp_Q4_multi
@@ -34,8 +34,8 @@ class Q4(Quadrilateral):
             A list of monomials.
 
         """
-        locvars = r, s = symbols('r, s', real=True)
-        monoms = [1, r, s, r*s]
+        locvars = r, s = symbols("r, s", real=True)
+        monoms = [1, r, s, r * s]
         return locvars, monoms
 
     @classmethod
@@ -48,8 +48,7 @@ class Q4(Quadrilateral):
         numpy.ndarray
 
         """
-        return np.array([[-1., -1.], [1., -1.],
-                        [1., 1.], [-1., 1.]])
+        return np.array([[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]])
 
     @classmethod
     def lcenter(cls) -> ndarray:
@@ -61,4 +60,4 @@ class Q4(Quadrilateral):
         numpy.ndarray
 
         """
-        return np.array([0., 0.])
+        return np.array([0.0, 0.0])

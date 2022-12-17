@@ -5,8 +5,10 @@ from .config import __hasvtk__
 
 if __hasvtk__:
     import vtk
-    from vtk.util.numpy_support import numpy_to_vtk as np2vtk, \
-        numpy_to_vtkIdTypeArray as np2vtkId
+    from vtk.util.numpy_support import (
+        numpy_to_vtk as np2vtk,
+        numpy_to_vtkIdTypeArray as np2vtkId,
+    )
     from vtk.numpy_interface import dataset_adapter as dsa
 
 
@@ -17,8 +19,9 @@ def mesh_to_vtkdata(coords, topo, deepcopy=True):
     vtkpoints = vtk.vtkPoints()
     vtkpoints.SetData(np2vtk(coords, deep=deepcopy))
     # cells
-    topo_vtk = np.concatenate((np.ones((topo.shape[0], 1), dtype=int) *
-                               topo.shape[1], topo), axis=1).ravel()
+    topo_vtk = np.concatenate(
+        (np.ones((topo.shape[0], 1), dtype=int) * topo.shape[1], topo), axis=1
+    ).ravel()
     vtkcells = vtk.vtkCellArray()
     vtkcells.SetNumberOfCells(topo.shape[0])
     vtkcells.SetCells(topo.shape[0], np2vtkId(topo_vtk, deep=deepcopy))
@@ -27,8 +30,9 @@ def mesh_to_vtkdata(coords, topo, deepcopy=True):
 
 
 def mesh_to_UnstructuredGrid(coords, topo, vtkCellType, deepcopy=True):
-    vtkpoints, vtkcells = mesh_to_vtkdata(coords.astype(np.float64), 
-                                          topo.astype(np.int64), deepcopy)
+    vtkpoints, vtkcells = mesh_to_vtkdata(
+        coords.astype(np.float64), topo.astype(np.int64), deepcopy
+    )
     ugrid = vtk.vtkUnstructuredGrid()
     ugrid.SetPoints(vtkpoints)
     ugrid.SetCells(vtkCellType, vtkcells)
