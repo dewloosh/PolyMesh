@@ -1,6 +1,14 @@
-===========================
-Recipes for Mesh Generation
-===========================
+===============
+Mesh Generation
+===============
 
-.. automodule:: polymesh.recipes.recipes
+Grid Generation
+===============
+
+.. autofunction:: polymesh.grid.grid
+
+Recipes
+=======
+
+.. automodule:: polymesh.recipes
     :members:

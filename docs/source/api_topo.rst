@@ -1,12 +1,12 @@
-======================
-Topological Operations
-======================
+========
+Topology
+========
 
-.. automodule:: polymesh.topo.topo
-    :members:
-
-.. automodule:: polymesh.topo.topoarray
+.. automodule:: polymesh.topoarray
     :members: 
 
-.. automodule:: polymesh.topo.tr
+.. automodule:: polymesh.utils.topology.topo
+    :members:
+
+.. automodule:: polymesh.utils.topology.topo.tr
     :members: 

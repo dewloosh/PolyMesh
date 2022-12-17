@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # !TODO  handle decimation in all transformations, template : T6_to_T3
 import numpy as np
 from awkward import Array

@@ -14,24 +14,45 @@ Examples using ``polymesh.PolyDataBase.pvplot``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Circular Disk with PyVista">
+    <div class="sphx-glr-thumbcontainer" tooltip="Compound Meshes">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_4_disc_thumb.png
-    :alt: Circular Disk with PyVista
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_2_pv_thumb.png
+    :alt: Compound Meshes
 
-  :ref:`sphx_glr_auto_examples_plot_4_disc.py`
+  :ref:`sphx_glr_auto_examples_plot_2_pv.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">Circular Disk with PyVista</div>
+      <div class="sphx-glr-thumbnail-title">Compound Meshes</div>
     </div>
 
 
 .. only:: not html
 
- * :ref:`sphx_glr_auto_examples_plot_4_disc.py`
+ * :ref:`sphx_glr_auto_examples_plot_2_pv.py`
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A Simple Cube">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_3_cube_thumb.png
+    :alt: A Simple Cube
+
+  :ref:`sphx_glr_auto_examples_plot_3_cube.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">A Simple Cube</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_auto_examples_plot_3_cube.py`
 
 .. raw:: html
 

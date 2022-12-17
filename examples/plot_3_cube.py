@@ -14,7 +14,6 @@ shape = nx, ny, nz = 10, 10, 10
 coords, topo = grid(size=size, shape=shape, eshape='H27')
 GlobalFrame = StandardFrame(dim=3)
 pd = PointData(coords=coords, frame=GlobalFrame)
-cd = H27(topo=topo, frames=GlobalFrame)
 mesh = PolyData(pd, frame=GlobalFrame)
 
 part1 = H27(topo=topo[:10], frames=GlobalFrame)

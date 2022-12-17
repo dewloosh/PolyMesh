@@ -3,7 +3,6 @@ from polymesh import PolyData
 from polymesh.trimesh import TriMesh
 from polymesh.grid import Grid
 from polymesh.space import StandardFrame
-from polymesh.utils.space import frames_of_surfaces
 import numpy as np
 
 
@@ -42,7 +41,6 @@ class TestCompoundMesh(unittest.TestCase):
         self.assertTrue(mesh.topology().is_jagged())
     
         
-
 if __name__ == "__main__":
 
     unittest.main()
