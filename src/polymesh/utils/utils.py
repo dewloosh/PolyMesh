@@ -188,17 +188,17 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
         nE : number of elements
         nNE : number of nodes per element
     local_axes : numpy.ndarray
-        Reference frames as a3d array of shape (..., 3, 3). A single 
+        Reference frames as a 3d array of shape (..., 3, 3). A single 
         3x3 numpy array or matrices for all elements in 'topo' must be 
         provided.
     centralize : bool, Optional
-        If True, and 'frame' is not None, the local coordinates are 
+        If True, and 'local_axes' is not None, the local coordinates are 
         returned with respect to the geometric center of each element.
 
     Returns
     -------
     numpy.ndarray
-        3d float array of coordinates
+        3d float array of coordinates.
 
     Notes
     -----
@@ -206,26 +206,37 @@ def points_of_cells(coords: ndarray, topo: ndarray, *args,
     points in the same frame.
     """
     if local_axes is not None:
-        return _cells_coords_tr_(cells_coords(coords, topo),
-                                 local_axes, centralize=centralize)
+        if centralize:
+            ec = _centralize_cells_coords_(cells_coords(coords, topo))
+        else:
+            ec = cells_coords(coords, topo)
+        return _cells_coords_tr_(ec, local_axes)
     else:
-        return cells_coords(coords, topo)
+        if centralize:
+            return _centralize_cells_coords_(cells_coords(coords, topo))
+        else:
+            return cells_coords(coords, topo)
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def _cells_coords_tr_(ecoords: ndarray, local_axes: ndarray,
-                      centralize: bool = True) -> ndarray:
+#@njit(nogil=True, parallel=True, cache=__cache)
+def _cells_coords_tr_(ecoords: ndarray, local_axes: ndarray) -> ndarray:
     nE, nNE, _ = ecoords.shape
     res = np.zeros_like(ecoords)
     for i in prange(nE):
-        if centralize:
-            cc = cell_center(ecoords[i])
-            ecoords[i, :, 0] -= cc[0]
-            ecoords[i, :, 1] -= cc[1]
-            ecoords[i, :, 2] -= cc[2]
         dcm = local_axes[i]
         for j in prange(nNE):
             res[i, j, :] = dcm @ ecoords[i, j, :]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _centralize_cells_coords_(ecoords):
+    nE, nNE, _ = ecoords.shape
+    res = np.zeros_like(ecoords)
+    for i in prange(nE):
+        cc = cell_center(ecoords[i])
+        for j in prange(nNE):
+            res[i, j, :] = ecoords[i, j, :] - cc
     return res
 
 
@@ -264,7 +275,7 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
         for iNE in prange(nNE):
             res[iE, iNE] = coords[topo[iE, iNE]]
     return res
-
+ 
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:

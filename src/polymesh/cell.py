@@ -15,6 +15,7 @@ from .utils.tri import area_tri_bulk
 from .utils.tet import tet_vol_bulk
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .utils.topology.topo import detach_mesh_bulk, rewire
+from .utils.tri import triangulate_cell_coords
 from .topoarray import TopologyArray
 from .space import CartesianFrame
 
@@ -511,23 +512,33 @@ class PolyCell2d(PolyCell):
         """
         return np.sum(self.areas(*args, **kwargs))
 
+    @classmethod
+    def trimap(cls):
+        """
+        Returns a mapper to transform topology and other data to
+        a collection of T3 triangles.
+        """
+        raise NotImplementedError
+    
     def to_triangles(self):
+        """
+        Returns the topology as a collection of T3 triangles.
+        """
         raise NotImplementedError
 
-    def areas(self, *_, **kwargs) -> ndarray:
+    def areas(self, *_, **__) -> ndarray:
         """
         Returns the areas of the cells.
         """
-        coords = kwargs.get('coords', None)
-        topo = kwargs.get('topo', None)
-        if coords is None:
-            coords = self.container.root().coords()
-        if topo is None:
-            topo = self.topology().to_numpy()
-        topo_tri = self.to_triangles()
-        areas = area_tri_bulk(cells_coords(coords, topo_tri))
-        res = np.sum(areas.reshape(topo.shape[0], int(
-            len(areas)/topo.shape[0])), axis=1)
+        nE = len(self)            
+        coords = self.container.source().coords()
+        topo = self.topology().to_numpy()
+        frames = self.frames
+        ec = points_of_cells(coords, topo, local_axes=frames)
+        trimap = self.__class__.trimap()
+        ec_tri = triangulate_cell_coords(ec, trimap)
+        areas_tri = area_tri_bulk(ec_tri)
+        res = np.sum(areas_tri.reshape(nE, int(len(areas_tri)/nE)), axis=1)
         return np.squeeze(res)
 
     def volumes(self, *args, **kwargs) -> ndarray:

@@ -78,7 +78,6 @@ def rewire(topo: TopoLike, imap: MappingLike, invert=False):
     -------
     TopoLike
         The same topology with the new numbering.
-
     """
     if invert:
         assert isinstance(imap, ndarray)
@@ -107,7 +106,6 @@ def remap_topo(topo: ndarray, imap):
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
     the indices in the old topology array.
-
     """
     nE, nNE = topo.shape
     res = np.zeros_like(topo)
@@ -123,7 +121,6 @@ def remap_topo_1d(topo1d: ndarray, imap):
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
     the indices in the old topology array.
-
     """
     N = topo1d.shape[0]
     res = np.zeros_like(topo1d)
@@ -399,16 +396,8 @@ def _cells_at_nodes_reg_csr_(topo: csr_matrix):
 def _nodal_cell_data_to_dicts_(count: ndarray, ereg: ndarray,
                                nreg: ndarray, cellIDs: ndarray,
                                nodeIDs: ndarray) -> Tuple[Dict, Dict]:
-    ereg_d = nbDict.empty(
-        key_type=nbint64,
-        value_type=nbint64A,
-    )
-    nreg_d = nbDict.empty(
-        key_type=nbint64,
-        value_type=nbint64A,
-    )
-    #ereg_d = dict()
-    #nreg_d = dict()
+    ereg_d = nbDict.empty(key_type=nbint64, value_type=nbint64A)
+    nreg_d = nbDict.empty(key_type=nbint64, value_type=nbint64A)
     for i in range(len(count)):
         ereg_d[nodeIDs[i]] = cellIDs[ereg[i, : count[i]]]
         nreg_d[nodeIDs[i]] = nreg[i, : count[i]]
@@ -486,7 +475,7 @@ def cells_at_nodes(topo: TopoLike, *args, frmt:str=None, assume_regular:bool=Fal
                             Column indices denote element indices, values
                             have the meaning of element node locations.                       
     
-    `frmt` = 'scipy-csr'
+    `frmt` = 'scipy-csr' or 'csr-scipy'
         
         counts(optionally) : np.ndarray(nN) - number of connecting elements
         
@@ -538,7 +527,7 @@ def cells_at_nodes(topo: TopoLike, *args, frmt:str=None, assume_regular:bool=Fal
 
     frmt = '' if frmt is None else frmt
 
-    if frmt in ['csr', 'csr-scipy']:
+    if frmt in ['csr', 'csr-scipy', 'scipy-csr']:
         data, indices, indptr, shape = \
             _nodal_cell_data_to_spdata_(counts, ereg, nreg)
         csr = csr_matrix(data=data, indices=indices,
@@ -557,6 +546,8 @@ def cells_at_nodes(topo: TopoLike, *args, frmt:str=None, assume_regular:bool=Fal
                 cellIDs = np.arange(len(topo.indptr)-1).astype(int)
         cellIDs = np.arange(len(topo)).astype(int) if cellIDs is None else cellIDs
         nodeIDs = np.arange(len(counts)).astype(int) if nodeIDs is None else nodeIDs
+        cellIDs = cellIDs.astype(np.int64)
+        nodeIDs = nodeIDs.astype(np.int64)
         ereg, nreg = _nodal_cell_data_to_dicts_(
             counts, ereg, nreg, cellIDs, nodeIDs)
         if return_counts:

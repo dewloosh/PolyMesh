@@ -18,9 +18,9 @@ class TriMesh(PolyData):
 
     Parameters
     ----------
-    points : numpy.ndarray, Optional.
+    points : numpy.ndarray, Optional
         2d numpy array of floats, describing a pointcloud. Default is None.
-    triangles : numpy.ndarray, Optional.
+    triangles : numpy.ndarray, Optional
         2d numpy array of integers, describing the topology of a polygonal mesh. 
         Default is None.
 

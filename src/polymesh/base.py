@@ -72,6 +72,11 @@ class CellDataBase(AkWrapper, ABC_MeshData):
 class PolyDataBase(LinkedDeepDict):
 
     @abstractmethod
+    def source(self, *args, **kwargs) -> 'PolyDataBase':
+        """Ought to return the object that holds onto point data."""
+        ...
+    
+    @abstractmethod
     def coords(self, *args, **kwargs) -> ndarray:
         """Ought to return the coordiantes associated with the object."""
         ...

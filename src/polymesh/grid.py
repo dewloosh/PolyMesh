@@ -17,7 +17,9 @@ def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None,
          eshape:Union[str, Tuple[int]]=None, shift:Iterable=None, start:int=0,
          bins:Iterable=None, centralize:bool=False, **kwargs) -> Tuple[ndarray, ndarray]:
     """
-    Crates a 1d, 2d or 3d grid for different patterns.
+    Crates a 1d, 2d or 3d grid for different patterns and returnes the raw data.
+    If you want a more high level mesh object, consider using the :class:`~polymesh.grid.Grid`
+    class, which calls this method to generate a :class:`~polymesh.polydata.PolyData` instance.
     
     Parameters
     ----------
@@ -48,7 +50,6 @@ def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None,
     1) The returned topology may not be compliant with vtk. If you want to use
     the results of this call to build a vtk model, you have to account for this.
     Optinally, you can use the dedicated grid generation routines of this module.
-    
     2) If you'd rather get the result as a `PolyData`, use the `Grid` class.
     
     Returns
@@ -61,7 +62,8 @@ def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None,
     Examples
     --------
     Create a simple hexagonal mesh
-        
+    
+    >>> from polymesh import grid
     >>> size = 80, 60, 20
     >>> shape = 8, 6, 2
     >>> mesh = (coords, topo) = grid(size=size, shape=shape, eshape='H8')
@@ -82,6 +84,9 @@ def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None,
     >>> gridparams['eshape'] = (2, 3)
     >>> coordsQ4, topoQ4 = grid(**gridparams)
     
+    See also
+    --------
+    :class:`~polymesh.grid.Grid`
     """
     if size is not None:
         nDime = len(size)
@@ -136,17 +141,18 @@ def grid(*args, size:Tuple[float]=None, shape:Union[int, Tuple[int]]=None,
 
 def gridQ4(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
-    Customized version of `grid` dedicated to Q4 elements.
+    Customized version of :func:`grid` dedicated to Q4 elements.
     It returns a topology with vtk-compliant node numbering.
     
     In terms of parameters, this function have to be called the
     same way `grid` would be called, except the parameter
     `eshape` being obsolete.
        
-    Examples
-    --------    
-    Creating a mesh  a mesh of 4-noded quadrilaterals
+    Example
+    -------    
+    Creating a mesh of 4-noded quadrilaterals
     
+    >>> from polymesh.grid import gridQ4
     >>> gridparams = {
     >>>     'size' : (1200, 600),
     >>>     'shape' : (30, 15),
@@ -169,7 +175,6 @@ def gridQ9(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     In terms of parameters, this function have to be called the
     same way `grid` would be called, except the parameter
     `eshape` being obsolete.
-            
     """
     coords, topo = grid(*args, eshape=(3, 3), **kwargs)
     path = np.array([0, 6, 8, 2, 3, 7, 5, 1, 4], dtype=int)
@@ -183,8 +188,7 @@ def gridH8(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     
     In terms of parameters, this function have to be called the
     same way `grid` would be called, except the parameter
-    `eshape` being obsolete.
-            
+    `eshape` being obsolete. 
     """
     coords, topo = grid(*args, eshape=(2, 2, 2), **kwargs)
     path = np.array([0, 4, 6, 2, 1, 5, 7, 3], dtype=int)
@@ -198,8 +202,7 @@ def gridH27(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     
     In terms of parameters, this function have to be called the
     same way `grid` would be called, except the parameter
-    `eshape` being obsolete.
-            
+    `eshape` being obsolete.      
     """
     coords, topo = grid(*args, eshape=(3, 3, 3), **kwargs)
     path = np.array([0, 18, 24, 6, 2, 20, 26, 8, 9, 21, 15, 3, 11, 23, 17, 5,
@@ -494,7 +497,8 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
 
 def knngridL2(*args, max_distance:float=None, k:int=3, **kwargs):
     """
-    Returns a KNN grid of L2 lines.
+    Returns a KNN grid of L2 lines. First a grid of points is created
+    using :func:``grid``, then points are connected based on a KNN-tree.
     
     Parameters
     ----------
@@ -505,7 +509,12 @@ def knngridL2(*args, max_distance:float=None, k:int=3, **kwargs):
     k : int, Optional
         Number of neighbours for a given point.
     **kwargs : dict, Optional
-        Keyword arguments forwarded to :func:``grid``. 
+        Keyword arguments forwarded to :func:``grid``.
+        
+    See also
+    --------
+    :func:`~polymesh.utils.knn.k_nearest_neighbours` 
+    :func:`~polymesh.utils.knn.knn_to_lines` 
     """
     X, _ = grid(*args, **kwargs)
     i = knn(X, X, k=k, max_distance=max_distance)
@@ -518,7 +527,9 @@ def knngridL2(*args, max_distance:float=None, k:int=3, **kwargs):
 class Grid(PolyData):
     """
     A class to generate meshes based on grid-like data. All input
-    arguments are forwarded to :func:``grid``.
+    arguments are forwarded to :func:``grid``. The difference is that
+    a :class:`~polymesh.polydata.PolyData` instance is returned, insted of 
+    raw mesh data.
     
     Examples
     --------
@@ -530,9 +541,7 @@ class Grid(PolyData):
     See also
     --------
     :func:``grid``
-    
     """
-    
     def __init__(self, *args, celltype=None, frame=None, 
                  eshape=None, **kwargs):
         # parent class handles pointdata and celldata creation

@@ -10,6 +10,21 @@ from ..utils.utils import cells_coords, cell_coords
 __cache = True
 
 
+@njit(nogil=True, parallel=True, cache=__cache)
+def triangulate_cell_coords(ecoords: ndarray, trimap: ndarray):
+    nE = ecoords.shape[0]
+    nTE, nNTE = trimap.shape
+    nT = int(nE * nTE)
+    nD = ecoords.shape[-1]
+    res = np.zeros((nT, nNTE, nD), dtype=ecoords.dtype)
+    for iE in prange(nE):
+        for iTE in prange(nTE):
+            iT = iE * nTE + iTE
+            for iNTE in prange(nNTE):
+                res[iT, iNTE, :] = ecoords[iE, trimap[iTE, iNTE], :]
+    return res
+
+
 @njit(nogil=True, cache=__cache)
 def monoms_tri_loc(lcoord: np.ndarray):
     return np.array([1, lcoord[0], lcoord[1]], dtype=lcoord.dtype)

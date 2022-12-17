@@ -14,7 +14,7 @@ from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray, csr_matrix
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann.linalg.vector import VectorBase
-from neumann import atleast1d, minmax
+from neumann import atleast1d, minmax, repeat
 
 from .akwrap import AkWrapper
 from .utils.topology.topo import inds_to_invmap_as_dict, remap_topo_1d
@@ -35,9 +35,8 @@ from .cells import (
 from .utils.utils import nodal_distribution_factors
 from .polyhedron import Wedge
 from .utils.space import index_of_closest_point, index_of_furthest_point
-from .utils.topology import (regularize, nodal_adjacency,
-                             detach_mesh_bulk, cells_at_nodes,
-                             detach_mesh_data_bulk)
+from .utils.topology import (nodal_adjacency, detach_mesh_data_bulk,
+                             detach_mesh_bulk, cells_at_nodes)
 from .topoarray import TopologyArray
 from .pointdata import PointData
 from .celldata import CellData
@@ -92,7 +91,7 @@ class PolyData(PolyDataBase):
         A PolyData or a CellData instance. Dafault is None.
     cd : CellData, Optional
         A CellData instance, if the first argument is provided. Dafault is None.
-    celltype : int, Optional.
+    celltype : int, Optional
         An integer spcifying a valid celltype.
 
     Examples
@@ -158,7 +157,8 @@ class PolyData(PolyDataBase):
     def __init__(self, pd: Union[PointData, CellData] = None, cd: CellData = None,
                  *args, coords: ndarray = None, topo: ndarray = None, celltype=None,
                  frame: FrameLike = None, newaxis: int = 2, cell_fields: dict = None,
-                 point_fields: dict = None, parent: 'PolyData' = None, **kwargs):
+                 point_fields: dict = None, parent: 'PolyData' = None, 
+                 frames : Union[FrameLike, ndarray]=None, **kwargs):
         self._reset_point_data()
         self._reset_cell_data()
         self._frame = frame
@@ -232,6 +232,18 @@ class PolyData(PolyDataBase):
                 topo = topo.astype(int)
             else:
                 raise TypeError("Topo must be an 1d array of integers.")
+            
+            if frames is not None:
+                if isinstance(frames, FrameLike):
+                    cell_fields['frames'] = repeat(frames.show(), topo.shape[0])
+                elif isinstance(frames, ndarray):
+                    if len(frames.shape) == 2:
+                        cell_fields['frames'] = repeat(frames, topo.shape[0])
+                    else:
+                        assert len(frames.shape) == 3, "'frames' must be a 2d or 3d array."
+                        cell_fields['frames'] = frames
+            elif isinstance(frame, FrameLike):
+                cell_fields['frames'] = repeat(frame.show(), topo.shape[0])
 
             GIDs = self.root().cim.generate_np(topo.shape[0])
             cell_fields[cidkey] = GIDs
@@ -1255,9 +1267,8 @@ class PolyData(PolyDataBase):
         Parameters
         ----------
         All arguments are forwarded to :func:`.topo.topo.nodal_adjacency`.
-
         """
-        topo = self.topology()
+        topo = self.topology().astype(np.int64)
         return nodal_adjacency(topo, *args, **kwargs)
 
     def number_of_cells(self) -> int:
@@ -1455,148 +1466,197 @@ class PolyData(PolyDataBase):
                 else:
                     yield block, c, t, None
 
-    def to_vtk(self, deepcopy: bool = False, multiblock: bool = False):
-        """
-        Returns the mesh as a `VTK` object.
+    if __hasvtk__:
+        def to_vtk(self, deepcopy: bool = False, multiblock: bool = False) -> \
+                Union[vtk.vtkUnstructuredGrid, vtk.vtkMultiBlockDataSet]:
+            """
+            Returns the mesh as a `VTK` object. 
 
-        Parameters
-        ----------
-        deepcopy : bool, Optional
-            Default is False.
-        multiblock : bool, Optional
-            Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
-            of `vtkUnstructuredGrid` instances. Default is False.
-        """
-        if not __hasvtk__:
-            raise ImportError("VTK must be installed for this!")
-        ugrids = []
-        for block, c, t, _ in self._detach_block_data_():
-            vtkct = block.celltype.vtkCellType
-            ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
-            ugrids.append(ugrid)
-        if multiblock:
-            mb = vtk.vtkMultiBlockDataSet()
-            mb.SetNumberOfBlocks(len(ugrids))
-            for i, ugrid in enumerate(ugrids):
-                mb.SetBlock(i, ugrid)
-            return mb
-        else:
-            if len(ugrids) > 1:
-                return ugrids
+            Parameters
+            ----------
+            deepcopy : bool, Optional
+                Default is False.
+            multiblock : bool, Optional
+                Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
+                of `vtkUnstructuredGrid` instances. Default is False.
+
+            Returns
+            -------
+            vtk.vtkUnstructuredGrid or vtk.vtkMultiBlockDataSet
+            """
+            if not __hasvtk__:
+                raise ImportError("VTK must be installed for this!")
+            ugrids = []
+            for block, c, t, _ in self._detach_block_data_():
+                vtkct = block.celltype.vtkCellType
+                ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
+                ugrids.append(ugrid)
+            if multiblock:
+                mb = vtk.vtkMultiBlockDataSet()
+                mb.SetNumberOfBlocks(len(ugrids))
+                for i, ugrid in enumerate(ugrids):
+                    mb.SetBlock(i, ugrid)
+                return mb
             else:
-                return ugrids[0]
-
-    def to_pv(self, deepcopy: bool = False, multiblock: bool = False,
-              scalars: Union[str, ndarray] = None):
-        """
-        Returns the mesh as a `PyVista` oject, optionally set up with data.
-
-        Parameters
-        ----------
-        deepcopy : bool, Optional
-            Default is False.
-        multiblock : bool, Optional
-            Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
-            of `vtkUnstructuredGrid` instances. Default is False.
-        scalars : str or numpy.ndarray, Optional
-            A string or an array describing scalar data. Default is None.
-        """
-        if not __hasvtk__:
-            raise ImportError("VTK must be installed for this!")
-        if not __haspyvista__:
-            raise ImportError("PyVista must be installed for this!")
-        ugrids = []
-        data = []
-        for block, c, t, d in self._detach_block_data_(scalars):
-            vtkct = block.celltype.vtkCellType
-            ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
-            ugrids.append(ugrid)
-            data.append(d)
-        if multiblock:
-            mb = vtk.vtkMultiBlockDataSet()
-            mb.SetNumberOfBlocks(len(ugrids))
-            for i, ugrid in enumerate(ugrids):
-                mb.SetBlock(i, ugrid)
-            mb = pv.wrap(mb)
-            try:
-                mb.wrap_nested()
-            except AttributeError:
-                pass
-            return mb
-        else:
-            if scalars is None:
-                return [pv.wrap(ugrid) for ugrid in ugrids]
-            else:
-                res = []
-                for ugrid, d in zip(ugrids, data):
-                    pvobj = pv.wrap(ugrid)
-                    if isinstance(d, ndarray):
-                        if isinstance(scalars, str):
-                            pvobj[scalars] = d
-                        else:
-                            pvobj['scalars'] = d
-                    res.append(pvobj)
-                return res
-
-    def to_k3d(self, *, scene=None, deep=True, menu_visibility=True,
-               scalars=None, config_key=None, color_map=None, detach=False,
-               show_edges=True, **kwargs):
-        """
-        Returns the mesh as a k3d mesh object.
-        
-        :: warning:
-            Calling this method raises a UserWarning inside the `traittypes`
-            package saying "Given trait value dtype 'float32' does not match 
-            required type 'float32'."
-
-        Returns
-        -------
-        Plot
-            K3D Plot Widget.
-
-        """
-        assert __hask3d__, "The python package 'k3d' must be installed for this"
-        if scene is None:
-            scene = k3d.plot(menu_visibility=menu_visibility)
-        vertices = self.root().coords().astype(np.float32)
-
-        k3dparams = dict(wireframe=False)
-        if config_key is None:
-            config_key = self.__class__._k3d_config_key_
-
-        for b in self.cellblocks(inclusive=True, deep=deep):
-            params = copy(k3dparams)
-            params.update(b.config[config_key])
-            if 'color' in params:
-                if isinstance(params['color'], str):
-                    hexstr = mpl.colors.to_hex(params['color'])
-                    params['color'] = int("0x" + hexstr[1:], 16)
-            if color_map is not None:
-                params['color_map'] = color_map
-            if b.celltype.NDIM == 1:
-                i = b.cd.topology().to_numpy().astype(np.uint32)
-                scene += k3d.lines(vertices, i, indices_type='segment', **params)
-            elif b.celltype.NDIM == 2:
-                i = b.cd.to_triangles().astype(np.uint32)
-                if 'side' in params:
-                    if params['side'].lower() == 'both':
-                        params['side'] = 'front'
-                        scene += k3d.mesh(vertices, i, **params)
-                        params['side'] = 'back'
-                        scene += k3d.mesh(vertices, i, **params)
-                    else:
-                        scene += k3d.mesh(vertices, i, **params)
+                if len(ugrids) > 1:
+                    return ugrids
                 else:
-                    scene += k3d.mesh(vertices, i, **params)
-                if show_edges:
-                    scene += k3d.mesh(vertices, i, wireframe=True, color=0)
-            elif b.celltype.NDIM == 3:
-                i = b.surface().topology().astype(np.uint32)
-                #i = b.surface(detach=False, triangulate=True).topology()
-                scene += k3d.mesh(vertices, i, **params)
-                if show_edges:
-                    scene += k3d.mesh(vertices, i, wireframe=True, color=0)
-        return scene
+                    return ugrids[0]
+
+    if __hasvtk__ and __haspyvista__:
+        def to_pv(self, deepcopy: bool = False, multiblock: bool = False,
+                  scalars: Union[str, ndarray] = None) -> \
+                Union[pv.UnstructuredGrid, pv.MultiBlock]:
+            """
+            Returns the mesh as a `PyVista` oject, optionally set up with data.
+
+            Parameters
+            ----------
+            deepcopy : bool, Optional
+                Default is False.
+            multiblock : bool, Optional
+                Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
+                of `vtkUnstructuredGrid` instances. Default is False.
+            scalars : str or numpy.ndarray, Optional
+                A string or an array describing scalar data. Default is None.
+
+            Returns
+            -------
+            pyvista.UnstructuredGrid or pyvista.MultiBlock
+            """
+            if not __hasvtk__:
+                raise ImportError("VTK must be installed for this!")
+            if not __haspyvista__:
+                raise ImportError("PyVista must be installed for this!")
+            ugrids = []
+            data = []
+            for block, c, t, d in self._detach_block_data_(scalars):
+                vtkct = block.celltype.vtkCellType
+                ugrid = mesh_to_vtk(c, t, vtkct, deepcopy)
+                ugrids.append(ugrid)
+                data.append(d)
+            if multiblock:
+                mb = vtk.vtkMultiBlockDataSet()
+                mb.SetNumberOfBlocks(len(ugrids))
+                for i, ugrid in enumerate(ugrids):
+                    mb.SetBlock(i, ugrid)
+                mb = pv.wrap(mb)
+                try:
+                    mb.wrap_nested()
+                except AttributeError:
+                    pass
+                return mb
+            else:
+                if scalars is None:
+                    return [pv.wrap(ugrid) for ugrid in ugrids]
+                else:
+                    res = []
+                    for ugrid, d in zip(ugrids, data):
+                        pvobj = pv.wrap(ugrid)
+                        if isinstance(d, ndarray):
+                            if isinstance(scalars, str):
+                                pvobj[scalars] = d
+                            else:
+                                pvobj['scalars'] = d
+                        res.append(pvobj)
+                    return res
+
+    if __hask3d__:
+        def to_k3d(self, *, scene: object = None, deep: bool = True, config_key: str = None,
+                   menu_visibility: bool = True, cmap: list = None, show_edges: bool = True,
+                   scalars: ndarray = None):
+            """
+            Returns the mesh as a k3d mesh object. 
+
+            :: warning:
+                Calling this method raises a UserWarning inside the `traittypes`
+                package saying "Given trait value dtype 'float32' does not match 
+                required type 'float32'." However, plotting seems to be fine.
+
+            Returns
+            -------
+            object
+                A K3D Plot Widget, which is a result of a call to `k3d.plot`.
+                
+            See also
+            --------
+            :func:`k3d.lines`
+            :func:`k3d.mesh`
+            """
+            if not __hask3d__:
+                raise ImportError(
+                    "The python package 'k3d' must be installed for this.")
+            if scene is None:
+                scene = k3d.plot(menu_visibility=menu_visibility)
+            source = self.source()
+            coords = source.coords()
+            
+            if isinstance(scalars, ndarray):
+                color_range = minmax(scalars)
+                color_range = [scalars.min()-1, scalars.max()+1]
+
+            k3dparams = dict(wireframe=False)
+            if config_key is None:
+                config_key = self.__class__._k3d_config_key_
+
+            for b in self.cellblocks(inclusive=True, deep=deep):
+                params = copy(k3dparams)
+                params.update(b.config[config_key])
+                if 'color' in params:
+                    if isinstance(params['color'], str):
+                        hexstr = mpl.colors.to_hex(params['color'])
+                        params['color'] = int("0x" + hexstr[1:], 16)
+                if cmap is not None:
+                    params['color_map'] = cmap
+                if b.celltype.NDIM == 1:
+                    topo = b.cd.topology().to_numpy()
+                    if isinstance(scalars, ndarray):
+                        c, d, t = detach_mesh_data_bulk(coords, topo, scalars)
+                        params['attribute'] = d
+                        params['color_range'] = color_range
+                        params['indices_type'] = 'segment'
+                    else:
+                        c, t = detach_mesh_bulk(coords, topo)
+                        params['indices_type'] = 'segment'
+                    c = c.astype(np.float32)
+                    t = t.astype(np.uint32)
+                    scene += k3d.lines(c, t, **params)
+                elif b.celltype.NDIM == 2:
+                    topo = b.cd.to_triangles()
+                    if isinstance(scalars, ndarray):
+                        c, d, t = detach_mesh_data_bulk(coords, topo, scalars)
+                        params['attribute'] = d
+                        params['color_range'] = color_range
+                    else:
+                        c, t = detach_mesh_bulk(coords, topo)
+                    c = c.astype(np.float32)
+                    t = t.astype(np.uint32)
+                    if 'side' in params:
+                        if params['side'].lower() == 'both':
+                            params['side'] = 'front'
+                            scene += k3d.mesh(c, t, **params)
+                            params['side'] = 'back'
+                            scene += k3d.mesh(c, t, **params)
+                        else:
+                            scene += k3d.mesh(c, t, **params)
+                    else:
+                        scene += k3d.mesh(c, t, **params)
+                    if show_edges:
+                        scene += k3d.mesh(c, t, wireframe=True, color=0)
+                elif b.celltype.NDIM == 3:
+                    topo = b.surface().topology()
+                    if isinstance(scalars, ndarray):
+                        c, d, t = detach_mesh_data_bulk(coords, topo, scalars)
+                        params['attribute'] = d
+                        params['color_range'] = color_range
+                    else:
+                        c, t = detach_mesh_bulk(coords, topo)
+                    c = c.astype(np.float32)
+                    t = t.astype(np.uint32)
+                    scene += k3d.mesh(c, t, **params)
+                    if show_edges:
+                        scene += k3d.mesh(c, t, wireframe=True, color=0)
+            return scene
 
     def plot(self, *, notebook: bool = False, backend: str = 'pyvista',
              config_key: str = None, **kwargs):
@@ -1651,6 +1711,7 @@ class PolyData(PolyDataBase):
 
         See Also
         --------
+        :func:`to_k3d`
         :func:`k3d.plot`
         """
         if scene is None:
