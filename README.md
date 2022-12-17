@@ -85,7 +85,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('A'),
           show_edges=True, window_size=(600, 480))
 ```
 
-![ ](plot1.png)
+![ ](docs/source/_static/plot1.png)
 
 Attaching data to the cells of the created blocks and plotting the results using PyVista:
 
@@ -106,7 +106,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('B'),
           scalars='scalars')
 ```
 
-![ ](plot2.png)
+![ ](docs/source/_static/plot2.png)
 
 PolyMesh makes it easy to transfer data from the cells to the supporting point cloud:
 
@@ -123,7 +123,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('A'),
           cmap='plasma')
 ```
 
-![ ](plot3.png)
+![ ](docs/source/_static/plot3.png)
 
 ### Customizing the distribution mechanism
 
@@ -139,7 +139,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('B'),
           scalars='scalars')
 ```
 
-![ ](plot4.png)
+![ ](docs/source/_static/plot4.png)
 
 The default smoothing mechanism uses the volumes of the cells to determine nodal distribution factors.
 
@@ -151,7 +151,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('A'),
           cmap='jet')
 ```
 
-![ ](plot4a.png)
+![ ](docs/source/_static/plot4a.png)
 
 If you want you can give more presence to the hexahedral cells by increasing their weights:
 
@@ -167,7 +167,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('A'),
           cmap='jet')
 ```
 
-![ ](plot5.png)
+![ ](docs/source/_static/plot5.png)
 
 or by decreasing them:
 
@@ -183,7 +183,7 @@ mesh.plot(notebook=True, jupyter_backend='static', config_key=('A'),
           cmap='jet')
 ```
 
-![ ](plot6.png)
+![ ](docs/source/_static/plot6.png)
 
 It can be observed how the colors change arounf the boundary of hexahedral cells. 
 
@@ -196,7 +196,7 @@ cmap=matplotlib_color_maps.Jet
 mesh.k3dplot(scalars=scalars, menu_visibility=False, cmap=cmap)
 ```
 
-![ ](plot7.png)
+![ ](docs/source/_static/plot7.png)
 
 ## **Documentation**
 
