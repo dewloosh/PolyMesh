@@ -3,6 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/polymesh/badge/?version=latest)](https://polymesh.readthedocs.io/en/latest/?badge=latest) 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://badge.fury.io/py/PolyMesh.svg)](https://pypi.org/project/PolyMesh) 
+[![Python 3.7‒3.10](https://img.shields.io/badge/python-3.7%E2%80%923.10-blue)](https://www.python.org)
 
 # **PolyMesh** - A Python Library for Compound Meshes with Jagged Topologies
 
@@ -201,7 +202,7 @@ The documentation is hosted on [ReadTheDocs](https://PolyMesh.readthedocs.io/en/
 
 ## **Installation**
 
-`PolyMesh` can be installed from PyPI using `pip` on Python >= 3.7:
+PolyMesh can be installed from PyPI using `pip` on Python >= 3.7:
 
 ```console
 >>> pip install polymesh
