@@ -2,12 +2,15 @@ from typing import Union
 import numpy as np
 from numpy import ndarray
 
+from .pointdata import PointData
+from .grid import grid
 from .polydata import PolyData
 from .trimesh import TriMesh
-from .cells import H8, TET4, T3
+from .cells import H8, H27, TET4, TET10, T3
 from .space import CartesianFrame
 from .triang import triangulate
-from .utils.topology import detach_mesh_bulk
+from .utils import cell_centers_bulk
+from .utils.topology import detach, H8_to_TET4
 from .extrude import extrude_T3_TET4
 from .voxelize import voxelize_cylinder
 
@@ -77,7 +80,7 @@ def circular_disk(
     )
     triangles = triang.get_masked_triangles()
     points = np.stack((triang.x, triang.y, np.zeros(nP)), axis=1)
-    points, triangles = detach_mesh_bulk(points, triangles)
+    points, triangles = detach(points, triangles)
     frame = CartesianFrame(dim=3) if frame is None else frame
     return TriMesh(points=points, triangles=triangles, celltype=T3, frame=frame)
 
@@ -188,3 +191,130 @@ def cylinder(
 
     frame = CartesianFrame(dim=3) if frame is None else frame
     return PolyData(coords=coords, topo=topo, celltype=celltype, frame=frame)
+
+
+def ribbed_plate(lx:float, ly:float, t:float, *,
+                 wx:float=None, wy:float=None, 
+                 hx:float=None, hy:float=None, 
+                 ex:float=None, ey:float=None,
+                 lmax : float=None, order:int=1,
+                 tetrahedralize:bool=False) -> PolyData:
+    """
+    Creates a ribbed plate.
+    
+    Parameters
+    ----------
+    lx : float
+        The length of the plate along the X axis.
+    ly : float
+        The length of the plate along the Y axis.
+    t : float
+        The thickness of a plate.
+    wx : float, Optional
+        The width of the ribs running in X direction. Must be defined
+        alongside `hx`. Default is None.
+    hx : float, Optional
+        The height of the ribs running in X direction. Must be defined
+        alongside `wx`. Default is None.
+    ex : float, Optional
+        The eccentricity of the ribs running in X direction.
+    wy : float, Optional
+        The width of the ribs running in Y direction. Must be defined
+        alongside `hy`. Default is None.
+    hy : float, Optional
+        The height of the ribs running in Y direction. Must be defined
+        alongside `wy`. Default is None.
+    ey : float, Optional
+        The eccentricity of the ribs running in Y direction.
+    lmax : float, Optional
+        Maximum edge length of the cells in the resulting mesh. Default is None.
+    order : int, Optional
+        Determines the order of the cells used. Allowed values are 1 and 2. If order is
+        1, either H8 hexahedra or TET4 tetrahedra are returned. If order is 2, H27
+        hexahedra or TET10 tetrahedra are returned.
+    tetrahedralize : bool, Optional
+        If True, a mesh of 4-noded tetrahedra is returned. Default is False.
+        
+    Example
+    -------
+    >>> from polymesh.recipes import ribbed_plate
+    >>> mesh = ribbed_plate(lx=5.0, ly=5.0, t=1.0, 
+    >>>                     wx=1.0, hx=2.0, ex=0.05,
+    >>>                     wy=1.0, hy=2.0, ey=-0.05)
+    """
+    
+    def subdivide(bins, lmax):
+        _bins = []
+        for i in range(len(bins)-1):
+            a = bins[i]
+            b = bins[i+1]
+            if (b-a) > lmax:
+                ndiv = int(np.ceil((b-a)/lmax))
+            else:
+                ndiv = 1    
+            ldiv = (b-a)/ndiv
+            for j in range(ndiv):
+                _bins.append(a + j*ldiv)
+        _bins.append(bins[-1])
+        return np.array(_bins)
+    
+    xbins, ybins, zbins = [], [], []
+    xbins.extend([-lx/2, 0, lx/2])
+    ybins.extend([-ly/2, 0, ly/2])
+    zbins.extend([-t/2, 0, t/2])
+    if wx is not None and hx is not None:
+        ex = 0.0 if ex is None else ex
+        ybins.extend([-wx/2, wx/2])
+        if (ex - hx/2) < (-t/2):
+            zbins.append(ex - hx/2)
+        if (ex + hx/2) > (t/2):
+            zbins.append(ex + hx/2)     
+    if wy is not None and hy is not None:
+        ey = 0.0 if ey is None else ey
+        xbins.extend([-wy/2, wy/2])
+        if (ey - hy/2) < (-t/2):
+            zbins.append(ey - hy/2)
+        if (ey + hy/2) > (t/2):
+            zbins.append(ey + hy/2) 
+    xbins = np.unique(np.sort(xbins))
+    ybins = np.unique(np.sort(ybins))
+    zbins = np.unique(np.sort(zbins))
+    if isinstance(lmax, float):
+        xbins = subdivide(xbins, lmax)
+        ybins = subdivide(ybins, lmax)
+        zbins = subdivide(zbins, lmax)
+    bins = xbins, ybins, zbins
+    if order == 1:
+        coords, topo = grid(bins=bins, eshape='H8')
+    elif order == 2:
+        coords, topo = grid(bins=bins, eshape='H27')
+    else:
+        raise NotImplementedError
+    centers = cell_centers_bulk(coords, topo)
+    mask = (centers[:, 2] > (-t/2)) & (centers[:, 2] < (t/2))
+    if wx is not None and hx is not None:
+        m = (centers[:, 1] > (-wx/2)) & (centers[:, 1] < (wx/2))
+        m = m & (centers[:, 2] > (ex - hx/2)) & (centers[:, 2] < (ex + hx/2))
+        mask = mask | m
+    if wy is not None and hy is not None:
+        m = (centers[:, 0] > (-wy/2)) & (centers[:, 0] < (wy/2))
+        m = m & (centers[:, 2] > (ey - hy/2)) & (centers[:, 2] < (ey + hy/2))
+        mask = mask | m
+    topo=topo[mask, :]
+    if tetrahedralize:
+        if order == 1:
+            coords, topo = H8_to_TET4(coords, topo)
+            celltype = TET4
+        elif order == 2:
+            raise NotImplementedError
+            coords, topo = H27_to_TET10(coords, topo)
+            celltype = TET10
+        else:
+            raise NotImplementedError
+    else:
+        celltype = H8
+    coords, topo = detach(coords, topo)
+    frame = CartesianFrame(dim=3)
+    pd = PointData(coords=coords, frame=frame)
+    cd = celltype(topo=topo, frames=frame)
+    return PolyData(pd, cd, frame=frame)

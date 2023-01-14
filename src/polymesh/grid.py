@@ -10,7 +10,8 @@ from .polydata import PolyData
 __cache = True
 
 
-__all__ = ["grid", "gridQ4", "gridQ9", "gridH8", "gridH27", "knngridL2", "Grid"]
+__all__ = ["grid", "gridQ4", "gridQ9",
+           "gridH8", "gridH27", "knngridL2", "Grid"]
 
 
 def grid(
@@ -160,7 +161,8 @@ def grid(
         if len(bins) == 2:
             coords, topo = grid_2d_bins(bins[0], bins[1], eshape, shift, start)
         elif len(bins) == 3:
-            coords, topo = grid_3d_bins(bins[0], bins[1], bins[2], eshape, shift, start)
+            coords, topo = grid_3d_bins(
+                bins[0], bins[1], bins[2], eshape, shift, start)
         else:
             raise NotImplementedError
     else:
@@ -245,38 +247,9 @@ def gridH27(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     `eshape` being obsolete.
     """
     coords, topo = grid(*args, eshape=(3, 3, 3), **kwargs)
-    path = np.array(
-        [
-            0,
-            18,
-            24,
-            6,
-            2,
-            20,
-            26,
-            8,
-            9,
-            21,
-            15,
-            3,
-            11,
-            23,
-            17,
-            5,
-            1,
-            19,
-            25,
-            7,
-            4,
-            22,
-            10,
-            16,
-            12,
-            14,
-            13,
-        ],
-        dtype=int,
-    )
+    path = np.array([0, 18, 24, 6, 2, 20, 26, 8, 9, 21, 15, 3, 11,
+                     23, 17, 5, 1, 19, 25, 7, 4, 22, 10, 16, 12,
+                     14, 13], dtype=int)
     return coords, transform_topo(topo, path)
 
 
@@ -354,8 +327,10 @@ def _rgridST(size, shape, eshape, shift, start=0):
                             + (nNodeY - 1) * (j - 1)
                             + m
                         )
-                        coords[n - 1, 0] = shift[0] + dX * (i - 1) + ddX * (k - 1)
-                        coords[n - 1, 1] = shift[1] + dY * (j - 1) + ddY * (m - 1)
+                        coords[n - 1, 0] = shift[0] + \
+                            dX * (i - 1) + ddX * (k - 1)
+                        coords[n - 1, 1] = shift[1] + \
+                            dY * (j - 1) + ddY * (m - 1)
                         ne += 1
                         topo[elem, ne] = n
     elif nDime == 3:
@@ -435,7 +410,6 @@ def rgridMT(size, shape, eshape, shift, start=0):
         numCell = ndivY * ndivX * ndivZ
         numPoin = nX * nY * nZ
         numNode = nNodeX * nNodeY * nNodeZ
-
     # set up nodal coordinates
     coords = np.zeros((numPoin, nDime))
     topo = np.zeros((numCell, numNode), dtype=np.int64)
@@ -460,8 +434,10 @@ def rgridMT(size, shape, eshape, shift, start=0):
                             + m
                         )
                         ne = (k - 1) * nNodeY + m - 1
-                        coords[n - 1, 0] = shift[0] + dX * (i - 1) + ddX * (k - 1)
-                        coords[n - 1, 1] = shift[1] + dY * (j - 1) + ddY * (m - 1)
+                        coords[n - 1, 0] = shift[0] + \
+                            dX * (i - 1) + ddX * (k - 1)
+                        coords[n - 1, 1] = shift[1] + \
+                            dY * (j - 1) + ddY * (m - 1)
                         topo[elem, ne] = n
     elif nDime == 3:
         for i in prange(1, ndivX + 1):
@@ -483,7 +459,8 @@ def rgridMT(size, shape, eshape, shift, start=0):
                                     + p
                                 )
                                 ne = (
-                                    (m - 1) * nNodeY * nNodeZ + (q - 1) * nNodeZ + p - 1
+                                    (m - 1) * nNodeY * nNodeZ +
+                                    (q - 1) * nNodeZ + p - 1
                                 )
                                 coords[n - 1, 0] = (
                                     shift[0] + dX * (i - 1) + ddX * (m - 1)
@@ -501,38 +478,33 @@ def rgridMT(size, shape, eshape, shift, start=0):
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def grid_2d_bins(xbins, ybins, eshape, shift, start=0):
-
     # size
     lX = xbins.max() - xbins.min()
     lY = ybins.max() - ybins.min()
-
     # shape of cells
     nEX = len(xbins) - 1
     nEY = len(ybins) - 1
-
     # number of cells
     nC = nEX * nEY
-
     # number of nodes
     nNEX, nNEY = eshape
+    nDIVX = (nNEX - 1)
+    nDIVY = (nNEY - 1)
     nNE = nNEX * nNEY
-    nNX = nEX * (nNEX - 1) + 1
-    nNY = nEY * (nNEY - 1) + 1
+    nNX = nEX * nDIVX + 1
+    nNY = nEY * nDIVY + 1
     nN = nNX * nNY
-    dX = lX / nEX
-    dY = lY / nEY
-    ddX = dX / (nNEX - 1)
-    ddY = dY / (nNEY - 1)
-
     # create grid
     coords = np.zeros((nN, 2))
     topo = np.zeros((nC, nNE), dtype=np.int64)
     for i in prange(nEX):
+        ddX = (xbins[i + 1] - xbins[i]) / nDIVX
         for j in prange(nEY):
+            ddY = (ybins[j + 1] - ybins[j]) / nDIVY
             iE = i * nEY + j
             for p in prange(nNEX):
                 for q in prange(nNEY):
-                    n = ((nNEX - 1) * i + p) * nNY + (nNEY - 1) * j + q
+                    n = (nDIVX * i + p) * nNY + nDIVY * j + q
                     coords[n, 0] = shift[0] + xbins[i] + ddX * p
                     coords[n, 1] = shift[1] + ybins[j] + ddY * q
                     iNE = p * nNEY + q
@@ -546,42 +518,39 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
     lX = xbins.max() - xbins.min()
     lY = ybins.max() - ybins.min()
     lZ = zbins.max() - zbins.min()
-
     # shape of cells
     nEX = len(xbins) - 1
     nEY = len(ybins) - 1
     nEZ = len(zbins) - 1
-
     # number of cells
     nC = nEX * nEY * nEZ
-
     # number of nodes
     nNEX, nNEY, nNEZ = eshape
+    nDIVX = (nNEX - 1)
+    nDIVY = (nNEY - 1)
+    nDIVZ = (nNEZ - 1)
     nNE = nNEX * nNEY * nNEZ
-    nNX = nEX * (nNEX - 1) + 1
-    nNY = nEY * (nNEY - 1) + 1
-    nNZ = nEZ * (nNEZ - 1) + 1
+    nNX = nEX * nDIVX + 1
+    nNY = nEY * nDIVY + 1
+    nNZ = nEZ * nDIVZ + 1
     nN = nNX * nNY * nNZ
-    dX = lX / nEX
-    dY = lY / nEY
-    dZ = lZ / nEZ
-    ddX = dX / (nNEX - 1)
-    ddY = dY / (nNEY - 1)
-    ddZ = dZ / (nNEZ - 1)
-
     # create grid
     coords = np.zeros((nN, 3), dtype=xbins.dtype)
     topo = np.zeros((nC, nNE), dtype=np.int64)
     for i in prange(nEX):
+        ddX = (xbins[i + 1] - xbins[i]) / nDIVX
         for j in prange(nEY):
+            ddY = (ybins[j + 1] - ybins[j]) / nDIVY
             for k in prange(nEZ):
+                ddZ = (zbins[k + 1] - zbins[k]) / nDIVZ
                 iE = i * nEZ * nEY + j * nEZ + k
                 for p in prange(nNEX):
                     for q in prange(nNEY):
                         for r in prange(nNEZ):
                             n = (
-                                (((nNEX - 1) * i + p) * nNY + (nNEY - 1) * j + q) * nNZ
-                                + (nNEZ - 1) * k
+                                ((nDIVX * i + p) * nNY +
+                                 nDIVY * j + q) * nNZ
+                                + nDIVZ * k
                                 + r
                             )
                             coords[n, 0] = shift[0] + xbins[i] + ddX * p

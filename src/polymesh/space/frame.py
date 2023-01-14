@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 from typing import Union
 from numpy import ndarray
 from copy import deepcopy as dcopy
 
-from neumann.linalg.frame import ReferenceFrame
+from neumann.linalg import CartesianFrame as Frame, FrameLike, Vector
 from neumann.linalg.vector import Vector
 
 
@@ -14,17 +13,17 @@ __all__ = ["CartesianFrame"]
 VectorLike = Union[Vector, ndarray]
 
 
-class CartesianFrame(ReferenceFrame):
+class CartesianFrame(Frame):
     """
     A field-specific reference frame to be used in problems related to
     Euclidean geometry.
 
-    It builds on top of :class:`ReferenceFrame` from `neumann`, but adds
+    It builds on top of :class:`FrameLike` from `neumann`, but adds
     the contept of 'origo', and some other applications related to the field.
 
     See Also
     --------
-    :class:`~neumann.linalg.frame.frame.ReferenceFrame`
+    :class:`~neumann.linalg.frame.frame.FrameLike`
 
     Parameters
     ----------
@@ -38,7 +37,7 @@ class CartesianFrame(ReferenceFrame):
 
     Note
     ----
-    See the documentation of :class:`neumann.ReferenceFrame` for more control over
+    See the documentation of :class:`neumann.FrameLike` for more control over
     object creation. However, if your problem not very extreme in some sense,
     you are probably good to goo only by following the examples.
 
@@ -68,29 +67,29 @@ class CartesianFrame(ReferenceFrame):
     or equivalently
 
     >>> A_R_B = A.dcm(target=A)
-
     """
 
-    def __init__(self, axes=None, *args, dim=3, origo=None, **kwargs):
+    def __init__(self, axes:ndarray=None, *args, dim:int=3, 
+                 origo:ndarray=None, **kwargs):
         axes = np.eye(dim) if axes is None else axes
         super().__init__(axes, *args, **kwargs)
         self._origo = origo
 
-    def origo(self, target: ReferenceFrame = None) -> Vector:
+    def origo(self, target: FrameLike = None) -> Vector:
         """
         Returns the origo of the current frame in ambient space
         or with respect to another frame.
 
         Parameters
         ----------
-        target : ReferenceFrame, Optional
+        target : FrameLike, Optional
             A frame in which we want to get the origo of the current frame.
             A None value returns the origo of the current frame with respect
             to the root. Default is None.
 
         Returns
         -------
-        :class:`Vector`
+        Vector
             A vector defined in ambient space, the parent frame,
             or the specified frame.
 
@@ -125,26 +124,18 @@ class CartesianFrame(ReferenceFrame):
 
         >>> B.origo()  # same as B.origo(B.root())
         [0.7071, 0.7071, 0.]
-
         """
-        if self.parent is None and not isinstance(self._origo, ndarray):
+        if not isinstance(self._origo, ndarray):
             self._origo = np.zeros(len(self.axes))
 
         if target is None:
-            if self.parent is None:
-                return Vector(self._origo).show()
-            else:
-                if isinstance(self._origo, ndarray):
-                    v = Vector(self._origo, frame=self.parent).show()
-                    return self.parent.origo() + v
-                else:
-                    return self.parent.origo()
+            return Vector(self._origo).show()
         else:
             t = target.origo()
             s = self.origo()
             return Vector(s - t).show(target)
 
-    def move(self, d: VectorLike, frame: ReferenceFrame = None) -> "CartesianFrame":
+    def move(self, d: VectorLike, frame: FrameLike = None) -> "CartesianFrame":
         """
         Moves the frame by shifting its origo.
 
@@ -152,19 +143,17 @@ class CartesianFrame(ReferenceFrame):
         ----------
         d : VectorLike
             :class:`Vector` or :class:`Array`, the amount of the motion.
-
-        frame : ReferenceFrame, Optional
+        frame : FrameLike, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None, which assumes the root frame.
 
         Returns
         -------
-        :class:`ReferenceFrame`
+        CartesianFrame
             The object the function is called on.
 
         Examples
         --------
-
         >>> A = CartesianFrame()
         >>> v = Vector([1., 0., 0.], frame=A)
         >>> B = A.fork('Body', [0, 0, 45*np.pi/180], 'XYZ').move(v)
@@ -172,47 +161,35 @@ class CartesianFrame(ReferenceFrame):
         Move the frame locally with the same amount
 
         >>> B.move(v.array, frame=B)
-
         """
         if not isinstance(d, Vector):
             d = Vector(d, frame=frame)
         if self._origo is None:
             self._origo = np.zeros(len(self.axes))
-        if self.parent is not None:
-            self._origo += d.show(self.parent)
-        else:
-            self._origo += d.show(self)
+        self._origo += d.show()
         return self
 
     def fork(self, *args, **kwargs) -> "CartesianFrame":
         """
-        Retures a new frame, as a child of the current one.
-        Optionally, a transformation can be provided and all the arguments
-        are passed to the `orient_new` function. Otherwise, a frame is
-        returned with identical orientation and position.
+        Alias for `orient_new`.
         """
-        if (len(args) + len(kwargs)) == 0:
-            dim = len(self.axes)
-            return self.__class__(np.eye(dim), parent=self)
-        else:
-            return self.orient_new(*args, **kwargs)
+        return self.orient_new(*args, **kwargs)
 
-    def copy(self, deepcopy=False) -> "CartesianFrame":
+    def copy(self, deep:bool=False, name:str=None) -> "CartesianFrame":
         """
         Returns a shallow or deep copy of this object, depending of the
         argument `deepcopy` (default is False).
         """
-        if deepcopy:
-            return self.__class__(dcopy(self.axes), parent=self.parent)
+        if deep:
+            return self.__class__(
+                dcopy(self.axes), 
+                origo=dcopy(self.origo()),
+                name=name)
         else:
-            return self.__class__(self.axes, parent=self.parent)
+            return self.__class__(self.axes, origo=self.origo(), name=name)
 
-    def join(self, parent: ReferenceFrame = None) -> "CartesianFrame":
-        """
-        Sets this object as the 'child' to the provided frame.
-        If there is no frame provided, the object is joined to the root.
-        """
+    """def join(self, parent: FrameLike = None) -> "CartesianFrame":
         parent = parent if parent is not None else self.root()
         self._array = self.show(parent)
         self.parent = parent
-        return self
+        return self"""

@@ -215,7 +215,7 @@ def H8_to_TET4(
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, + transform_topo(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
 

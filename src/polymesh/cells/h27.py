@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 from typing import Tuple, List
 import numpy as np
 from numpy import ndarray
 import sympy as sy
 
-from neumann.numint import GaussPoints as Gauss
+from neumann.numint import gauss_points as gp
 
 from ..polyhedron import TriquadraticHexaHedron
 from ..utils.utils import cells_coords
@@ -166,5 +165,5 @@ class H27(TriquadraticHexaHedron):
             coords = self.container.source().coords()
         topo = self.topology().to_numpy()
         ecoords = cells_coords(coords, topo)
-        qpos, qweight = Gauss(3, 3, 3)
+        qpos, qweight = gp(3, 3, 3)
         return volumes_H27(ecoords, qpos, qweight)

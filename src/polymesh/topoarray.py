@@ -80,9 +80,12 @@ class TopologyArray(JaggedArray):
     """
 
     def __init__(self, *topo, cuts: Iterable = None, force_numpy: bool = True):
-        if len(topo) == 1:
+        if len(topo) == 1 and cuts is None:
             if isinstance(topo[0], np.ndarray):
                 data = atleast2d(topo[0], front=True)
+        elif len(topo) == 1 and cuts is not None:
+            data = np.array(topo[0]).astype(int)
+            cuts = np.array(cuts).astype(int)
         else:
             topo = list(map(lambda t: atleast2d(t, front=True), topo))
             widths = list(map(lambda topo: topo.shape[1], topo))
@@ -94,6 +97,7 @@ class TopologyArray(JaggedArray):
                 cN += dE * topo[i].shape[1]
             data = np.zeros(cN, dtype=int)
             cuts = np.zeros(cE, dtype=int)
+            print(data.shape)
             cN, cE = 0, 0
             for i in range(len(topo)):
                 dE = topo[i].shape[0]

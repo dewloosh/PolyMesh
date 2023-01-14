@@ -1,3 +1,7 @@
+import operator
+from typing import Union
+
+from numba import njit, prange
 from numba.core import types as nbtypes, cgutils
 from numba.extending import (
     typeof_impl,
@@ -12,18 +16,13 @@ from numba.extending import (
     overload,
     overload_attribute,
 )
-import operator
-from typing import Union
+
 from numpy import ndarray
 import numpy as np
-from numba import njit, prange
-from typing import Union
 
 from dewloosh.core.typing import issequence
-
 from neumann import minmax
-from neumann.linalg.vector import VectorBase, Vector
-from neumann.linalg.frame import ReferenceFrame as FrameLike
+from neumann.linalg import Vector, FrameLike
 
 from .frame import CartesianFrame
 from .point import Point
@@ -131,11 +130,8 @@ class PointCloud(Vector):
     >>> c = np.array([[0, 0, 0], [0, 0, 1.], [0, 0, 0]])
     >>> COORD = PointCloud(c, inds=np.array([0, 1, 2, 3]))
     >>> foo(COORD)
-
     """
 
-    _array_cls_ = VectorBase
-    _vector_cls_ = Point  # TODO : this is currently not used
     _frame_cls_ = CartesianFrame
 
     def __init__(self, *args, frame=None, inds=None, **kwargs):
@@ -183,13 +179,19 @@ class PointCloud(Vector):
         ----------
         target : ReferenceFrame
             A target frame of reference.
-
         """
         if isinstance(target, FrameLike):
             self._array = self.show(target)
             self._frame = target
         else:
             raise TypeError("Value must be a {} instance".format(FrameLike))
+        
+    @property
+    def id(self) -> ndarray:
+        """
+        Returns the indices of the points.
+        """
+        return self.inds
 
     def x(self, target: FrameLike = None):
         """Returns the `x` coordinates."""
@@ -211,7 +213,6 @@ class PointCloud(Vector):
         Returns the bounds of the pointcloud as a numpy array with
         a shape of (N, 2), where N is 2 for 2d problems and 3 for 3d
         ones.
-
         """
         arr = self.show(target)
         dim = arr.shape[1]
@@ -236,7 +237,6 @@ class PointCloud(Vector):
         -------
         VectorBase
             A numpy array.
-
         """
         arr = self.show(target)
 
@@ -262,7 +262,6 @@ class PointCloud(Vector):
         Returns
         -------
         int
-
         """
         if not isinstance(p, Vector):
             p = Vector(p, frame=frame)
@@ -285,7 +284,6 @@ class PointCloud(Vector):
         Returns
         -------
         int
-
         """
         if not isinstance(p, Vector):
             p = Vector(p, frame=frame)
@@ -308,7 +306,6 @@ class PointCloud(Vector):
         Returns
         -------
         Point
-
         """
         id = self.index_of_closest(p, frame)
         arr = self._array[id, :]
@@ -338,7 +335,6 @@ class PointCloud(Vector):
         Returns
         -------
         Point
-
         """
         id = self.index_of_furthest(p, frame)
         arr = self._array[id, :]
@@ -365,7 +361,6 @@ class PointCloud(Vector):
         -------
         VectorBase
             The coordinates in the desired frame.
-
         """
         x = super().show(target)
         buf = x + dcoords(x, self.frame.origo(target))
@@ -408,7 +403,6 @@ class PointCloud(Vector):
         >>> coords.move(d).move(d)
         >>> coords.center()
         array([400., 302.,   0.])
-
         """
         if not isinstance(v, Vector):
             v = Vector(v, frame=frame)
@@ -432,7 +426,6 @@ class PointCloud(Vector):
         -------
         ReferenceFrame
             The object the function is called on.
-
         """
         return self.move(-self.center(target), target)
 
@@ -448,7 +441,6 @@ class PointCloud(Vector):
         To apply a 90 degree rotation about the Z axis:
 
         >>> coords.rotate('Body', [0, 0, np.pi/2], 'XYZ')
-
         """
         if isinstance(args[0], FrameLike):
             self._array = self.show(args[0])

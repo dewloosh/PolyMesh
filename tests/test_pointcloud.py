@@ -23,7 +23,7 @@ class TestPointCloud(unittest.TestCase):
         
         self.assertTrue(np.all(np.isclose(coords[3:6].inds, [3, 4, 5])))
         self.assertTrue(np.isclose(coords.index_of_closest(coords.center()), 4))
-        self.assertTrue(np.all(np.isclose(coords.closest(coords.center()),
+        self.assertTrue(np.all(np.isclose(coords.closest(coords.center()).show(),
                                           coords.center())))
                 
         @njit

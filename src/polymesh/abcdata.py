@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from dewloosh.core.meta import ABCMeta_Weak
 
 

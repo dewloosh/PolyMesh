@@ -13,7 +13,6 @@ from dewloosh.core.warning import PerformanceWarning
 from linkeddeepdict import DeepDict
 from neumann.linalg.sparse import JaggedArray, csr_matrix
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
-from neumann.linalg.vector import VectorBase
 from neumann import atleast1d, minmax, repeat
 
 from .akwrap import AkWrapper
@@ -54,8 +53,10 @@ from .config import __hasvtk__, __haspyvista__, __hask3d__, __hasmatplotlib__
 
 if __hasvtk__:
     import vtk
+    
 if __hask3d__:
     import k3d
+    
 if __hasmatplotlib__:
     import matplotlib as mpl
 
@@ -138,10 +139,9 @@ class PolyData(PolyDataBase):
 
     See also
     --------
-    :class:`.tri.trimesh.TriMesh`
-    :class:`.pointdata.PointData`
-    :class:`.celldata.CellData`
-
+    :class:`~polymesh.trimesh.TriMesh`
+    :class:`~polymesh.pointdata.PointData`
+    :class:`~polymesh.celldata.CellData`
     """
 
     _point_array_class_ = PointCloud
@@ -995,7 +995,6 @@ class PolyData(PolyDataBase):
             A dictionary to define default values for missing fields
             for cell related data. If not specified, the default
             is `numpy.nan`.
-
         """
         assert self.is_root(), "This must be called on he root object!"
         if not inplace:
@@ -1095,7 +1094,7 @@ class PolyData(PolyDataBase):
 
     def coords(
         self, *args, return_inds: bool = False, from_cells: bool = False, **kwargs
-    ) -> VectorBase:
+    ) -> ndarray:
         """
         Returns the coordinates as an array.
 
@@ -1110,7 +1109,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        :class:`neumann.linalg.vector.VectorBase`
+        numpy.ndarray
         """
         if return_inds:
             p, inds = self.points(return_inds=True, from_cells=from_cells)
@@ -1127,7 +1126,6 @@ class PolyData(PolyDataBase):
         >>> from polymesh.examples import stand_vtk
         >>> pd = stand_vtk(read=True)
         >>> pd.bounds()
-
         """
         c = self.coords(*args, **kwargs)
         return [minmax(c[:, 0]), minmax(c[:, 1]), minmax(c[:, 2])]
@@ -1170,7 +1168,7 @@ class PolyData(PolyDataBase):
         jagged = False if not isinstance(jagged, bool) else jagged
         needs_jagged = not np.all(widths == widths[0])
         if jagged or needs_jagged:
-            topo = TopologyArray(*topo)
+            topo = np.vstack(topo)
             if return_inds:
                 inds = list(map(lambda i: i.celldata.id, blocks))
                 return topo, np.concatenate(inds)

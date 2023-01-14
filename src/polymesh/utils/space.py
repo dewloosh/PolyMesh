@@ -6,7 +6,7 @@ from neumann import squeeze
 from neumann.linalg import normalize, normalize2d, norm2d
 from neumann import atleast2d
 
-from ..utils.utils import center_of_points, cell_center, cell_coords
+from .utils import center_of_points, cell_center, cell_coords
 
 __cache = True
 
@@ -29,7 +29,6 @@ def frame_of_plane(coords: ndarray):
     -------
     numpy.ndarray
         3x3 global -> local DCM matrix
-
     """
     tr = np.zeros((3, 3), dtype=coords.dtype)
     center = center_of_points(coords)
@@ -57,7 +56,6 @@ def frames_of_surfaces(coords: ndarray, topo: ndarray):
     -------
     numpy.ndarray
         3d array of 3x3 transformation matrices
-
     """
     nE, nNE = topo.shape
     nNE -= 1
@@ -93,7 +91,6 @@ def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
         2d array of cell centers
     numpy.ndarray
         3d array of 3x3 transformation matrices
-
     """
     nE, nNE = topo.shape
     tr = np.zeros((nE, 3, 3), dtype=coords.dtype)

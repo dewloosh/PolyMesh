@@ -95,7 +95,6 @@ def triangulate(
 
     >>> coords, topo, triobj = triangulate(size=(800, 600), shape=100, random=True)
     ...
-
     """
     if len(args) > 0:
         if is_triobj(args[0]):

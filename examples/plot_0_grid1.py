@@ -73,5 +73,3 @@ triplot(triobj, data=data, cmap='Set1', axis='off')
 # %%
 data = np.random.rand(len(points))
 triplot(triobj, data=data, cmap='gnuplot', axis='off', ecolor='k', lw=0.8)
-
-

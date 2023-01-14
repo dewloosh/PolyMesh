@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 from typing import Tuple, List
 from sympy import symbols
 import numpy as np
 from numpy import ndarray
 
-from neumann.numint import GaussPoints as Gauss
+from neumann.numint import gauss_points as gp
 
 from ..polyhedron import HexaHedron
 from ..utils.utils import cells_coords
@@ -109,5 +108,5 @@ class H8(HexaHedron):
                 coords = self.container.source().coords()
         topo = self.topology().to_numpy() if topo is None else topo
         ecoords = cells_coords(coords, topo)
-        qpos, qweight = Gauss(2, 2, 2)
+        qpos, qweight = gp(2, 2, 2)
         return volumes_H8(ecoords, qpos, qweight)
