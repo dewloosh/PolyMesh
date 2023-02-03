@@ -110,13 +110,12 @@ def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _frames_of_lines_auto(coords: ndarray, topo: ndarray):
-    nE, nNE = topo.shape
-    nNE -= 1
+def _frames_of_lines_auto(coords: ndarray, topo: ndarray) -> ndarray:
+    nE = topo.shape[0]
     ijk = np.eye(3)
     tr = np.zeros((nE, 3, 3), dtype=coords.dtype)
     for iE in prange(nE):
-        tr[iE, 0, :] = normalize(coords[topo[iE, nNE]] - coords[topo[iE, 0]])
+        tr[iE, 0, :] = normalize(coords[topo[iE, -1]] - coords[topo[iE, 0]])
         _dot = ijk @ tr[iE, 0, :]
         i2 = np.argmin(np.absolute(_dot))
         _dot = np.dot(ijk[i2], tr[iE, 0, :])
@@ -164,7 +163,6 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None) -> nda
     -------
     numpy.ndarray
         3d array of 3x3 transformation matrices
-
     """
     topo = atleast2d(topo)
     if isinstance(refZ, ndarray):

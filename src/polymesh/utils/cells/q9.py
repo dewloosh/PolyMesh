@@ -54,22 +54,22 @@ def shp_Q9_multi(pcoords: np.ndarray):
     return res
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_Q9(pcoord: np.ndarray):
-    eye = np.eye(3, dtype=pcoord.dtype)
+@njit(nogil=True, parallel=False, cache=__cache)
+def shape_function_matrix_Q9(pcoord: np.ndarray, ndof:int=2):
+    eye = np.eye(ndof, dtype=pcoord.dtype)
     shp = shp_Q9(pcoord)
-    res = np.zeros((3, 27), dtype=pcoord.dtype)
-    for i in prange(9):
-        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
+    res = np.zeros((ndof, ndof*9), dtype=pcoord.dtype)
+    for i in range(9):
+        res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_Q9_multi(pcoords: np.ndarray):
+def shape_function_matrix_Q9_multi(pcoords: np.ndarray, ndof:int=2):
     nP = pcoords.shape[0]
-    res = np.zeros((nP, 2, 18), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof*9), dtype=pcoords.dtype)
     for iP in prange(nP):
-        res[iP] = shape_function_matrix_Q9(pcoords[iP])
+        res[iP] = shape_function_matrix_Q9(pcoords[iP], ndof)
     return res
 
 
@@ -130,3 +130,10 @@ def dshp_Q9_multi(pcoords: ndarray):
     for iP in prange(nP):
         res[iP] = dshp_Q9(pcoords[iP])
     return res
+
+
+if __name__ == '__main__':
+    import numpy as np
+    shape_function_matrix_Q9(np.array([0, 0]))
+    shape_function_matrix_Q9(np.array([0, 0]))
+    shape_function_matrix_Q9(np.array([0, 0]))

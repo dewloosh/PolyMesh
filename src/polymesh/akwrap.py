@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from typing import Iterable, Union
 import numpy as np
 from numpy import ndarray
@@ -14,7 +13,6 @@ class AkWrapper(Wrapper):
     """
     A wrapper for Awkward objects. This is the base class of most
     database classes in DewLoosh projects.
-
     """
 
     _attr_map_ = {}
@@ -80,7 +78,6 @@ class AkWrapper(Wrapper):
             Valid field names to include in the parquet files.
         **kwargs: dict, Optional
             Keyword arguments forwarded to :func:`awkward.to_parquet`.
-
         """
         if fields is None and len(args) == 0:
             ak.to_parquet(self.db, path, **kwargs)

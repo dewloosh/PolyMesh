@@ -41,6 +41,7 @@ __all__ = [
     "H8_to_Q4",
     "H8_to_H27",
     "H8_to_TET4",
+    "H27_to_H8",
     "TET4_to_L2",
     "TET4_to_TET10",
 ]
@@ -53,10 +54,10 @@ def transform_topo(
     topo: ndarray,
     path: ndarray,
     data: ndarray = None,
-    *args,
-    MT=True,
-    max_workers=4,
-    **kwargs
+    *_,
+    MT: bool = True,
+    max_workers: int = 4,
+    **__
 ):
     nD = len(path.shape)
     if nD == 1:
@@ -69,7 +70,8 @@ def transform_topo(
             try:
                 data = data.to_numpy()
             except Exception:
-                raise TypeError("Invalid data type '{}'".format(data.__class__))
+                raise TypeError(
+                    "Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
             data = transform_topo_data(topo, data, path)
             return _transform_topo_(topo, path), data
@@ -131,7 +133,7 @@ def T6_to_T3(
     data: DataLike = None,
     *args,
     path: ndarray = None,
-    subdivide=True,
+    subdivide: bool = True,
     **kwargs
 ):
     if isinstance(path, ndarray):
@@ -144,6 +146,41 @@ def T6_to_T3(
                 )
             else:
                 path = np.array([[0, 1, 2]], dtype=topo.dtype)
+    if data is None:
+        return coords, +transform_topo(topo, path, *args, **kwargs)
+    else:
+        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+    
+
+def H27_to_H8(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    subdivide: bool = True,
+    **kwargs
+):
+    if isinstance(path, ndarray):
+        assert path.shape[1] == 8
+    else:
+        if path is None:
+            if subdivide:
+                path = np.array(
+                    [
+                        [0, 8, 24, 11, 16, 22, 26, 20], 
+                        [8, 1, 9, 24, 22, 17, 21, 26], 
+                        [24, 9, 2, 10, 26, 21, 18, 23], 
+                        [11, 24, 10, 3, 20, 26, 23, 19],
+                        [16, 22, 26, 20, 4, 12, 25, 15], 
+                        [22, 17, 21, 26, 12, 5, 13, 25], 
+                        [26, 21, 18, 23, 25, 13, 6, 14], 
+                        [20, 26, 23, 19, 15, 25, 14, 7],
+                        ], 
+                    dtype=topo.dtype
+                )
+            else:
+                path = np.array([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=topo.dtype)
     if data is None:
         return coords, +transform_topo(topo, path, *args, **kwargs)
     else:
@@ -180,7 +217,8 @@ def Q9_to_Q4(
 
 def Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray = None):
     if path is None:
-        path = np.array([[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
+        path = np.array(
+            [[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
     return _Q9_to_T6(coords, topo, path)
 
 
@@ -209,7 +247,8 @@ def H8_to_TET4(
     else:
         if path is None:
             path = np.array(
-                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0],
+                    [6, 5, 7, 2], [0, 2, 7, 5]],
                 dtype=topo.dtype,
             )
         elif isinstance(path, str):

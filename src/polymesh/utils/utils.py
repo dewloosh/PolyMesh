@@ -228,7 +228,7 @@ def points_of_cells(
             return cells_coords(coords, topo)
 
 
-# @njit(nogil=True, parallel=True, cache=__cache)
+@njit(nogil=True, parallel=True, cache=__cache)
 def _cells_coords_tr_(ecoords: ndarray, local_axes: ndarray) -> ndarray:
     nE, nNE, _ = ecoords.shape
     res = np.zeros_like(ecoords)
@@ -359,7 +359,7 @@ def cell_center(coords: np.ndarray):
         1d coordinate array.
     """
     return np.array(
-        [np.mean(coords[:, 0]), np.mean(coords[:, 1]), np.mean(coords[:, 2])],
+        [np.mean(coords[:, i]) for i in range(coords.shape[1])],
         dtype=coords.dtype,
     )
 

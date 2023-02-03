@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .utils.utils import lengths_of_lines
 from .cell import PolyCell1d
 import numpy as np
@@ -21,31 +20,6 @@ class Line(PolyCell1d):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def lengths(self, *args, coords=None, topo=None, **kwargs) -> ndarray:
-        """
-        Returns the lengths as a NumPy array.
-        """
-        if coords is None:
-            coords = self.root().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
-        return lengths_of_lines(coords, topo)
-
-    def areas(self, *args, **kwargs) -> ndarray:
-        """
-        Returns the areas as a NumPy array.
-        """
-        areakey = self._dbkey_areas_
-        if areakey in self.fields:
-            return self[areakey].to_numpy()
-        else:
-            return np.ones((len(self)))
-
-    def volumes(self, *args, **kwargs):
-        """
-        Returns the volumes as a NumPy array.
-        """
-        return self.lengths(*args, **kwargs) * self.areas(*args, **kwargs)
 
     def jacobian_matrix(self, *args, dshp: ndarray = None, **kwargs):
         """

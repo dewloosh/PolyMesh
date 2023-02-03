@@ -202,7 +202,6 @@ def gridQ4(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     >>>     'start' : 0
     >>> }
     >>> coordsQ4, topoQ4 = gridQ4(**gridparams)
-
     """
     coords, topo = grid(*args, eshape=(2, 2), **kwargs)
     path = np.array([0, 2, 3, 1], dtype=int)

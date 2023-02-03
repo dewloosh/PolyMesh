@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
-from .utils.utils import cells_coords, points_of_cells
+from .utils.utils import points_of_cells
 from .utils.tri import area_tri_bulk
 from .utils.topology import T6_to_T3, Q4_to_T3, Q9_to_Q4, T3_to_T6
 from .cell import PolyCell2d
@@ -10,16 +9,12 @@ from .cell import PolyCell2d
 class PolyGon(PolyCell2d):
     """
     Base class for polygons.
-
     """
-
-    ...
 
 
 class Triangle(PolyGon):
     """
     Base class for triangles.
-
     """
 
     NNODE = 3

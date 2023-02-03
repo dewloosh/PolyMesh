@@ -4,7 +4,6 @@ while providing static hints.
 
 This module must not have references from other parts of the library,
 to make sure circular refrerences are all avoided.
-
 """
 from abc import abstractmethod, abstractproperty
 from typing import Union, Iterable
@@ -20,6 +19,7 @@ from .abcdata import ABC_MeshData
 
 
 class PointDataBase(AkWrapper, ABC_MeshData):
+    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the points."""
@@ -37,6 +37,7 @@ class PointDataBase(AkWrapper, ABC_MeshData):
 
 
 class CellDataBase(AkWrapper, ABC_MeshData):
+    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the cells."""

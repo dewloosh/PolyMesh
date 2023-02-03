@@ -264,6 +264,9 @@ class PointCloud(Vector):
         int
         """
         if not isinstance(p, Vector):
+            p = np.array(p)
+            if frame is None:
+                frame = self._frame_cls_(dim=p.shape[-1])
             p = Vector(p, frame=frame)
         return index_of_closest_point(self.show(), p.show())
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from typing import Tuple, List
 import numpy as np
 from numpy import ndarray
@@ -32,7 +31,6 @@ class Q9(BiQuadraticQuadrilateral):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r, s = symbols("r, s", real=True)
         monoms = [

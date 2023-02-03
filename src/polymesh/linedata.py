@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 from .polydata import PolyData
@@ -63,15 +62,12 @@ class LineData(PolyData):
         ----------
         scalars : numpy.ndarray, Optional
             Stacked nodal information as an 1d or 2d NumPy array. Default is None.
-
         backend : str, Optional
             The backend to use. Possible options are `plotly` and `vtk`
             (`vtk` is being managed through `PyVista`) at the moment.
             Default is 'plotly'.
-
         scalar_labels : Iterable, Optional
             Labels for the datasets provided with 'scalars'. Default is None.
-
         """
         if backend == "vtk":
             return self.pvplot(

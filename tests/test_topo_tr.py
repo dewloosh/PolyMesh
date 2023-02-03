@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from polymesh.triang import triangulate
@@ -6,7 +5,8 @@ from polymesh.grid import grid
 from polymesh.utils.topology import (T3_to_T6, T6_to_T3, Q9_to_Q4, Q4_to_T3,
                                      Q4_to_Q9, H8_to_H27, Q4_to_Q8, Q9_to_T6,
                                      H8_to_TET4, TET4_to_TET10, H8_to_L2,
-                                     TET4_to_L2, L2_to_L3, Q4_to_Q8, Q8_to_T3)
+                                     TET4_to_L2, L2_to_L3, Q4_to_Q8, Q8_to_T3,
+                                     H27_to_H8)
 
 
 class TestTopoTR(unittest.TestCase):
@@ -87,11 +87,12 @@ class TestTopoTR(unittest.TestCase):
 
     def test_7(self):
         def test_7(Lx, Ly, Lz, nx, ny, nz):
-            """H8 -> TET4 -> L2 -> L3"""
+            """H27 -> H8 -> TET4 -> L2 -> L3"""
             coords, topo = grid(size=(Lx, Ly, Lz),
-                                shape=(nx, ny, nz), eshape='H8')
-            H8_to_L2(coords, topo)
-            coords, topo = H8_to_TET4(coords, topo)
+                                shape=(nx, ny, nz), eshape='H27')
+            
+            H8_to_L2(H27_to_H8(coords, topo))
+            coords, topo = H8_to_TET4(H27_to_H8(coords, topo))
             coords, topo = TET4_to_L2(coords, topo)
             coords, topo = L2_to_L3(coords, topo)
             return True

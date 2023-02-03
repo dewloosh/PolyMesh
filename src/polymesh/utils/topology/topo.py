@@ -1,11 +1,13 @@
+from typing import MutableMapping, Union, Dict, List, Tuple, Iterable
+
 import numpy as np
 from numpy import ndarray
-from numba import njit, prange, types as nbtypes
-from numba.typed import Dict as nbDict
-from typing import MutableMapping, Union, Dict, List, Tuple, Iterable
 import awkward as ak
 from awkward import Array as akarray
 from scipy.sparse import csr_matrix as csr_scipy
+
+from numba import njit, prange, types as nbtypes
+from numba.typed import Dict as nbDict
 
 from neumann.linalg.sparse import csr_matrix, JaggedArray
 from neumann.arraysetops import unique2d
@@ -14,7 +16,6 @@ from neumann import count_cols
 from ...space import PointCloud
 from ..utils import explode_mesh_bulk
 from ...topoarray import TopologyArray
-from ..topodata import faces_TET4, faces_H8
 from ...config import __hasnx__
 
 if __hasnx__:
@@ -32,7 +33,6 @@ __all__ = [
     "detach_mesh_bulk",
     "rewire",
     "detach",
-    "extract_tet_surface",
     "detach_mesh_data_bulk",
 ]
 
@@ -700,7 +700,6 @@ def detach_mesh_jagged(coords: ndarray, topo: ndarray):
     the function returns the coordinate array of the points involved
     in the topology, and a new topology array, with indices referencing
     the new coordinate array.
-
     """
     inds = np.unique(topo)
     cuts, topo1d = topo.flatten(return_cuts=True)
@@ -779,7 +778,8 @@ def inds_to_invmap_as_array(inds: np.ndarray):
     return res
 
 
-def nodal_adjacency(topo: TopoLike, *args, frmt=None, assume_regular=False, **kwargs):
+def nodal_adjacency(topo: TopoLike, *args, frmt:str=None, 
+                    assume_regular:bool=False, **kwargs):
     """
     Returns nodal adjacency information of a mesh.
 
@@ -839,27 +839,7 @@ def nodal_adjacency(topo: TopoLike, *args, frmt=None, assume_regular=False, **kw
     return dol
 
 
-def extract_tet_surface(topo: TopoLike):
-    if isinstance(topo, ndarray):
-        nNE = topo.shape[-1]
-        if nNE == 4:
-            faces3d = faces_TET4(topo)
-            return unique_topo_data(faces3d)[0]
-        elif nNE == 8:
-            from .tr import Q4_to_T3
-
-            faces3d = faces_H8(topo)
-            unique_faces = unique_topo_data(faces3d)[0]
-            return Q4_to_T3(None, unique_faces)[1]
-            from ..topo.tr import H8_to_TET4
-
-            _, topo = H8_to_TET4(None, topo)
-            faces3d = faces_TET4(topo)
-            return unique_topo_data(faces3d)[0]
-    raise NotImplementedError
-
-
-def unique_topo_data(topo3d: TopoLike):
+def unique_topo_data(topo3d: TopoLike) -> Tuple[ndarray, ndarray]:
     """
     Returns information about unique topological elements
     of a mesh. It can be used to return unique lines of a 2d
@@ -868,8 +848,12 @@ def unique_topo_data(topo3d: TopoLike):
     Parameters
     ----------
     topo : numpy.ndarray
-        Topology array.
-
+        Hierarchical topology array. The array must be 3 dimensional containing node 
+        indices for every node as a subarray. For instance for a 2d cell, the node 
+        indices of the j-th edge of the i-th element read as `topo[i, j]`. In general,
+        the first axis runs for the elements, the second axis runs for edges (2d) or
+        faces (3d).
+        
     Returns
     -------
     numpy.ndarray
@@ -905,16 +889,6 @@ def unique_topo_data(topo3d: TopoLike):
     >>> assert np.all(edges3d == edges3d_)
     True
     """
-    """if isinstance(topo3d, ndarray):
-        nE, nD, nN = topo3d.shape
-        topo3d = topo3d.reshape((nE * nD, nN))
-        
-        i = np.argsort(topo3d, axis=1)
-        topo = np.take_along_axis(topo3d, i, axis=1)
-        #topo = np.sort(topo, axis=1)
-        
-        _, topoIDs = np.unique(topo, axis=0, return_inverse=True)
-        return topo3d[topoIDs], topoIDs.reshape((nE, nD))"""
     if isinstance(topo3d, ndarray):
         nE, nD, nN = topo3d.shape
         topo3d = topo3d.reshape((nE * nD, nN))
@@ -924,35 +898,3 @@ def unique_topo_data(topo3d: TopoLike):
         return topo3d, topoIDs
     elif isinstance(topo3d, JaggedArray):
         raise NotImplementedError
-
-
-"""
-def unique_lines(lines : np.ndarray):
-    # ! IN PROGRESS
-    raise NotImplementedError
-    nE, nL, nNL = lines.shape
-    lines = lines.reshape((nE * nL, nNL))
-    lines = np.sort(lines, axis=1)
-    lines, lineIDs = np.unique(lines[:, [0, -1]], axis=0, return_inverse=True)
-    lineIDs = lineIDs.reshape((nE, nL))
-    return lines, lineIDs
-
-
-def unique_lines_of_areas(topo : np.ndarray, lpath : np.ndarray):
-    # ! IN PROGRESS
-    raise NotImplementedError
-    return unique_lines(lines_of_areas_njit(topo, lpath))
-
-
-@njit(nogil=True, parallel=True, cache=__cache)
-def lines_of_areas_njit(topo : np.ndarray, lpaths : np.ndarray):
-    # ! CHECK
-    nE = topo.shape[0]
-    nL, nNL = lpaths.shape
-    lines = np.zeros((nE, nL, nNL), dtype=topo.dtype)
-    for iE in prange(nE):
-        for jL in prange(nL):
-            for kL in prange(nNL):
-                lines[iE, jL, kL] = topo[iE, lpaths[jL, kL]]
-    return lines
-"""

@@ -7,11 +7,10 @@ import warnings
 from numpy import ndarray
 import numpy as np
 import awkward as ak
-from awkward import Array as akarray
 
 from dewloosh.core.warning import PerformanceWarning
 from linkeddeepdict import DeepDict
-from neumann.linalg.sparse import JaggedArray, csr_matrix
+from neumann.linalg.sparse import csr_matrix
 from neumann.linalg import Vector, ReferenceFrame as FrameLike
 from neumann import atleast1d, minmax, repeat
 
@@ -72,8 +71,6 @@ else:
 
 
 VectorLike = Union[Vector, ndarray]
-TopoLike = Union[ndarray, JaggedArray, akarray, TopologyArray]
-
 
 __all__ = ["PolyData"]
 
@@ -889,8 +886,8 @@ class PolyData(PolyDataBase):
         if self._frame is not None:
             return self._frame
         else:
-            if self.is_source("x"):
-                return self.pointdata.frame
+            if self.pd.has_x:
+                return self.pd.frame
         return self.parent.frame
 
     @property
@@ -946,7 +943,6 @@ class PolyData(PolyDataBase):
         -------
         PolyData
             Returnes the object instance for continuitation.
-
         """
         if not deep:
             if self.cd is not None:
@@ -1144,8 +1140,8 @@ class PolyData(PolyDataBase):
         return self.__class__(pd, cd, frame=frame)
 
     def topology(
-        self, *args, return_inds=False, jagged=None, **kwargs
-    ) -> Union[ndarray, akarray]:
+        self, *args, return_inds:bool=False, jagged:bool=None, **kwargs
+    ) -> Union[ndarray, TopologyArray]:
         """
         Returns the topology as either a `NumPy` or an `Awkward` array.
 
@@ -1159,7 +1155,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        Union[numpy.ndarray, awkward.Array]
+        Union[numpy.ndarray, TopologyArray]
             The topology as a 2d integer array.
         """
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
@@ -1350,16 +1346,23 @@ class PolyData(PolyDataBase):
             pc = root.points()[inds]
             return pc.center(target)
 
-    def centers(self, *args, target: FrameLike = None, **kwargs) -> ndarray:
+    def centers(self, target: FrameLike = None) -> ndarray:
         """Returns the centers of the cells."""
-        if self.is_root():
-            coords = self.points().show(target)
-        else:
-            root = self.root()
-            inds = np.unique(self.topology())
-            pc = root.points()[inds]
-            coords = pc.show(target)
-        return cell_centers_bulk(coords, self.topology(*args, **kwargs))
+        root = self.root()
+        coords = root.coords()
+        blocks = self.cellblocks(inclusive=True)
+        
+        def foo(b: PolyData):
+            t = b.cd.topology().to_numpy()
+            return cell_centers_bulk(coords, t)
+
+        centers = np.vstack(list(map(foo, blocks)))
+        
+        if target:
+            pc = PointCloud(centers, frame=root.frame)
+            centers = pc.show(target)
+        
+        return centers
 
     def centralize(self, target: FrameLike = None) -> "PolyData":
         """
@@ -1368,7 +1371,7 @@ class PolyData(PolyDataBase):
         """
         pc = self.root().points()
         pc.centralize(target)
-        self.pointdata["x"] = pc.show(self.frame)
+        self.pd.x = pc.show(self.frame)
         return self
 
     def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None, **kwargs):

@@ -187,9 +187,3 @@ class CartesianFrame(Frame):
                 name=name)
         else:
             return self.__class__(self.axes, origo=self.origo(), name=name)
-
-    """def join(self, parent: FrameLike = None) -> "CartesianFrame":
-        parent = parent if parent is not None else self.root()
-        self._array = self.show(parent)
-        self.parent = parent
-        return self"""

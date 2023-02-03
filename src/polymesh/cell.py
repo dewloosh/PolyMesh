@@ -14,15 +14,18 @@ from .utils.utils import (
     points_of_cells,
     pcoords_to_coords_1d,
     cells_coords,
+    lengths_of_lines
 )
 from .utils.tri import area_tri_bulk
 from .utils.tet import tet_vol_bulk
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .utils.topology.topo import detach_mesh_bulk, rewire
+from .utils.topology import transform_topo
 from .utils.tri import triangulate_cell_coords
+from .utils import cell_center, cell_center_2d
 from .topoarray import TopologyArray
 from .space import CartesianFrame
-
+from .triang import triangulate
 from .config import __haspyvista__
 
 if __haspyvista__:
@@ -35,7 +38,6 @@ class PolyCell(CellData):
     """
     A subclass of :class:`polymesh.celldata.CellData` as a base class
     for all kinds of geometrical entities.
-
     """
 
     NNODE = None
@@ -72,9 +74,8 @@ class PolyCell(CellData):
         Returns
         -------
         numpy.ndarray
-
         """
-        raise NotImplementedError
+        return cell_center(cls.lcoords())
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -87,7 +88,6 @@ class PolyCell(CellData):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         raise NotImplementedError
 
@@ -136,23 +136,21 @@ class PolyCell(CellData):
             Evaluates the shape functions at multiple points in the
             master domain.
             """
-            # r = np.squeeze(_shpf([p[..., i] for i in range(nD)])).T
-            # return ascont(r)
             r = np.stack([_shpf(p[i])[0] for i in range(len(p))])
             return ascont(r)
 
-        def shpmf(p: ndarray):
+        def shpmf(p: ndarray, ndof:int=nDOF):
             """
             Evaluates the shape function matrix at multiple points
             in the master domain.
             """
             nP = p.shape[0]
-            eye = np.eye(nDOF, dtype=float)
+            eye = np.eye(ndof, dtype=float)
             shp = shpf(p)
-            res = np.zeros((nP, nDOF, nN * nDOF), dtype=float)
+            res = np.zeros((nP, ndof, nN * ndof), dtype=float)
             for iP in range(nP):
                 for i in range(nN):
-                    res[iP, :, i * nDOF : (i + 1) * nDOF] = eye * shp[iP, i]
+                    res[iP, :, i * ndof : (i + 1) * ndof] = eye * shp[iP, i]
             return ascont(res)
 
         def dshpf(p: ndarray):
@@ -160,8 +158,6 @@ class PolyCell(CellData):
             Evaluates the shape function derivatives at multiple points
             in the master domain.
             """
-            # r = np.squeeze(_dshpf([p[..., i] for i in range(nD)])).T
-            # return ascont(np.swapaxes(r, -1, -2))
             r = np.stack([_dshpf(p[i]) for i in range(len(p))])
             return ascont(r)
 
@@ -191,7 +187,6 @@ class PolyCell(CellData):
             An array of shape (nP, nNE) where nP and nNE are the number of
             evaluation points and shape functions. If there is only one
             evaluation point, the returned array is one dimensional.
-
         """
         pcoords = np.array(pcoords)
         if cls.shpfnc is None:
@@ -218,16 +213,22 @@ class PolyCell(CellData):
             An array of shape (nP, nDOF, nDOF * nNE) where nP, nDOF and nNE
             are the number of evaluation points, degrees of freedom per node
             and nodes per cell.
-
         """
+        nDOFN = getattr(cls, "NDOFN", None)
         pcoords = np.array(pcoords)
         if cls.shpmfnc is None:
             cls.generate(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
-                return squeeze(cls.shpmfnc(pcoords)).astype(float)
-        return cls.shpmfnc(pcoords).astype(float)
+                if nDOFN:
+                    return squeeze(cls.shpmfnc(pcoords, nDOFN)).astype(float)
+                else:
+                    return squeeze(cls.shpmfnc(pcoords)).astype(float)
+        if nDOFN:
+            return cls.shpmfnc(pcoords, nDOFN).astype(float)
+        else:
+            return cls.shpmfnc(pcoords).astype(float)
 
     @classmethod
     def shape_function_derivatives(cls, pcoords: ndarray) -> ndarray:
@@ -334,7 +335,7 @@ class PolyCell(CellData):
             jac = self.jacobian_matrix(**kwargs)
         return np.linalg.det(jac)
 
-    def points_of_cells(self, *args, **kwargs) -> ndarray:
+    def points_of_cells(self, *_, **kwargs) -> ndarray:
         """
         Returns the points of the cells as a 3d float numpy array.
 
@@ -347,7 +348,7 @@ class PolyCell(CellData):
         else:
             coords = self.container.source().coords()
         topo = self.topology().to_numpy()
-        return points_of_cells(coords, topo)
+        return points_of_cells(coords, topo, centralize=False)
 
     def local_coordinates(self, *, target: CartesianFrame = None) -> ndarray:
         """
@@ -370,7 +371,7 @@ class PolyCell(CellData):
             coords = self.pointdata.x
         else:
             coords = self.container.source().coords()
-        return points_of_cells(coords, topo, local_axes=frames)
+        return points_of_cells(coords, topo, local_axes=frames, centralize=True)
 
     def coords(self, *args, **kwargs) -> ndarray:
         """
@@ -430,20 +431,37 @@ class PolyCell1d(PolyCell):
         the database."""
         return np.sum(self.lengths(*args, **kwargs))
 
-    def lengths(self, *args, **kwargs):
-        """Ought to return the lengths of the individuall
-        cells in the database."""
-        raise NotImplementedError
-
-    def areas(self, *args, **kwargs):
-        raise NotImplementedError
-
     def area(self, *args, **kwargs):
         return np.sum(self.areas(*args, **kwargs))
+    
+    def lengths(self, *args, coords=None, topo=None, **kwargs) -> ndarray:
+        """
+        Returns the lengths as a NumPy array.
+        """
+        if coords is None:
+            coords = self.root().coords()
+        topo = self.topology().to_numpy() if topo is None else topo
+        return lengths_of_lines(coords, topo)
+
+    def areas(self, *args, **kwargs) -> ndarray:
+        """
+        Returns the areas as a NumPy array.
+        """
+        areakey = self._dbkey_areas_
+        if areakey in self.fields:
+            return self[areakey].to_numpy()
+        else:
+            return np.ones((len(self)))
+
+    def volumes(self, *args, **kwargs):
+        """
+        Returns the volumes as a NumPy array.
+        """
+        return self.lengths(*args, **kwargs) * self.areas(*args, **kwargs)
 
     def measures(self, *args, **kwargs):
         return self.lengths(*args, **kwargs)
-
+    
     # NOTE The functionality of `pcoords_to_coords_1d` needs to be generalized
     # for higher order cells.
     def points_of_cells(
@@ -467,7 +485,7 @@ class PolyCell1d(PolyCell):
                 coords = self.pointdata.x
             else:
                 coords = self.container.source().coords()
-        ecoords = points_of_cells(coords, topo)
+        ecoords = points_of_cells(coords, topo, centralize=False)
         if points is None and cells is None:
             return ecoords
 
@@ -532,13 +550,27 @@ class PolyCell2d(PolyCell):
         Returns a mapper to transform topology and other data to
         a collection of T3 triangles.
         """
-        raise NotImplementedError
+        _, t, _ = triangulate(points=cls.lcoords())
+        return t
+    
+    @classmethod
+    def lcenter(cls) -> ndarray:
+        """
+        Ought to return the local coordinates of the center of the
+        master element.
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return cell_center_2d(cls.lcoords())
 
     def to_triangles(self):
         """
         Returns the topology as a collection of T3 triangles.
         """
-        raise NotImplementedError
+        t = self.topology().to_numpy()
+        return transform_topo(t, self.trimap())
 
     def areas(self, *_, **__) -> ndarray:
         """
@@ -562,12 +594,6 @@ class PolyCell2d(PolyCell):
         areas = self.areas(*args, **kwargs)
         t = self.thickness()
         return areas * t
-
-    def volume(self, *args, **kwargs) -> float:
-        """
-        Returns the total volume of the cells.
-        """
-        return np.sum(self.volumes(*args, **kwargs))
 
     def measures(self, *args, **kwargs) -> ndarray:
         """
@@ -635,7 +661,7 @@ class PolyCell3d(PolyCell):
     def boundary(self, detach=False):
         return self.surface(detach=detach)
 
-    def volumes(self, *args, coords=None, topo=None, **kwargs):
+    def volumes(self, *_, coords=None, topo=None, **__):
         if coords is None:
             coords = self.container.root().coords()
         topo = self.topology().to_numpy() if topo is None else topo

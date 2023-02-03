@@ -20,22 +20,22 @@ def shp_T3_multi(pcoords: ndarray):
     return res
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_T3(pcoord: np.ndarray):
-    eye = np.eye(2, dtype=pcoord.dtype)
+@njit(nogil=True, parallel=False, cache=__cache)
+def shape_function_matrix_T3(pcoord: np.ndarray, ndof:int=2):
+    eye = np.eye(ndof, dtype=pcoord.dtype)
     shp = shp_T3(pcoord)
-    res = np.zeros((3, 9), dtype=pcoord.dtype)
+    res = np.zeros((ndof, ndof*3), dtype=pcoord.dtype)
     for i in prange(3):
-        res[:, i * 3 : (i + 1) * 3] = eye * shp[i]
+        res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_T3_multi(pcoords: np.ndarray):
+def shape_function_matrix_T3_multi(pcoords: np.ndarray, ndof:int=2):
     nP = pcoords.shape[0]
-    res = np.zeros((nP, 3, 9), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof*3), dtype=pcoords.dtype)
     for iP in prange(nP):
-        res[iP] = shape_function_matrix_T3(pcoords[iP])
+        res[iP] = shape_function_matrix_T3(pcoords[iP], ndof)
     return res
 
 
