@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 from typing import Tuple, List
 import numpy as np
+from numpy import ndarray
 from sympy import symbols
 
 from ..polyhedron import QuadraticTetraHedron
@@ -9,6 +9,9 @@ from ..utils.cells.tet10 import (
     dshp_TET10_multi,
     shape_function_matrix_TET10_multi,
 )
+from ..utils.cells.tet import Gauss_Legendre_Tet_4
+from ..utils.cells.commons import volumes2
+from ..utils.utils import cells_coords
 
 
 class TET10(QuadraticTetraHedron):
@@ -20,9 +23,14 @@ class TET10(QuadraticTetraHedron):
     :class:`QuadraticTetraHedron`
     """
 
+    # FIXME check these functions
     """shpfnc = shp_TET10_multi
     shpmfnc = shape_function_matrix_TET10_multi
     dshpfnc = dshp_TET10_multi"""
+    
+    quadrature = {
+        "full": Gauss_Legendre_Tet_4(),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -35,7 +43,6 @@ class TET10(QuadraticTetraHedron):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r, s, t = symbols("r s t", real=True)
         monoms = [1, r, s, t, r * s, r * t, s * t, r**2, s**2, t**2]
@@ -61,3 +68,15 @@ class TET10(QuadraticTetraHedron):
     @classmethod
     def lcenter(cls):
         return np.array([[1 / 3, 1 / 3, 1 / 3]])
+    
+    def volumes(self, coords: ndarray = None, topo: ndarray = None) -> ndarray:
+        if coords is None:
+            if self.pointdata is not None:
+                coords = self.pointdata.x
+            else:
+                coords = self.container.source().coords()
+        topo = self.topology().to_numpy() if topo is None else topo
+        ecoords = cells_coords(coords, topo)
+        qpos, qweight = self.quadrature['full']
+        dshp = self.shape_function_derivatives(qpos)
+        return volumes2(ecoords, dshp, qweight)

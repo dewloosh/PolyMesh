@@ -388,9 +388,6 @@ class PolyData(PolyDataBase):
             If True, some mappers are generated to speed up certain types of
             searches, like finding a block containing cells based on their
             indices.
-
-            .. versionadded:: 0.0.9
-
         """
         if create_mappers and self._cid2bid is None:
             bid2b, cid2bid = self._create_mappers_()
@@ -407,7 +404,6 @@ class PolyData(PolyDataBase):
         the call `generate_cell_mappers` are deleted.
 
         The object is returned for continuation.
-
         """
         self._locked = False
         self._cid2bid = None  # maps cell indices to block indices
@@ -417,9 +413,6 @@ class PolyData(PolyDataBase):
     def blocks_of_cells(self, i: Union[int, Iterable] = None) -> dict:
         """
         Returns a dictionary that maps cell indices to blocks.
-
-        .. versionadded:: 0.0.9
-
         """
         assert self.is_root(), "This must be called on the root object."
         if self._cid2bid is None:
@@ -473,7 +466,6 @@ class PolyData(PolyDataBase):
         >>> from dewloosh.core.downloads import download_stand
         >>> vtkpath = download_stand()
         >>> mesh = PolyData.read(vtkpath)
-
         """
         try:
             return cls.from_pv(pv.read(*args, **kwargs))
@@ -493,7 +485,6 @@ class PolyData(PolyDataBase):
         >>> from polymesh import PolyData
         >>> bunny = examples.download_bunny_coarse()
         >>> mesh = PolyData.from_pv(bunny)
-
         """
         celltypes = cls._cell_classes_.values()
         vtk_to_celltype = {v.vtkCellType: v for v in celltypes}
@@ -1177,6 +1168,14 @@ class PolyData(PolyDataBase):
                 return topo, np.concatenate(inds)
             else:
                 return topo
+            
+    def cell_indices(self) -> ndarray:
+        """
+        Returns the indices of the cells along the walk.
+        """
+        blocks = self.cellblocks(inclusive=True)
+        m = map(lambda b : b.cd.id, blocks)
+        return np.concatenate(list(m))
 
     def detach(self, nummrg: bool = False) -> "PolyData":
         """
@@ -1210,20 +1209,12 @@ class PolyData(PolyDataBase):
     def nummrg(self):
         """
         Merges node numbering.
-
-        Parameters
-        ----------
-        store_indices: bool, Optional
-            If True, original indices are stored with the key 'gid'.
-            Default is True.
         """
         assert self.is_root(), "This must be called on he root object!"
         topo = self.topology()
         inds = np.unique(topo)
         pointtype = self.__class__._point_class_
         self.pointdata = pointtype(db=self.pd[inds])
-        """if store_indices:
-            self.pointdata._wrapped['gid'] = self.pd.id"""
         imap = inds_to_invmap_as_dict(self.pd.id)
         [cb.rewire(imap=imap) for cb in self.cellblocks(inclusive=True)]
         self.pointdata.id = np.arange(len(self.pd))
@@ -1240,7 +1231,6 @@ class PolyData(PolyDataBase):
         frame : FrameLike, Optional
             If `v` is only an array, this can be used to specify
             a frame in which the components should be understood.
-
         """
         if self.is_root():
             pc = self.points()

@@ -19,3 +19,32 @@ def shape_function_matrix_multi(
         for i in prange(nNE):
             res[iP, :, i * nDOF : (i + 1) * nDOF] = eye * shp[i]
     return res
+
+
+@njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
+def volumes(ecoords: ndarray, qpos: ndarray, qweight: ndarray,
+            dshpfnc : Callable) -> ndarray:
+    nE = ecoords.shape[0]
+    volumes = np.zeros(nE, dtype=ecoords.dtype)
+    nQ = len(qweight)
+    for iQ in range(nQ):
+        dshp = dshpfnc(qpos[iQ])
+        for i in prange(nE):
+            jac = ecoords[i].T @ dshp
+            djac = np.linalg.det(jac)
+            volumes[i] += qweight[iQ] * djac
+    return volumes
+
+
+@njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
+def volumes2(ecoords: ndarray, dshp: ndarray, qweight: ndarray) -> ndarray:
+    nE = ecoords.shape[0]
+    volumes = np.zeros(nE, dtype=ecoords.dtype)
+    nQ = len(qweight)
+    for iQ in range(nQ):
+        _dshp = dshp[iQ]
+        for i in prange(nE):
+            jac = ecoords[i].T @ _dshp
+            djac = np.linalg.det(jac)
+            volumes[i] += qweight[iQ] * djac
+    return volumes

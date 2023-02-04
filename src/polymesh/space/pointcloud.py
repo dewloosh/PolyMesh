@@ -407,9 +407,11 @@ class PointCloud(Vector):
         >>> coords.center()
         array([400., 302.,   0.])
         """
-        if not isinstance(v, Vector):
+        if not isinstance(v, Vector) and frame:
             v = Vector(v, frame=frame)
-        arr = v.show(self.frame)
+            arr = v.show(self.frame)
+        else:
+            arr = v
         self._array += dcoords(self._array, arr)
         return self
 

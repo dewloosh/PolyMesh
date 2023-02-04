@@ -560,7 +560,8 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
     return coords, topo + start
 
 
-def knngridL2(*args, max_distance: float = None, k: int = 3, **kwargs):
+def knngridL2(*args, max_distance: float = None, k: int = 3, 
+              X: ndarray=None, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     Returns a KNN grid of L2 lines. First a grid of points is created
     using :func:``grid``, then points are connected based on a KNN-tree.
@@ -573,6 +574,9 @@ def knngridL2(*args, max_distance: float = None, k: int = 3, **kwargs):
         Maximum distance allowed. Default is None.
     k : int, Optional
         Number of neighbours for a given point.
+    X : numpy.ndarray, Optional
+        Coordinates of a pointcloud. If provided, `args` and `kwargs`
+        are ignored. Default is None.
     **kwargs : dict, Optional
         Keyword arguments forwarded to :func:``grid``.
 
@@ -581,7 +585,8 @@ def knngridL2(*args, max_distance: float = None, k: int = 3, **kwargs):
     :func:`~polymesh.utils.knn.k_nearest_neighbours`
     :func:`~polymesh.utils.knn.knn_to_lines`
     """
-    X, _ = grid(*args, **kwargs)
+    if X is None:
+        X, _ = grid(*args, **kwargs)
     i = knn(X, X, k=k, max_distance=max_distance)
     T, _ = unique_topo_data(knn_to_lines(i))
     di = T[:, 0] - T[:, -1]
