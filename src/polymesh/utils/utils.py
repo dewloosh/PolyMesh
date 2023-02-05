@@ -689,12 +689,10 @@ def _avg_cell_data_1d_bulk_(data: np.ndarray, topo: np.ndarray):
     return res
 
 
-def avg_cell_data(data: np.ndarray, topo: np.ndarray, squeeze: bool = True) -> ndarray:
+def avg_cell_data(data: np.ndarray, topo: np.ndarray) -> ndarray:
     nR = len(data.shape)
     if nR == 2:
         res = _avg_cell_data_1d_bulk_(matrixform(data), topo)
-    if squeeze:
-        return np.squeeze(res)
     return res
 
 

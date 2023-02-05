@@ -2,7 +2,7 @@ from typing import Union, MutableMapping, Iterable
 from typing import Tuple, List, Callable
 
 import numpy as np
-from numpy import ndarray, squeeze
+from numpy import ndarray
 from sympy import Matrix, lambdify
 
 from neumann import atleast1d, atleast2d, ascont
@@ -194,7 +194,7 @@ class PolyCell(CellData):
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
-                return squeeze(cls.shpfnc(pcoords)).astype(float)
+                return cls.shpfnc(pcoords).astype(float)
         return cls.shpfnc(pcoords).astype(float)
 
     @classmethod
@@ -222,9 +222,9 @@ class PolyCell(CellData):
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
                 if nDOFN:
-                    return squeeze(cls.shpmfnc(pcoords, nDOFN)).astype(float)
+                    return cls.shpmfnc(pcoords, nDOFN).astype(float)
                 else:
-                    return squeeze(cls.shpmfnc(pcoords)).astype(float)
+                    return cls.shpmfnc(pcoords).astype(float)
         if nDOFN:
             return cls.shpmfnc(pcoords, nDOFN).astype(float)
         else:
@@ -253,7 +253,7 @@ class PolyCell(CellData):
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
-                return squeeze(cls.dshpfnc(pcoords)).astype(float)
+                return cls.dshpfnc(pcoords).astype(float)
         return cls.dshpfnc(pcoords).astype(float)
 
     def measures(self, *args, **kwargs) -> ndarray:
@@ -585,7 +585,7 @@ class PolyCell2d(PolyCell):
         ec_tri = triangulate_cell_coords(ec, trimap)
         areas_tri = area_tri_bulk(ec_tri)
         res = np.sum(areas_tri.reshape(nE, int(len(areas_tri) / nE)), axis=1)
-        return np.squeeze(res)
+        return res
 
     def volumes(self, *args, **kwargs) -> ndarray:
         """
@@ -670,4 +670,4 @@ class PolyCell3d(PolyCell):
         res = np.sum(
             volumes.reshape(topo.shape[0], int(len(volumes) / topo.shape[0])), axis=1
         )
-        return np.squeeze(res)
+        return res

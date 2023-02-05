@@ -2,7 +2,6 @@ import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
-from neumann import squeeze
 from neumann.linalg import normalize, normalize2d, norm2d
 from neumann import atleast2d
 
@@ -137,7 +136,6 @@ def _frames_of_lines_ref(coords: ndarray, topo: ndarray, refZ: ndarray):
     return tr
 
 
-@squeeze(True)
 def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None) -> ndarray:
     """
     Returns coordinate frames of line elements defined by a coordinate array

@@ -312,7 +312,7 @@ class CellData(CellDataBase):
         else:
             d = distribute_nodal_data_sparse(nodal_data, topo, self.id, ndf)
         # nE, nNE, nDATA
-        return np.squeeze(d)
+        return d
 
     @property
     def fields(self):
