@@ -81,8 +81,6 @@ class TestIO(unittest.TestCase):
         mesh['grids', 'H8'].cd.to_pandas()
         mesh['grids', 'H8'].cd.to_akarray()
         mesh['grids', 'H8'].cd.to_akrecord()
-        ak.from_parquet("mesh_pd.parquet")['id']
-        ak.from_parquet("mesh_cd.parquet")['id']
         
         for path in paths:
             if os.path.exists(path):

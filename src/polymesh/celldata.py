@@ -83,7 +83,10 @@ class CellData(CellDataBase):
     ):
         fields = {} if fields is None else fields
         assert isinstance(fields, dict)
-
+        if len(fields) > 0:
+            attr_map = self._attr_map_
+            fields = {attr_map.get(k, k) : v for k, v in fields.items()}
+        
         if db is not None:
             wrap = db
         else:

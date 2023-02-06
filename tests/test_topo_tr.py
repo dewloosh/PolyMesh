@@ -91,8 +91,8 @@ class TestTopoTR(unittest.TestCase):
             coords, topo = grid(size=(Lx, Ly, Lz),
                                 shape=(nx, ny, nz), eshape='H27')
             
-            H8_to_L2(H27_to_H8(coords, topo))
-            coords, topo = H8_to_TET4(H27_to_H8(coords, topo))
+            H8_to_L2(*H27_to_H8(coords, topo))
+            coords, topo = H8_to_TET4(*H27_to_H8(coords, topo))
             coords, topo = TET4_to_L2(coords, topo)
             coords, topo = L2_to_L3(coords, topo)
             return True

@@ -57,7 +57,6 @@ class TriMesh(PolyData):
     --------
     :class:`polymesh.polydata.PolyData`
     :class:`polymesh.space.frame.CartesianFrame`
-
     """
 
     _cell_classes_ = {
