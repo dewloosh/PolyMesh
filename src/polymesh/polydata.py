@@ -523,7 +523,7 @@ class PolyData(PolyDataBase):
                 raise NotImplementedError(msg.format(vtkid))
         return pd
 
-    def to_pandas(
+    def to_dataframe(
         self,
         *args,
         point_fields: Iterable[str] = None,
@@ -546,12 +546,12 @@ class PolyData(PolyDataBase):
         -------
         >>> from polymesh.examples import stand_vtk
         >>> mesh = stand_vtk(read=True)
-        >>> mesh.to_pandas(point_fields=['x'])
+        >>> mesh.to_dataframe(point_fields=['x'])
         """
         ak_pd, ak_cd = self.to_ak(
             *args, point_fields=point_fields, cell_fields=cell_fields
         )
-        return ak.to_pandas(ak_pd, **kwargs), ak.to_pandas(ak_cd, **kwargs)
+        return ak.to_dataframe(ak_pd, **kwargs), ak.to_dataframe(ak_cd, **kwargs)
 
     def to_parquet(
         self,

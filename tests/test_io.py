@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 import unittest
 import os
 import numpy as np
-import awkward as ak
 
 from polymesh import PolyData, PointData
 from polymesh.cells import T3, Q4, H8
@@ -77,8 +75,8 @@ class TestIO(unittest.TestCase):
         ## PART 2
         mesh.to_parquet("mesh_pd.parquet", "mesh_cd.parquet")
         paths.extend(["mesh_pd.parquet", "mesh_cd.parquet"])
-        mesh.to_pandas()
-        mesh['grids', 'H8'].cd.to_pandas()
+        mesh.to_dataframe()
+        mesh['grids', 'H8'].cd.to_dataframe()
         mesh['grids', 'H8'].cd.to_akarray()
         mesh['grids', 'H8'].cd.to_akrecord()
         

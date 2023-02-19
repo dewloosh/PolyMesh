@@ -1,4 +1,4 @@
 packaging
-linkeddeepdict>=0.0.1
-neumann>=0.0.8
-awkward==1.10.2
+linkeddeepdict==1.0.0
+neumann==1.0.0
+fsspec==2023.1.0  # to use awkward.to_parquet

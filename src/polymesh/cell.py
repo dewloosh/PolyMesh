@@ -131,7 +131,7 @@ class PolyCell(CellData):
         _shpf = lambdify([locvars], shp[:, 0].T, "numpy")
         _dshpf = lambdify([locvars], dshp, "numpy")
 
-        def shpf(p: ndarray):
+        def shpf(p: ndarray) -> ndarray:
             """
             Evaluates the shape functions at multiple points in the
             master domain.
@@ -139,7 +139,7 @@ class PolyCell(CellData):
             r = np.stack([_shpf(p[i])[0] for i in range(len(p))])
             return ascont(r)
 
-        def shpmf(p: ndarray, ndof:int=nDOF):
+        def shpmf(p: ndarray, ndof:int=nDOF) -> ndarray:
             """
             Evaluates the shape function matrix at multiple points
             in the master domain.
@@ -153,7 +153,7 @@ class PolyCell(CellData):
                     res[iP, :, i * ndof : (i + 1) * ndof] = eye * shp[iP, i]
             return ascont(res)
 
-        def dshpf(p: ndarray):
+        def dshpf(p: ndarray) -> ndarray:
             """
             Evaluates the shape function derivatives at multiple points
             in the master domain.
@@ -245,7 +245,6 @@ class PolyCell(CellData):
         numpy.ndarray
             An array of shape (nP, nNE, nD), where nP, nNE and nD are
             the number of evaluation points, nodes and spatial dimensions.
-
         """
         pcoords = np.array(pcoords)
         if cls.dshpfnc is None:

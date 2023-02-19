@@ -44,7 +44,7 @@ class AkWrapper(Wrapper):
         """
         return self._wrapped[key].to_numpy()
 
-    def to_pandas(self, *args, fields: Iterable[str] = None, **kwargs):
+    def to_dataframe(self, *args, fields: Iterable[str] = None, **kwargs):
         """
         Returns the data contained within the database as a DataFrame.
 
@@ -55,14 +55,14 @@ class AkWrapper(Wrapper):
         fields : Iterable[str], Optional
             Valid field names to include in the parquet files.
         **kwargs: dict, Optional
-            Keyword arguments forwarded to :func:`awkward.to_pandas`.
+            Keyword arguments forwarded to :func:`awkward.to_dataframe`.
 
         Returns
         -------
         pandas.DataFrame
         """
         akdb = self.to_ak(*args, fields=fields)
-        return ak.to_pandas(akdb, **kwargs)
+        return ak.to_dataframe(akdb, **kwargs)
 
     def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs):
         """
