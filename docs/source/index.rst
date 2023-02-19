@@ -2,18 +2,16 @@
 PolyMesh - A Python Library for Compound Polygonal Meshes with Jagged Topology
 ==============================================================================
 
-----
-
 .. image:: logo.png
 
 
 PolyMesh is an effort to provide an easy access to the most popular data
 visualization libraries. It makes you able to
 
-* build, manipulate and analyse meshes easily, then convert to other formats
+* build, manipulate and analyse polygonal meshes easily, then convert to other formats
 
 * plot spatial data with the most popular backends such as Matplotlib, 
-  Plotly, PyVista, Vedo, etc.
+  Plotly, PyVista, K3D, etc.
 
 The library is built around the cornerstones of high performance computing 
 in Python, such as `Numpy`, `Scipy`, `Awkward` and `Numba` and provides

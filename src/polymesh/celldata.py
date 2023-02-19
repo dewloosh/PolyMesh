@@ -1,15 +1,20 @@
-# -*- coding: utf-8 -*-
+from typing import Union
+
 import numpy as np
 from numpy import ndarray
 
 from dewloosh.core import classproperty
-from neumann.array import atleast2d, atleast3d, repeat
+from neumann import atleast2d, atleast3d, repeat
+from neumann.linalg.sparse import csr_matrix
+from neumann.linalg import ReferenceFrame
 
-from .base import (PointDataBase, CellDataBase, 
-                   PolyDataBase as PolyData)
+from .base import PointDataBase, CellDataBase, PolyDataBase as PolyData
 from .akwrap import AwkwardLike
-from .utils import (avg_cell_data, distribute_nodal_data_bulk,
-                    homogenize_nodal_values)
+from .utils import (
+    avg_cell_data,
+    distribute_nodal_data_bulk,
+    distribute_nodal_data_sparse,
+)
 
 
 class CellData(CellDataBase):
@@ -21,6 +26,29 @@ class CellData(CellDataBase):
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every
     polygonal data structure, it is useful to understand how it works.
+    
+    Parameters
+    ----------
+    activity : numpy.ndarray, Optional
+        1d boolean array describing the activity of the elements.
+    t or thickness : numpy.ndarray, Optional
+        1d float array of thicknesses. Only for 2d cells.
+        Default is None.
+    areas : numpy.ndarray, Optional
+        1d float array of cross sectional areas. Only for 1d cells.
+        Default is None.
+    fields : dict, Optional
+        Every value of this dictionary is added to the dataset.
+        Default is `None`.
+    frames : numpy.ndarray, Optional
+        Coordinate axes representing cartesian coordinate frames.
+        Default is None.
+    topo : numpy.ndarray, Optional
+        2d integer array representing node indices. Default is None.
+    **kwargs : dict, Optional
+        For every key and value pair where the value is a numpy array
+        with a matching shape (has entries for all cells), the key
+        is considered as a field and the value is added to the database.
 
     See Also
     --------
@@ -29,24 +57,36 @@ class CellData(CellDataBase):
     """
 
     _attr_map_ = {
-        'nodes': 'nodes',  # node indices
-        'frames': 'frames',  # coordinate frames
-        'ndf': 'ndf',  # nodal distribution factors
-        'id': 'id',  # global indices of the cells
-        'areas': 'areas',  # areas of 1d cells
-        't': 't',  # thicknesses for 2d cells
-        'activity': 'activity',  # activity of the cells
+        "nodes": "_nodes_",  # node indices
+        "frames": "_frames_",  # coordinate frames
+        "ndf": "_ndf_",  # nodal distribution factors
+        "id": "_id_",  # global indices of the cells
+        "areas": "_areas_",  # areas of 1d cells
+        "t": "_t_",  # thicknesses for 2d cells
+        "activity": "_activity_",  # activity of the cells
     }
-    
-    def __init__(self, *args, pointdata:PointDataBase=None, 
-                 wrap:AwkwardLike=None, topo:ndarray=None, 
-                 fields:dict=None, activity:ndarray=None,
-                 frames:ndarray=None, db:AwkwardLike=None,  
-                 container: PolyData = None, **kwargs):
-        amap = self.__class__._attr_map_
+
+    def __init__(
+        self,
+        *args,
+        pointdata: PointDataBase = None,
+        wrap: AwkwardLike = None,
+        topo: ndarray = None,
+        fields: dict = None,
+        activity: ndarray = None,
+        frames: Union[ndarray, ReferenceFrame] = None,
+        areas: Union[ndarray, float]=None,
+        t: Union[ndarray, float]=None,
+        db: AwkwardLike = None,
+        container: PolyData = None,
+        **kwargs,
+    ):
         fields = {} if fields is None else fields
         assert isinstance(fields, dict)
-
+        if len(fields) > 0:
+            attr_map = self._attr_map_
+            fields = {attr_map.get(k, k) : v for k, v in fields.items()}
+        
         if db is not None:
             wrap = db
         else:
@@ -58,58 +98,102 @@ class CellData(CellDataBase):
                 nodes = topo
 
             if isinstance(activity, ndarray):
-                fields[amap['activity']] = activity
+                fields[self._dbkey_activity_] = activity
 
             if isinstance(nodes, ndarray):
-                fields[amap['nodes']] = nodes
+                fields[self._dbkey_nodes_] = nodes
                 N = nodes.shape[0]
                 for k, v in kwargs.items():
                     if isinstance(v, ndarray):
                         if v.shape[0] == N:
                             fields[k] = v
+                            
+            if isinstance(areas, np.ndarray):
+                fields[self._dbkey_areas_] = areas
 
         super().__init__(*args, wrap=wrap, fields=fields, **kwargs)
 
-        self.pointdata = pointdata
+        self._pointdata = pointdata
         self._container = container
 
         if self.db is not None:
-            if isinstance(frames, ndarray):
-                # this handles possible repetition of a single frame
-                self.frames = frames
-    
+            
+            if frames is not None:
+                if isinstance(frames, (ReferenceFrame, ndarray)):
+                    self.frames = frames
+                else:
+                    msg = ("'frames' must be a NumPy array, or a ",
+                        "neumann.linalg.ReferenceFrame instance.")
+                    raise TypeError(msg)
+                
+            if t is not None:
+                self.t = t
+                
+            if areas is not None:
+                self.A = areas
+
     @classproperty
     def _dbkey_nodes_(cls) -> str:
-        return cls._attr_map_['nodes']
-    
+        return cls._attr_map_["nodes"]
+
     @classproperty
     def _dbkey_frames_(cls) -> str:
-        return cls._attr_map_['frames']
-    
+        return cls._attr_map_["frames"]
+
     @classproperty
     def _dbkey_areas_(cls) -> str:
-        return cls._attr_map_['areas']
-    
+        return cls._attr_map_["areas"]
+
     @classproperty
     def _dbkey_thickness_(cls) -> str:
-        return cls._attr_map_['t']
-    
+        return cls._attr_map_["t"]
+
     @classproperty
     def _dbkey_activity_(cls) -> str:
-        return cls._attr_map_['activity']
-    
+        return cls._attr_map_["activity"]
+
     @classproperty
     def _dbkey_ndf_(cls) -> str:
-        return cls._attr_map_['ndf']
-    
+        return cls._attr_map_["ndf"]
+
     @classproperty
     def _dbkey_id_(cls) -> str:
-        return cls._attr_map_['id']
-    
+        return cls._attr_map_["id"]
+
     @property
     def has_id(self) -> ndarray:
         return self._dbkey_id_ in self._wrapped.fields
     
+    @property
+    def has_frames(self):
+        return self._dbkey_frames_ in self._wrapped.fields
+    
+    @property
+    def has_thickness(self):
+        return self._dbkey_thickness_ in self._wrapped.fields
+    
+    @property
+    def has_areas(self):
+        return self._dbkey_areas_ in self._wrapped.fields
+
+    @property
+    def pointdata(self) -> PointDataBase:
+        """
+        Returns the attached point database. This is what
+        the topology of the cells are referring to.
+        """
+        return self._pointdata
+
+    @pointdata.setter
+    def pointdata(self, value: PointDataBase):
+        """
+        Sets the attached point database. This is what
+        the topology of the cells are referring to.
+        """
+        if value is not None:
+            assert isinstance(value, PointDataBase)
+        self._pointdata = value
+
     @property
     def pd(self) -> PointDataBase:
         """
@@ -120,23 +204,17 @@ class CellData(CellDataBase):
 
     @pd.setter
     def pd(self, value: PointDataBase):
-        """
-        Sets tje attached pointdata.
-        """
+        """Sets the attached pointdata."""
         self.pointdata = value
 
     @property
     def container(self) -> PolyData:
-        """
-        Returns the container object of the block.
-        """
+        """Returns the container object of the block."""
         return self._container
 
     @container.setter
     def container(self, value: PolyData):
-        """
-        Sets the container of the block.
-        """
+        """Sets the container of the block."""
         assert isinstance(value, PolyData)
         self._container = value
 
@@ -149,6 +227,11 @@ class CellData(CellDataBase):
         return None if c is None else c.root()
 
     def source(self) -> PolyData:
+        """
+        Retruns the source of the cells. This is the PolyData block
+        that stores the PointData object the topology of the cells
+        are referring to.
+        """
         c = self.container
         return None if c is None else c.source()
 
@@ -184,95 +267,65 @@ class CellData(CellDataBase):
         factors : numpy.ndarray
             A 3d float array. The length of the array must equal the number
             pf cells in the block.
-
         key : str, Optional
             A key used to store the values in the database. This makes you able
             to use more nodal distribution strategies in one model.
             If not specified, a default key is used.
-
         """
         if key is None:
-            key = self.__class__._attr_map_['ndf']
+            key = self.__class__._attr_map_[self._dbkey_ndf_]
         if len(factors) != len(self._wrapped):
             self._wrapped[key] = factors[self._wrapped.id]
         else:
             self._wrapped[key] = factors
 
-    def pull(self, key: str = None, *args, ndfkey: str = None, store: bool = False,
-             storekey: str = None, data: ndarray = None, distribute:bool=False, **kwargs):
+    def pull(
+        self, data: Union[str, ndarray], ndf: Union[ndarray, csr_matrix] = None
+    ) -> ndarray:
         """
-        Pulls data from the attached pointcloud. The pulled data is either copied or
+        Pulls data from the attached pointdata. The pulled data is either copied or
         distributed according to a measure.
 
         Parameters
         ----------
-        key : str, Optional
-            A field key to identify data in the database of the attached pointcloud.
-            If not specified, use the 'data' parameter to specify the data to pull.
-            Default is None.
-        ndfkey : str, Optional
-            A field key to identify the distribution factors to use. If not specified,
-            a default key is used. Default is None.
-        store : bool, Optional
-            Stores the pulled values in the database if True. If True, the pulled data
-            is either stored with the same key used in the pointcloud, or a key specified
-            with the parameter 'storekey'. Default is False.
-        storekey : str, Optional
-            A key used to store the values. If provided, the 'store' parameter is ignored.
-            Default is False.
-        data : numpy.ndarray, Optional
-            Used to specify the data to pull, if the parameter 'key' is None.
-            Default is None.
-        distribute : bool, Optional
-            If False, data is simply copied, otherwise it gets distributed according to
-            the distribution factors of a measure. In the former case, parameters related
-            to the distribution factors can be omitted. Default is False.
-            
+        data : str or numpy.ndarray
+            Either a field key to identify data in the database of the attached
+            PointData, or a NumPy array.
+
         See Also
         --------
-        :func:`distribute_nodal_data_bulk`
-
+        :func:`~polymesh.utils.utils.distribute_nodal_data_bulk`
+        :func:`~polymesh.utils.utils.distribute_nodal_data_sparse`
         """
-        if ndfkey is None and distribute:
-            ndfkey = self.__class__._attr_map_['ndf']
-        storekey = key if storekey is None else storekey
-        if key is not None:
-            nodal_data = self.pointdata[key].to_numpy()
+        if isinstance(data, str):
+            pd = self.source().pd
+            nodal_data = pd[data].to_numpy()
         else:
-            assert isinstance(data, ndarray), "No data to pull from!"
+            assert isinstance(
+                data, ndarray
+            ), "'data' must be a string or a NumPy array."
             nodal_data = data
         topo = self.nodes
-        if distribute:
-            ndf = self._wrapped[ndfkey].to_numpy()
-        else:
+        if ndf is None:
             ndf = np.ones_like(topo).astype(float)
         if len(nodal_data.shape) == 1:
             nodal_data = atleast2d(nodal_data, back=True)
-        d = distribute_nodal_data_bulk(nodal_data, topo, ndf)
+        if isinstance(ndf, ndarray):
+            d = distribute_nodal_data_bulk(nodal_data, topo, ndf)
+        else:
+            d = distribute_nodal_data_sparse(nodal_data, topo, self.id, ndf)
         # nE, nNE, nDATA
-        d = np.squeeze(d)
-        if store:
-            self._wrapped[key] = d
         return d
-
-    def push(self, *args, **kwargs):
-        raise NotImplementedError
 
     @property
     def fields(self):
-        """
-        Returns the fields in the database object.
-
-        """
+        """Returns the fields in the database object."""
         return self._wrapped.fields
 
     @property
     def nodes(self) -> ndarray:
-        """
-        Returns the topology of the cells.
-
-        """
-        return self._wrapped[self.__class__._attr_map_['nodes']].to_numpy()
+        """Returns the topology of the cells."""
+        return self._wrapped[self._dbkey_nodes_].to_numpy()
 
     @nodes.setter
     def nodes(self, value: ndarray):
@@ -283,18 +336,14 @@ class CellData(CellDataBase):
         ----------
         value : numpy.ndarray
             A 2d integer array.
-
         """
         assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['nodes']] = value
+        self._wrapped[self._dbkey_nodes_] = value
 
     @property
     def frames(self) -> ndarray:
-        """
-        Returns local coordinate frames of the cells.
-        
-        """
-        return self._wrapped[self.__class__._attr_map_['frames']].to_numpy()
+        """Returns local coordinate frames of the cells."""
+        return self._wrapped[self._dbkey_frames_].to_numpy()
 
     @frames.setter
     def frames(self, value: ndarray):
@@ -305,23 +354,47 @@ class CellData(CellDataBase):
         ----------
         value : numpy.ndarray
             A 3d float array.
-
         """
-        assert isinstance(value, ndarray)
-        value = atleast3d(value)
-        if len(value) == 1:
-            value = repeat(value[0], len(self._wrapped))
+        if isinstance(value, ReferenceFrame):
+            frames = value.show()
         else:
-            assert len(value) == len(self._wrapped)
-        self._wrapped[self.__class__._attr_map_['frames']] = value
+            assert isinstance(value, ndarray)
+            frames = value
+        frames = atleast3d(frames)
+        if len(frames) == 1:
+            frames = repeat(frames[0], len(self._wrapped))
+        else:
+            assert len(frames) == len(self._wrapped)
+        self._wrapped[self._dbkey_frames_] = frames
+    
+    @property
+    def t(self):
+        """Returns the thicknesses of the cells."""
+        return self._wrapped[self._dbkey_thickness_].to_numpy()
+    
+    @t.setter
+    def t(self, value: Union[float, int, ndarray]):
+        """Returns the thicknesses of the cells."""
+        if isinstance(value, (int, float)):
+            value = np.full(len(self), value)
+        self._wrapped[self._dbkey_thickness_] = value
+        
+    @property
+    def A(self):
+        """Returns the thicknesses of the cells."""
+        return self._wrapped[self._dbkey_areas_].to_numpy()
+    
+    @A.setter
+    def A(self, value: Union[float, int, ndarray]):
+        """Returns the thicknesses of the cells."""
+        if isinstance(value, (int, float)):
+            value = np.full(len(self), value)
+        self._wrapped[self._dbkey_areas_] = value
 
     @property
     def id(self) -> ndarray:
-        """
-        Returns global indices of the cells.
-        
-        """
-        return self._wrapped[self.__class__._attr_map_['id']].to_numpy()
+        """Returns global indices of the cells."""
+        return self._wrapped[self._dbkey_id_].to_numpy()
 
     @id.setter
     def id(self, value: ndarray):
@@ -332,18 +405,14 @@ class CellData(CellDataBase):
         ----------
         value : numpy.ndarray
             An 1d integer array.
-
         """
         assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['id']] = value
+        self._wrapped[self._dbkey_id_] = value
 
     @property
     def activity(self) -> ndarray:
-        """
-        Returns a 1d boolean array of cell activity.
-        
-        """
-        return self._wrapped[self.__class__._attr_map_['activity']].to_numpy()
+        """Returns a 1d boolean array of cell activity."""
+        return self._wrapped[self._dbkey_activity_].to_numpy()
 
     @activity.setter
     def activity(self, value: ndarray):
@@ -354,7 +423,7 @@ class CellData(CellDataBase):
         ----------
         value : numpy.ndarray
             An 1d bool array.
-
         """
-        assert isinstance(value, ndarray)
-        self._wrapped[self.__class__._attr_map_['activity']] = value
+        if isinstance(value, bool):
+            value = np.full(len(self), value, dtype=bool)
+        self._wrapped[self._dbkey_activity_] = value

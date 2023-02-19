@@ -5,7 +5,7 @@ Compound Meshes
 """
 
 from polymesh import PolyData
-from polymesh.tri.trimesh import TriMesh
+from polymesh.trimesh import TriMesh
 from polymesh.grid import Grid
 from polymesh.space import StandardFrame
 import numpy as np
@@ -24,7 +24,8 @@ mesh['tri', 'T3'].pointdata['values'] = np.full(tri.coords().shape[0], 5.)
 mesh['grids', 'Q4'].pointdata['values'] = np.full(grid2d.coords().shape[0], 10.)
 mesh['grids', 'H8'].pointdata['values'] = np.full(grid3d.coords().shape[0], -5.)
 
-mesh['tri', 'T3'].pointdata.values.to_numpy()
+mesh.to_standard_form()
+mesh.lock(create_mappers=True)
 
 import pyvista as pv
 from pyvista import themes

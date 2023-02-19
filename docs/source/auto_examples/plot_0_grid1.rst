@@ -55,8 +55,8 @@ Plotting in 2d with `matplotlib`
 
 .. code-block:: python3
 
-    from polymesh.topo.tr import Q4_to_T3
-    from polymesh.tri.trimesh import triangulate
+    from polymesh.utils.topology import Q4_to_T3
+    from polymesh.trimesh import triangulate
 
     points, triangles = Q4_to_T3(coordsQ4, topoQ4, path='grid')
     triobj = triangulate(points=points[:, :2], triangles=triangles)[-1]
@@ -94,7 +94,7 @@ Plotting in 2d with `matplotlib`
  .. code-block:: none
 
 
-    [<matplotlib.lines.Line2D object at 0x0000019405342430>, <matplotlib.lines.Line2D object at 0x0000019405342610>]
+    [<matplotlib.lines.Line2D object at 0x000001FA598CD0D0>, <matplotlib.lines.Line2D object at 0x000001FA598CD3A0>]
 
 
 
@@ -129,7 +129,7 @@ Create a Hinton-plot with random data.
  .. code-block:: none
 
 
-    [<dewloosh.mpl.triplot.TriPatchCollection object at 0x00000194056923A0>]
+    [<dewloosh.mpl.triplot.TriPatchCollection object at 0x000001FA5BBFD100>]
 
 
 
@@ -158,7 +158,7 @@ Plot the triangles with random cell data.
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x0000019403309040>]
+    [<matplotlib.collections.PolyCollection object at 0x000001FA5D379160>]
 
 
 
@@ -191,7 +191,7 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x00000194053C6C70>]
+    [<matplotlib.collections.PolyCollection object at 0x000001FA5D611790>]
 
 
 
@@ -216,7 +216,7 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001941DC40F40>]
+    [<matplotlib.collections.PolyCollection object at 0x000001FA5D6597C0>]
 
 
 
@@ -242,16 +242,16 @@ _[Click here to see the built-in colormaps in matplotlib](https://matplotlib.org
  .. code-block:: none
 
 
-    [<matplotlib.collections.PolyCollection object at 0x000001941DD7F7F0>]
+    [<matplotlib.collections.PolyCollection object at 0x000001FA5D753BB0>]
 
 
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  59.752 seconds)
+   **Total running time of the script:** ( 1 minutes  30.132 seconds)
 
-**Estimated memory usage:**  43 MB
+**Estimated memory usage:**  77 MB
 
 
 .. _sphx_glr_download_auto_examples_plot_0_grid1.py:

@@ -7,17 +7,16 @@ __cache = True
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def extrude_T3_TET4(points: ndarray, triangles: ndarray, 
-                    h: float=1.0, zres: int=1):
+def extrude_T3_TET4(points: ndarray, triangles: ndarray, h: float = 1.0, zres: int = 1):
     nT = triangles.shape[0]
     nP = points.shape[0]
     nE = nT * zres * 3
     nC = nP * (zres + 1)
     coords = np.zeros((nC, 3), dtype=points.dtype)
     topo = np.zeros((nE, 4), dtype=triangles.dtype)
-    coords[:nP, :2] = points[:, :2]        
+    coords[:nP, :2] = points[:, :2]
     for i in prange(zres):
-        coords[nP * (i + 1) : nP * (i + 2), :2] = points[:, :2] 
+        coords[nP * (i + 1) : nP * (i + 2), :2] = points[:, :2]
         coords[nP * (i + 1) : nP * (i + 2), 2] = h * (i + 1) / zres
         for j in prange(nT):
             id = i * nT * 3 + j * 3
@@ -42,6 +41,5 @@ def extrude_T3_TET4(points: ndarray, triangles: ndarray,
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def extrude_Q4_H8(coords: ndarray, zopo: ndarray, 
-                  h: float=1.0, zres: int=1):
+def extrude_Q4_H8(coords: ndarray, zopo: ndarray, h: float = 1.0, zres: int = 1):
     pass

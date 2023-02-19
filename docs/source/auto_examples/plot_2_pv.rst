@@ -21,7 +21,7 @@
 Compound Meshes
 ===============
 
-.. GENERATED FROM PYTHON SOURCE LINES 6-42
+.. GENERATED FROM PYTHON SOURCE LINES 6-43
 
 
 
@@ -38,7 +38,7 @@ Compound Meshes
 
 
     from polymesh import PolyData
-    from polymesh.tri.trimesh import TriMesh
+    from polymesh.trimesh import TriMesh
     from polymesh.grid import Grid
     from polymesh.space import StandardFrame
     import numpy as np
@@ -57,7 +57,8 @@ Compound Meshes
     mesh['grids', 'Q4'].pointdata['values'] = np.full(grid2d.coords().shape[0], 10.)
     mesh['grids', 'H8'].pointdata['values'] = np.full(grid3d.coords().shape[0], -5.)
 
-    mesh['tri', 'T3'].pointdata.values.to_numpy()
+    mesh.to_standard_form()
+    mesh.lock(create_mappers=True)
 
     import pyvista as pv
     from pyvista import themes
@@ -76,9 +77,9 @@ Compound Meshes
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  5.253 seconds)
+   **Total running time of the script:** ( 0 minutes  2.681 seconds)
 
-**Estimated memory usage:**  7 MB
+**Estimated memory usage:**  117 MB
 
 
 .. _sphx_glr_download_auto_examples_plot_2_pv.py:

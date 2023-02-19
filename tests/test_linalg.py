@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 import unittest
 
-from neumann.linalg import Vector, ReferenceFrame, linspace
+from neumann.linalg import Vector, linspace
 from polymesh import PointCloud, CartesianFrame
-from polymesh.tri import triangulate
+from polymesh.triang import triangulate
 from polymesh.space import StandardFrame
-from polymesh.utils import center_of_points
+from polymesh.utils.utils import center_of_points
 
 
 class TestLinalg(unittest.TestCase):
@@ -51,7 +50,7 @@ class TestLinalg(unittest.TestCase):
         arr2 = arr1[1:]
         arr2.inds
         COORD.to_numpy()
-        COORD @ np.eye(3)
+        COORD.show() @ np.eye(3)
         coords, topo, _ = triangulate(size=(800, 600), shape=(10, 10))
         coords = PointCloud(coords)
         coords.center()
@@ -144,7 +143,7 @@ class TestLinalg(unittest.TestCase):
         B.move(-Vector(np.array([0, np.sqrt(2)/2, 0])))
     
     def test_frame_2(self):
-        A = ReferenceFrame()
+        A = CartesianFrame()
         B = A.orient_new('Body', [0, 0, 30*np.pi/180],  'XYZ')
         C = B.orient_new('Body', [0, 0, 30*np.pi/180],  'XYZ')
         A = CartesianFrame()

@@ -7,21 +7,18 @@ from sympy import symbols
 from ..line import QuadraticLine
 
 
-__all__ = ['L3']
+__all__ = ["L3"]
 
 
 class L3(QuadraticLine):
     """
     3-Node line element.
-    
+
     See Also
     --------
     :class:`QuadraticLine`
     """
-    
-    shpfnc = None
-    dshpfnc = None
-    
+
     @classmethod
     def polybase(cls) -> Tuple[List]:
         """
@@ -35,7 +32,7 @@ class L3(QuadraticLine):
             A list of monomials.
 
         """
-        locvars = r = symbols('r', real=True)
+        locvars = r = symbols("r", real=True)
         monoms = [1, r, r**2]
         return [locvars], monoms
 
@@ -49,7 +46,7 @@ class L3(QuadraticLine):
         numpy.ndarray
 
         """
-        return np.array([-1., 0., 1.])
+        return np.array([-1.0, 0.0, 1.0])
 
     @classmethod
     def lcenter(cls) -> ndarray:
@@ -61,16 +58,4 @@ class L3(QuadraticLine):
         numpy.ndarray
 
         """
-        return np.array([0.])
-
-    """def shape_function_values(self, coords, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return shp3_bulk(coords)
-        else:
-            return shp3(coords)
-
-    def shape_function_derivatives(self, coords, *args, **kwargs):
-        if len(coords.shape) == 2:
-            return dshp3_bulk(coords)
-        else:
-            return dshp3(coords)"""
+        return np.array([0.0])

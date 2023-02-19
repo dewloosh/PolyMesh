@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 import unittest
 
-from polymesh.tri.trimesh import TriMesh
+from polymesh.trimesh import TriMesh
 from polymesh.space import CartesianFrame
 from polymesh.recipes import circular_disk
 from polymesh.cells import T3, T6

@@ -21,7 +21,7 @@
 A Simple Cube
 =============
 
-.. GENERATED FROM PYTHON SOURCE LINES 6-41
+.. GENERATED FROM PYTHON SOURCE LINES 6-40
 
 
 
@@ -47,7 +47,6 @@ A Simple Cube
     coords, topo = grid(size=size, shape=shape, eshape='H27')
     GlobalFrame = StandardFrame(dim=3)
     pd = PointData(coords=coords, frame=GlobalFrame)
-    cd = H27(topo=topo, frames=GlobalFrame)
     mesh = PolyData(pd, frame=GlobalFrame)
 
     part1 = H27(topo=topo[:10], frames=GlobalFrame)
@@ -75,9 +74,9 @@ A Simple Cube
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  11.346 seconds)
+   **Total running time of the script:** ( 0 minutes  7.243 seconds)
 
-**Estimated memory usage:**  82 MB
+**Estimated memory usage:**  84 MB
 
 
 .. _sphx_glr_download_auto_examples_plot_3_cube.py:

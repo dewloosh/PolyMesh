@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 from neumann.linalg import Vector
@@ -9,8 +8,8 @@ class Point(Vector):
     """
     A class a to handle one or more points in Euclidean space.
 
-    It inherits :class:`Vector <neumann.linalg.vector.Vector>`, 
-    and extends its behaviour with default frame management for domain 
+    It inherits :class:`Vector <neumann.linalg.vector.Vector>`,
+    and extends its behaviour with default frame management for domain
     specific applications through a ``_frame_cls_`` class property.
 
     If data is provided on object creation, the class can infer an appropriate
@@ -61,11 +60,11 @@ class Point(Vector):
         super().__init__(*args, frame=frame, **kwargs)
         self._id = id
         self._gid = id if gid is None else gid
-    
+
     @property
     def id(self):
         return self._id
-    
+
     @property
     def gid(self):
         return self._gid

@@ -23,8 +23,8 @@ coordsQ4, topoQ4 = grid(**gridparams)
 # ## Step 2 : Transform the mesh to triangles
 
 # %%
-from polymesh.topo.tr import Q4_to_T3
-from polymesh.tri.trimesh import triangulate
+from polymesh.utils.topology import Q4_to_T3
+from polymesh.trimesh import triangulate
 
 points, triangles = Q4_to_T3(coordsQ4, topoQ4, path='grid')
 triobj = triangulate(points=points[:, :2], triangles=triangles)[-1]
@@ -73,5 +73,3 @@ triplot(triobj, data=data, cmap='Set1', axis='off')
 # %%
 data = np.random.rand(len(points))
 triplot(triobj, data=data, cmap='gnuplot', axis='off', ecolor='k', lw=0.8)
-
-

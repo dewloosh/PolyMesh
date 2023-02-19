@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 import unittest
 import os
 import numpy as np
-import awkward as ak
 
 from polymesh import PolyData, PointData
 from polymesh.cells import T3, Q4, H8
-from polymesh.tri.trimesh import TriMesh
+from polymesh.trimesh import TriMesh
 from polymesh.grid import Grid
 from polymesh.space import StandardFrame
 from neumann.logical import isclose
@@ -66,6 +64,7 @@ class TestIO(unittest.TestCase):
         
         self.assertTrue(isclose(volume, mesh.volume(), atol=1e-5, rtol=None))
         
+        mesh.to_standard_form()
         t = mesh.topology()
         t0 = mesh.coords().shape[0]
         imin = np.min(t)
@@ -76,12 +75,10 @@ class TestIO(unittest.TestCase):
         ## PART 2
         mesh.to_parquet("mesh_pd.parquet", "mesh_cd.parquet")
         paths.extend(["mesh_pd.parquet", "mesh_cd.parquet"])
-        mesh.to_pandas()
-        mesh['grids', 'H8'].cd.to_pandas()
+        mesh.to_dataframe()
+        mesh['grids', 'H8'].cd.to_dataframe()
         mesh['grids', 'H8'].cd.to_akarray()
         mesh['grids', 'H8'].cd.to_akrecord()
-        ak.from_parquet("mesh_pd.parquet")['id']
-        ak.from_parquet("mesh_cd.parquet")['id']
         
         for path in paths:
             if os.path.exists(path):

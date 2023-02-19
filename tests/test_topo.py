@@ -3,7 +3,7 @@ import numpy as np
 import unittest
 
 
-from polymesh.topo import TopologyArray
+from polymesh.topoarray import TopologyArray
 
 
 class TestTopo(unittest.TestCase):

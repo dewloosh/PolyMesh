@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 from .polydata import PolyData
@@ -11,8 +10,8 @@ if __hasplotly__:
         from dewloosh.plotly import plot_lines_3d
     except Exception:
         pass
-    
-__all__ = ['LineData']
+
+__all__ = ["LineData"]
 
 
 class LineData(PolyData):
@@ -30,56 +29,55 @@ class LineData(PolyData):
             if areas is None:
                 areas = np.ones(nE)
             else:
-                assert len(areas.shape) == 1, \
-                    "'areas' must be a 1d float or integer numpy array!"
+                assert (
+                    len(areas.shape) == 1
+                ), "'areas' must be a 1d float or integer numpy array!"
             dbkey = self.celldata._dbkey_areas_
             self.celldata.db[dbkey] = areas
 
     def _init_config_(self):
         super()._init_config_()
         key = self.__class__._pv_config_key_
-        self.config[key]['color'] = 'k'
-        self.config[key]['line_width'] = 10
-        self.config[key]['render_lines_as_tubes'] = True
+        self.config[key]["color"] = "k"
+        self.config[key]["line_width"] = 10
+        self.config[key]["render_lines_as_tubes"] = True
 
     def __plot_plotly__(self, *args, scalars=None, fig=None, **kwargs):
         """
         Plots collections of lines and data provided on the nodes using `plotly`.
-                
+
         Returns the figure object.
-        
+
         """
         coords = self.coords()
         topo = self.topology()
         kwargs.update(dict(scalars=scalars, fig=fig))
         return plot_lines_3d(coords, topo, **kwargs)
 
-    def plot(self, *args, scalars=None, backend='plotly',
-             scalar_labels=None, **kwargs):
+    def plot(self, *args, scalars=None, backend="plotly", scalar_labels=None, **kwargs):
         """
         Plots the mesh with or without data, using multiple possible backends.
-        
+
         Parameters
         ----------
         scalars : numpy.ndarray, Optional
             Stacked nodal information as an 1d or 2d NumPy array. Default is None.
-            
         backend : str, Optional
-            The backend to use. Possible options are `plotly` and `vtk` 
+            The backend to use. Possible options are `plotly` and `vtk`
             (`vtk` is being managed through `PyVista`) at the moment.
             Default is 'plotly'.
-        
         scalar_labels : Iterable, Optional
             Labels for the datasets provided with 'scalars'. Default is None.
-         
         """
-        if backend == 'vtk':
-            return self.pvplot(*args, scalars=scalars,
-                               scalar_labels=scalar_labels, **kwargs)
-        elif backend == 'plotly':
+        if backend == "vtk":
+            return self.pvplot(
+                *args, scalars=scalars, scalar_labels=scalar_labels, **kwargs
+            )
+        elif backend == "plotly":
             if __hasplotly__:
-                return self.__plot_plotly__(*args, scalars=scalars,
-                                            scalar_labels=None, **kwargs)
+                return self.__plot_plotly__(
+                    *args, scalars=scalars, scalar_labels=None, **kwargs
+                )
             else:
                 msg = "You need to install `dewloosh.plotly` for this plot."
                 raise ImportError(msg)
