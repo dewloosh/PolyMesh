@@ -828,10 +828,10 @@ def nodal_adjacency(topo: TopoLike, *args, frmt:str=None,
         return nx.from_dict_of_lists(dol)
     elif frmt == "scipy-csr":
         G = nx.from_dict_of_lists(dol)
-        return nx.to_scipy_sparse_matrix(G).tocsr()
+        return nx.to_scipy_sparse_array(G).tocsr()
     elif frmt == "csr":
         G = nx.from_dict_of_lists(dol)
-        csr = nx.to_scipy_sparse_matrix(G).tocsr()
+        csr = nx.to_scipy_sparse_array(G).tocsr()
         return csr_matrix(csr)
     elif frmt == "jagged":
         cuts, data1d = dol_to_jagged_data(dol)

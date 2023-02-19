@@ -3,6 +3,6 @@ tetgen
 pytest
 pandas
 pyarrow
-networkx
+networkx>=3.0
 fsspec  # for ak.to_parquet
 k3d
