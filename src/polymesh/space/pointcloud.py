@@ -185,7 +185,7 @@ class PointCloud(Vector):
             self._frame = target
         else:
             raise TypeError("Value must be a {} instance".format(FrameLike))
-        
+
     @property
     def id(self) -> ndarray:
         """

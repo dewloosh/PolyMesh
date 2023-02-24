@@ -21,19 +21,19 @@ def shp_TET4_multi(pcoords: np.ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET4(pcoord: np.ndarray, ndof:int=3):
+def shape_function_matrix_TET4(pcoord: np.ndarray, ndof: int = 3):
     eye = np.eye(ndof, dtype=pcoord.dtype)
     shp = shp_TET4(pcoord)
-    res = np.zeros((ndof, ndof*4), dtype=pcoord.dtype)
+    res = np.zeros((ndof, ndof * 4), dtype=pcoord.dtype)
     for i in prange(4):
         res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET4_multi(pcoords: np.ndarray, ndof:int=3):
+def shape_function_matrix_TET4_multi(pcoords: np.ndarray, ndof: int = 3):
     nP = pcoords.shape[0]
-    res = np.zeros((nP, ndof, ndof*4), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof * 4), dtype=pcoords.dtype)
     for iP in prange(nP):
         res[iP] = shape_function_matrix_TET4(pcoords[iP], ndof)
     return res

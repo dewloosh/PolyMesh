@@ -7,7 +7,7 @@ from sympy import symbols
 
 from ..line import Line
 from ..utils.cells.l2 import shp_L2_multi, dshp_L2_multi, shape_function_matrix_L2_multi
-
+from ..utils.cells.gauss import Gauss_Legendre_Line_Grid
 
 __all__ = ["L2"]
 
@@ -18,12 +18,16 @@ class L2(Line):
 
     See Also
     --------
-    :class:`Line`
+    :class:`~polymesh.polygon.Line`
     """
 
     shpfnc = shp_L2_multi
     shpmfnc = shape_function_matrix_L2_multi
     dshpfnc = dshp_L2_multi
+
+    quadrature = {
+        "full": Gauss_Legendre_Line_Grid(2),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -36,7 +40,6 @@ class L2(Line):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r = symbols("r", real=True)
         monoms = [1, r]
@@ -50,7 +53,6 @@ class L2(Line):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([-1.0, 1.0])
 
@@ -62,6 +64,5 @@ class L2(Line):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([0.0])

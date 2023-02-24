@@ -129,7 +129,7 @@ def triangulate(
                     ]
                 else:
                     size = (shape, shape)
-            if isinstance(size, tuple):
+            if points is None and isinstance(size, tuple):
                 x = np.linspace(-origo[0], size[0] - origo[0], num=shape[0])
                 y = np.linspace(-origo[1], size[1] - origo[1], num=shape[1])
                 z = np.zeros(len(x), dtype=float) - origo[2]

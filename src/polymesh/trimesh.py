@@ -127,7 +127,6 @@ class TriMesh(PolyData):
         See Also
         --------
         :class:`polymesh.tet.tetmesh.TetMesh`
-
         """
         from .tetmesh import TetMesh
 

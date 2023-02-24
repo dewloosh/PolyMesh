@@ -13,3 +13,4 @@ from .trimesh import TriMesh
 from .tetmesh import TetMesh
 from .triang import triangulate
 from .grid import grid, Grid
+from .tetrahedralize import tetrahedralize

@@ -12,55 +12,51 @@ from polymesh.cells import H27
 
 
 class TestCoords(unittest.TestCase):
-
     def test_coords_1(self):
         def test_coord_tr_1(i, a):
             A = CartesianFrame(dim=3)
-            coords = PointCloud([
-                [1., 0., 0.],
-                [0., 1., 0.],
-                [0., 0., 1.]
-            ], frame=A)
+            coords = PointCloud(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], frame=A
+            )
             amounts = [0, 0, 0]
             amounts[i] = a * np.pi / 180
-            B = A.orient_new('Body', amounts, 'XYZ')
+            B = A.orient_new("Body", amounts, "XYZ")
             arr_new = Vector(coords.array, frame=A).view(B)
             coords_new = Vector(arr_new, frame=B)
             return np.max(np.abs(coords_new.view() - coords.view())) < 1e-8
-        assert test_coord_tr_1(1, 120.)
+
+        assert test_coord_tr_1(1, 120.0)
 
 
 class TestPolyData(unittest.TestCase):
-
     def test_pd_1(self):
         size = 800, 600, 20
         shape = 8, 6, 2
-        coords1, topo1 = grid(size=size, shape=shape, eshape='H27')
-        coords2, topo2 = grid(size=size, shape=shape,
-                              eshape='H27', origo=(0, 0, 100))
+        coords1, topo1 = grid(size=size, shape=shape, eshape="H27")
+        coords2, topo2 = grid(size=size, shape=shape, eshape="H27", origo=(0, 0, 100))
         coords = np.vstack([coords1, coords2])
         topo2 += coords1.shape[0]
         pd = PolyData(coords=coords)
-        pd['group1']['mesh1'] = PolyData(topo=topo1, vtkCellType=29)
-        pd['group2', 'mesh2'] = PolyData(topo=topo2, vtkCellType=29)
+        pd["group1"]["mesh1"] = PolyData(topo=topo1, vtkCellType=29)
+        pd["group2", "mesh2"] = PolyData(topo=topo2, vtkCellType=29)
         pd.center()
         pd.move(np.array([1.0, 0.0, 0.0]))
         pd.centralize()
         pd.center()
-        
+
     def test_pd_2(self):
         size = 100, 100, 100
         shape = 10, 10, 10
-        coords, topo = grid(size=size, shape=shape, eshape='H27')
+        coords, topo = grid(size=size, shape=shape, eshape="H27")
         pd = PolyData(coords=coords)
-        pd['A']['Part1'] = PolyData(topo=topo[:10])
-        pd['B']['Part2'] = PolyData(topo=topo[10:-10])
-        pd['C']['Part3'] = PolyData(topo=topo[-10:])
-        
+        pd["A"]["Part1"] = PolyData(topo=topo[:10])
+        pd["B"]["Part2"] = PolyData(topo=topo[10:-10])
+        pd["C"]["Part3"] = PolyData(topo=topo[-10:])
+
     def test_cube(self):
         size = Lx, Ly, Lz = 100, 100, 100
         shape = nx, ny, nz = 10, 10, 10
-        coords, topo = grid(size=size, shape=shape, eshape='H27')
+        coords, topo = grid(size=size, shape=shape, eshape="H27")
         GlobalFrame = StandardFrame(dim=3)
         pd = PointData(coords=coords, frame=GlobalFrame)
         cd = H27(topo=topo, frames=GlobalFrame)
@@ -70,9 +66,9 @@ class TestPolyData(unittest.TestCase):
         part2 = H27(topo=topo[10:-10], frames=GlobalFrame)
         part3 = H27(topo=topo[-10:], frames=GlobalFrame)
 
-        mesh['A']['Part1'] = PolyData(cd=part1)
-        mesh['A']['Part2'] = PolyData(cd=part2)
-        mesh['A']['Part3'] = PolyData(cd=part3)
+        mesh["A"]["Part1"] = PolyData(cd=part1)
+        mesh["A"]["Part2"] = PolyData(cd=part2)
+        mesh["A"]["Part3"] = PolyData(cd=part3)
 
 
 """def test_grid_origo_1(dx, dy, dz):
@@ -132,5 +128,4 @@ def test_volume_TET4_1(size, shape):
 
 
 if __name__ == "__main__":
-
     unittest.main()

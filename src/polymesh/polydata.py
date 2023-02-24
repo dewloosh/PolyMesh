@@ -52,10 +52,10 @@ from .config import __hasvtk__, __haspyvista__, __hask3d__, __hasmatplotlib__
 
 if __hasvtk__:
     import vtk
-    
+
 if __hask3d__:
     import k3d
-    
+
 if __hasmatplotlib__:
     import matplotlib as mpl
 
@@ -595,7 +595,7 @@ class PolyData(PolyDataBase):
         *args,
         point_fields: Iterable[str] = None,
         cell_fields: Iterable[str] = None,
-        **kwargs,
+        **__,
     ):
         """
         Returns the data contained within the mesh as a tuple of two
@@ -1131,7 +1131,7 @@ class PolyData(PolyDataBase):
         return self.__class__(pd, cd, frame=frame)
 
     def topology(
-        self, *args, return_inds:bool=False, jagged:bool=None, **kwargs
+        self, *args, return_inds: bool = False, jagged: bool = None, **kwargs
     ) -> Union[ndarray, TopologyArray]:
         """
         Returns the topology as either a `NumPy` or an `Awkward` array.
@@ -1168,13 +1168,13 @@ class PolyData(PolyDataBase):
                 return topo, np.concatenate(inds)
             else:
                 return topo
-            
+
     def cell_indices(self) -> ndarray:
         """
         Returns the indices of the cells along the walk.
         """
         blocks = self.cellblocks(inclusive=True)
-        m = map(lambda b : b.cd.id, blocks)
+        m = map(lambda b: b.cd.id, blocks)
         return np.concatenate(list(m))
 
     def detach(self, nummrg: bool = False) -> "PolyData":
@@ -1322,7 +1322,7 @@ class PolyData(PolyDataBase):
         return len(self.root().pointdata)
 
     def cells_coords(self, *, _topo=None, **kwargs) -> ndarray:
-        """Returns the coordiantes of the cells in extrensic format."""
+        """Returns the coordiantes of the cells in explicit format."""
         _topo = self.topology() if _topo is None else _topo
         return cells_coords(self.root().coords(), _topo)
 
@@ -1341,17 +1341,17 @@ class PolyData(PolyDataBase):
         root = self.root()
         coords = root.coords()
         blocks = self.cellblocks(inclusive=True)
-        
+
         def foo(b: PolyData):
             t = b.cd.topology().to_numpy()
             return cell_centers_bulk(coords, t)
 
         centers = np.vstack(list(map(foo, blocks)))
-        
+
         if target:
             pc = PointCloud(centers, frame=root.frame)
             centers = pc.show(target)
-        
+
         return centers
 
     def centralize(self, target: FrameLike = None) -> "PolyData":

@@ -5,6 +5,7 @@ from sympy import symbols
 
 from ..polygon import BiQuadraticQuadrilateral
 from ..utils.cells.q9 import shp_Q9_multi, dshp_Q9_multi, shape_function_matrix_Q9_multi
+from ..utils.cells.gauss import Gauss_Legendre_Quad_9
 
 
 class Q9(BiQuadraticQuadrilateral):
@@ -19,6 +20,10 @@ class Q9(BiQuadraticQuadrilateral):
     shpfnc = shp_Q9_multi
     shpmfnc = shape_function_matrix_Q9_multi
     dshpfnc = dshp_Q9_multi
+
+    quadrature = {
+        "full": Gauss_Legendre_Quad_9(),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -54,7 +59,6 @@ class Q9(BiQuadraticQuadrilateral):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array(
             [
@@ -78,6 +82,5 @@ class Q9(BiQuadraticQuadrilateral):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([0.0, 0.0])

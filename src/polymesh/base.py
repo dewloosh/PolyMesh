@@ -19,7 +19,6 @@ from .abcdata import ABC_MeshData
 
 
 class PointDataBase(AkWrapper, ABC_MeshData):
-    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the points."""
@@ -37,7 +36,6 @@ class PointDataBase(AkWrapper, ABC_MeshData):
 
 
 class CellDataBase(AkWrapper, ABC_MeshData):
-    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the cells."""

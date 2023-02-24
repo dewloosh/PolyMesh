@@ -13,6 +13,7 @@ from ..utils.cells.h8 import (
     volumes_H8,
     shape_function_matrix_H8_multi,
 )
+from ..utils.cells.gauss import Gauss_Legendre_Hex_Grid
 
 
 class H8(HexaHedron):
@@ -33,12 +34,16 @@ class H8(HexaHedron):
 
     See Also
     --------
-    :class:`HexaHedron`
+    :class:`~polymesh.polyhedron.HexaHedron`
     """
 
     shpfnc = shp_H8_multi
     shpmfnc = shape_function_matrix_H8_multi
     dshpfnc = dshp_H8_multi
+
+    quadrature = {
+        "full": Gauss_Legendre_Hex_Grid(2, 2, 2),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -51,7 +56,6 @@ class H8(HexaHedron):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r, s, t = symbols("r s t", real=True)
         monoms = [1, r, s, t, r * s, r * t, s * t, r * s * t]
@@ -65,7 +69,6 @@ class H8(HexaHedron):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array(
             [
@@ -88,7 +91,6 @@ class H8(HexaHedron):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([0.0, 0.0, 0.0])
 
@@ -99,7 +101,6 @@ class H8(HexaHedron):
         Returns
         -------
         numpy.ndarray
-
         """
         if coords is None:
             if self.pointdata is not None:

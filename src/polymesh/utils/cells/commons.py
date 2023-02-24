@@ -22,8 +22,9 @@ def shape_function_matrix_multi(
 
 
 @njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
-def volumes(ecoords: ndarray, qpos: ndarray, qweight: ndarray,
-            dshpfnc : Callable) -> ndarray:
+def volumes(
+    ecoords: ndarray, qpos: ndarray, qweight: ndarray, dshpfnc: Callable
+) -> ndarray:
     nE = ecoords.shape[0]
     volumes = np.zeros(nE, dtype=ecoords.dtype)
     nQ = len(qweight)

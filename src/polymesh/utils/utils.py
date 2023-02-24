@@ -878,6 +878,18 @@ def distances_of_points(coords: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
+def pcoords_to_coords(pcoords: ndarray, ecoords: ndarray, shp: ndarray) -> ndarray:
+    nP = pcoords.shape[0]
+    nE, nNE, nD = ecoords.shape
+    res = np.zeros((nE, nP, nD), dtype=ecoords.dtype)
+    for iE in prange(nE):
+        for iP in prange(nP):
+            for iNE in range(nNE):
+                res[iE, iP, :] += ecoords[iE, iNE] * shp[iP, iNE]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
 def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
     """
     Returns a flattened array of points, evaluated at multiple

@@ -88,19 +88,19 @@ def shp_H8_multi(pcoords: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=False, cache=__cache)
-def shape_function_matrix_H8(pcoord: ndarray, ndof:int=3) -> ndarray:
+def shape_function_matrix_H8(pcoord: ndarray, ndof: int = 3) -> ndarray:
     eye = np.eye(3, dtype=pcoord.dtype)
     shp = shp_H8(pcoord)
-    res = np.zeros((ndof, ndof*8), dtype=pcoord.dtype)
+    res = np.zeros((ndof, ndof * 8), dtype=pcoord.dtype)
     for i in prange(8):
         res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_H8_multi(pcoords: ndarray, ndof:int=3) -> ndarray:
+def shape_function_matrix_H8_multi(pcoords: ndarray, ndof: int = 3) -> ndarray:
     nP = pcoords.shape[0]
-    res = np.zeros((nP, ndof, ndof*8), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof * 8), dtype=pcoords.dtype)
     for iP in prange(nP):
         res[iP] = shape_function_matrix_H8(pcoords[iP], ndof)
     return res

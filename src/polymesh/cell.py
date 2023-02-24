@@ -12,9 +12,10 @@ from .celldata import CellData
 from .utils.utils import (
     jacobian_matrix_bulk,
     points_of_cells,
+    pcoords_to_coords,
     pcoords_to_coords_1d,
     cells_coords,
-    lengths_of_lines
+    lengths_of_lines,
 )
 from .utils.tri import area_tri_bulk
 from .utils.tet import tet_vol_bulk
@@ -61,7 +62,6 @@ class PolyCell(CellData):
         Returns
         -------
         numpy.ndarray
-
         """
         raise NotImplementedError
 
@@ -92,7 +92,9 @@ class PolyCell(CellData):
         raise NotImplementedError
 
     @classmethod
-    def generate(cls, return_symbolic: bool = True, update: bool = True) -> Tuple:
+    def generalte_class_functions(
+        cls, return_symbolic: bool = True, update: bool = True
+    ) -> Tuple:
         """
         Generates functions to evaulate shape functions, their derivatives
         and the shape function matrices using SymPy. For this to work, the
@@ -139,7 +141,7 @@ class PolyCell(CellData):
             r = np.stack([_shpf(p[i])[0] for i in range(len(p))])
             return ascont(r)
 
-        def shpmf(p: ndarray, ndof:int=nDOF) -> ndarray:
+        def shpmf(p: ndarray, ndof: int = nDOF) -> ndarray:
             """
             Evaluates the shape function matrix at multiple points
             in the master domain.
@@ -190,7 +192,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.shpfnc is None:
-            cls.generate(update=True)
+            cls.generalte_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -217,7 +219,7 @@ class PolyCell(CellData):
         nDOFN = getattr(cls, "NDOFN", None)
         pcoords = np.array(pcoords)
         if cls.shpmfnc is None:
-            cls.generate(update=True)
+            cls.generalte_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -248,7 +250,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.dshpfnc is None:
-            cls.generate(update=True)
+            cls.generalte_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -303,7 +305,6 @@ class PolyCell(CellData):
             are the number of elements, evaluation points and spatial
             dimensions. The number of evaluation points in the output
             is governed by the parameter 'dshp'.
-
         """
         ecoords = kwargs.get("ecoords", self.local_coordinates())
         return jacobian_matrix_bulk(dshp, ecoords)
@@ -328,26 +329,58 @@ class PolyCell(CellData):
         See Also
         --------
         :func:`jacobian_matrix`
-
         """
         if jac is None:
             jac = self.jacobian_matrix(**kwargs)
         return np.linalg.det(jac)
 
-    def points_of_cells(self, *_, **kwargs) -> ndarray:
+    def source_coords(self) -> ndarray:
         """
-        Returns the points of the cells as a 3d float numpy array.
-
-        See Also
-        --------
-        :func:`PolyCell1d.points_of_cells`
+        Returns the coordinates of the hosting pointcloud.
         """
         if self.pointdata is not None:
             coords = self.pointdata.x
         else:
             coords = self.container.source().coords()
-        topo = self.topology().to_numpy()
-        return points_of_cells(coords, topo, centralize=False)
+        return coords
+
+    def points_of_cells(
+        self,
+        *,
+        points: Union[float, Iterable] = None,
+        cells: Union[int, Iterable] = None,
+        target: Union[str, CartesianFrame] = "global"
+    ) -> ndarray:
+        """
+        Returns the points of the cells as a NumPy array.
+        """
+        if cells is not None:
+            cells = atleast1d(cells)
+            conds = np.isin(cells, self.id)
+            cells = atleast1d(cells[conds])
+            assert len(cells) > 0, "Length of cells is zero!"
+        else:
+            cells = np.s_[:]
+
+        if isinstance(target, str):
+            assert target.lower() in ["global", "g"]
+        else:
+            raise NotImplementedError
+
+        coords = self.source_coords()
+        topo = self.topology().to_numpy()[cells]
+        ecoords = points_of_cells(coords, topo, centralize=False)
+
+        if points is None:
+            return ecoords
+        else:
+            points = np.array(points)
+
+        shp = self.shape_function_values(points)
+        if len(shp) == 3:  # variable metric cells
+            shp = shp if len(shp) == 2 else shp[cells]
+
+        return pcoords_to_coords(points, ecoords, shp)  # (nE, nP, nD)
 
     def local_coordinates(self, *, target: CartesianFrame = None) -> ndarray:
         """
@@ -422,9 +455,6 @@ class PolyCell1d(PolyCell):
 
     NDIM = 1
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def lenth(self, *args, **kwargs):
         """Returns the total length of the cells in
         the database."""
@@ -432,7 +462,7 @@ class PolyCell1d(PolyCell):
 
     def area(self, *args, **kwargs):
         return np.sum(self.areas(*args, **kwargs))
-    
+
     def lengths(self, *args, coords=None, topo=None, **kwargs) -> ndarray:
         """
         Returns the lengths as a NumPy array.
@@ -460,9 +490,7 @@ class PolyCell1d(PolyCell):
 
     def measures(self, *args, **kwargs):
         return self.lengths(*args, **kwargs)
-    
-    # NOTE The functionality of `pcoords_to_coords_1d` needs to be generalized
-    # for higher order cells.
+
     def points_of_cells(
         self,
         *,
@@ -472,7 +500,7 @@ class PolyCell1d(PolyCell):
         target: Union[str, CartesianFrame] = "global",
         rng: Iterable = None,
         **kwargs
-    ) -> Union[dict, ndarray]:
+    ) -> ndarray:
         if isinstance(target, str):
             assert target.lower() in ["global", "g"]
         else:
@@ -508,34 +536,20 @@ class PolyCell1d(PolyCell):
             rng = np.array([0, 1]) if rng is None else np.array(rng)
 
         points, rng = to_range_1d(points, source=rng, target=[0, 1]).flatten(), [0, 1]
-        datacoords = pcoords_to_coords_1d(points, ecoords)  # (nE * nP, nD)
+        res = pcoords_to_coords_1d(points, ecoords)  # (nE * nP, nD)
 
         if not flatten:
             nE = ecoords.shape[0]
             nP = points.shape[0]
-            datacoords = datacoords.reshape(
-                nE, nP, datacoords.shape[-1]
-            )  # (nE, nP, nD)
+            res = res.reshape(nE, nP, res.shape[-1])  # (nE, nP, nD)
 
-        # values : (nE, nP, nDOF, nRHS) or (nE, nP * nDOF, nRHS)
-        if isinstance(cells, slice):
-            # results are requested on all elements
-            data = datacoords
-        elif isinstance(cells, Iterable):
-            data = {c: datacoords[i] for i, c in enumerate(cells)}
-        else:
-            raise TypeError("Invalid data type <> for cells.".format(type(cells)))
-
-        return data
+        return res
 
 
 class PolyCell2d(PolyCell):
     """Base class for 2d cells"""
 
     NDIM = 2
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def area(self, *args, **kwargs) -> float:
         """
@@ -551,7 +565,7 @@ class PolyCell2d(PolyCell):
         """
         _, t, _ = triangulate(points=cls.lcoords())
         return t
-    
+
     @classmethod
     def lcenter(cls) -> ndarray:
         """
@@ -661,6 +675,9 @@ class PolyCell3d(PolyCell):
         return self.surface(detach=detach)
 
     def volumes(self, *_, coords=None, topo=None, **__):
+        # NOTE implement `tetmap` class attribute, then it can be used
+        # to check if calculation should be based on splitting or Gauss integration
+        # Look at the examples for Gauss integration at child classes.
         if coords is None:
             coords = self.container.root().coords()
         topo = self.topology().to_numpy() if topo is None else topo

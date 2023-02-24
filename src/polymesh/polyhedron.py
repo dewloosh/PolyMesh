@@ -22,9 +22,6 @@ class TetraHedron(PolyHedron):
     vtkCellType = 10
     __label__ = "TET4"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def to_tetrahedra(self) -> np.ndarray:
         return self.topology().to_numpy()
 
@@ -36,9 +33,6 @@ class QuadraticTetraHedron(PolyHedron):
     vtkCellType = 24
     __label__ = "TET10"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class HexaHedron(PolyHedron):
     """Class for 8-noded hexahedra."""
@@ -46,9 +40,6 @@ class HexaHedron(PolyHedron):
     NNODE = 8
     vtkCellType = 12
     __label__ = "H8"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def to_tetrahedra(self) -> np.ndarray:
         return H8_to_TET4(None, self.topology().to_numpy())[1]
@@ -61,9 +52,6 @@ class TriquadraticHexaHedron(PolyHedron):
     vtkCellType = 29
     __label__ = "H27"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class Wedge(PolyHedron):
     """Class for 6-noded trilinear wedges."""
@@ -72,9 +60,6 @@ class Wedge(PolyHedron):
     vtkCellType = 13
     __label__ = "W6"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 
 class BiquadraticWedge(PolyHedron):
     """Class for 6-noded buquadratic wedges."""
@@ -82,6 +67,3 @@ class BiquadraticWedge(PolyHedron):
     NNODE = 18
     vtkCellType = 32
     __label__ = "W18"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)

@@ -15,3 +15,5 @@ from .h27 import H27
 from .tet4 import TET4
 from .tet4 import TET4 as Tetra
 from .tet10 import TET10
+from .w6 import W6
+from .w6 import W6 as Wedge

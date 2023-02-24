@@ -10,6 +10,7 @@ from ..utils.cells.tet4 import (
     dshp_TET4_multi,
     shape_function_matrix_TET4_multi,
 )
+from ..utils.cells.gauss import Gauss_Legendre_Tet_1
 
 
 class TET4(TetraHedron):
@@ -18,12 +19,16 @@ class TET4(TetraHedron):
 
     See Also
     --------
-    :class:`TetraHedron`
+    :class:`~polymesh.tetrahedron.TetraHedron`
     """
 
     shpfnc = shp_TET4_multi
     shpmfnc = shape_function_matrix_TET4_multi
     dshpfnc = dshp_TET4_multi
+
+    quadrature = {
+        "full": Gauss_Legendre_Tet_1(),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -36,7 +41,6 @@ class TET4(TetraHedron):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r, s, t = symbols("r s t", real=True)
         monoms = [1, r, s, t, r * s, r * t, s * t, r**2, s**2, t**2]

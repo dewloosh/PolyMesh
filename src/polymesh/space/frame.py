@@ -69,8 +69,9 @@ class CartesianFrame(Frame):
     >>> A_R_B = A.dcm(target=A)
     """
 
-    def __init__(self, axes:ndarray=None, *args, dim:int=3, 
-                 origo:ndarray=None, **kwargs):
+    def __init__(
+        self, axes: ndarray = None, *args, dim: int = 3, origo: ndarray = None, **kwargs
+    ):
         axes = np.eye(dim) if axes is None else axes
         super().__init__(axes, *args, **kwargs)
         self._origo = origo
@@ -175,15 +176,14 @@ class CartesianFrame(Frame):
         """
         return self.orient_new(*args, **kwargs)
 
-    def copy(self, deep:bool=False, name:str=None) -> "CartesianFrame":
+    def copy(self, deep: bool = False, name: str = None) -> "CartesianFrame":
         """
         Returns a shallow or deep copy of this object, depending of the
         argument `deepcopy` (default is False).
         """
         if deep:
             return self.__class__(
-                dcopy(self.axes), 
-                origo=dcopy(self.origo()),
-                name=name)
+                dcopy(self.axes), origo=dcopy(self.origo()), name=name
+            )
         else:
             return self.__class__(self.axes, origo=self.origo(), name=name)

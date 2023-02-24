@@ -35,19 +35,19 @@ def shp_TET10_multi(pcoords: np.ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET10(pcoord: np.ndarray, ndof:int=3):
+def shape_function_matrix_TET10(pcoord: np.ndarray, ndof: int = 3):
     eye = np.eye(ndof, dtype=pcoord.dtype)
     shp = shp_TET10(pcoord)
-    res = np.zeros((ndof, ndof*10), dtype=pcoord.dtype)
+    res = np.zeros((ndof, ndof * 10), dtype=pcoord.dtype)
     for i in prange(10):
         res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET10_multi(pcoords: np.ndarray, ndof:int=3):
+def shape_function_matrix_TET10_multi(pcoords: np.ndarray, ndof: int = 3):
     nP = pcoords.shape[0]
-    res = np.zeros((nP, ndof, ndof*10), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof * 10), dtype=pcoords.dtype)
     for iP in prange(nP):
         res[iP] = shape_function_matrix_TET10(pcoords[iP], ndof)
     return res

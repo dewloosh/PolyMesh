@@ -9,7 +9,7 @@ from ..utils.cells.tet10 import (
     dshp_TET10_multi,
     shape_function_matrix_TET10_multi,
 )
-from ..utils.cells.tet import Gauss_Legendre_Tet_4
+from ..utils.cells.gauss import Gauss_Legendre_Tet_4
 from ..utils.cells.commons import volumes2
 from ..utils.utils import cells_coords
 
@@ -27,7 +27,7 @@ class TET10(QuadraticTetraHedron):
     """shpfnc = shp_TET10_multi
     shpmfnc = shape_function_matrix_TET10_multi
     dshpfnc = dshp_TET10_multi"""
-    
+
     quadrature = {
         "full": Gauss_Legendre_Tet_4(),
     }
@@ -68,7 +68,7 @@ class TET10(QuadraticTetraHedron):
     @classmethod
     def lcenter(cls):
         return np.array([[1 / 3, 1 / 3, 1 / 3]])
-    
+
     def volumes(self, coords: ndarray = None, topo: ndarray = None) -> ndarray:
         if coords is None:
             if self.pointdata is not None:
@@ -77,6 +77,6 @@ class TET10(QuadraticTetraHedron):
                 coords = self.container.source().coords()
         topo = self.topology().to_numpy() if topo is None else topo
         ecoords = cells_coords(coords, topo)
-        qpos, qweight = self.quadrature['full']
+        qpos, qweight = self.quadrature["full"]
         dshp = self.shape_function_derivatives(qpos)
         return volumes2(ecoords, dshp, qweight)

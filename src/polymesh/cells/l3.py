@@ -5,6 +5,7 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..line import QuadraticLine
+from ..utils.cells.gauss import Gauss_Legendre_Line_Grid
 
 
 __all__ = ["L3"]
@@ -16,8 +17,12 @@ class L3(QuadraticLine):
 
     See Also
     --------
-    :class:`QuadraticLine`
+    :class:`~polymesh.polygon.QuadraticLine`
     """
+
+    quadrature = {
+        "full": Gauss_Legendre_Line_Grid(3),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -30,7 +35,6 @@ class L3(QuadraticLine):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r = symbols("r", real=True)
         monoms = [1, r, r**2]
@@ -44,7 +48,6 @@ class L3(QuadraticLine):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([-1.0, 0.0, 1.0])
 
@@ -56,6 +59,5 @@ class L3(QuadraticLine):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([0.0])
