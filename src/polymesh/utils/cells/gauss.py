@@ -128,7 +128,7 @@ def Gauss_Legendre_Hex_Grid(n: int, m: int = None, k: int = None):
 # WEDGES
 
 
-def Gauss_Legendre_Wedge_6():
+def Gauss_Legendre_Wedge_3x2():
     p_tri, w_tri = Gauss_Legendre_Tri_3a()
     p_line, w_line = Gauss_Legendre_Line_Grid(2)
     p = np.zeros((6, 3), dtype=float)
@@ -139,4 +139,17 @@ def Gauss_Legendre_Wedge_6():
     p[3:6, :2] = p_tri
     p[3:6, 2] = p_line[0]
     w[3:6] = w_tri * w_line[1]
+    return p, w
+
+
+def Gauss_Legendre_Wedge_3x3():
+    p_tri, w_tri = Gauss_Legendre_Tri_3a()
+    p_line, w_line = Gauss_Legendre_Line_Grid(3)
+    n = len(w_line) * len(w_tri)
+    p = np.zeros((n, 3), dtype=float)
+    w = np.zeros((n,), dtype=float)
+    for i in range(len(w_line)):
+        p[i*3:(i+1)*3, :2] = p_tri
+        p[i*3:(i+1)*3, 2] = p_line[i]
+        w[i*3:(i+1)*3] = w_tri * w_line[i]
     return p, w

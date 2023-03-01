@@ -1418,7 +1418,6 @@ class PolyData(PolyDataBase):
     def index_of_furthest_point(self, target: Iterable) -> int:
         """
         Returns the index of the furthest point to a target.
-        .. versionadded:: 0.0.10
         """
         return index_of_furthest_point(self.coords(), target)
 
@@ -1429,7 +1428,6 @@ class PolyData(PolyDataBase):
     def index_of_furthest_cell(self, target: Iterable) -> int:
         """
         Returns the index of the furthest cell to a target.
-        .. versionadded:: 0.0.10
         """
         return index_of_furthest_point(self.centers(), target)
 

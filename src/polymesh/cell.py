@@ -92,7 +92,7 @@ class PolyCell(CellData):
         raise NotImplementedError
 
     @classmethod
-    def generalte_class_functions(
+    def generate_class_functions(
         cls, return_symbolic: bool = True, update: bool = True
     ) -> Tuple:
         """
@@ -192,7 +192,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.shpfnc is None:
-            cls.generalte_class_functions(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -219,7 +219,7 @@ class PolyCell(CellData):
         nDOFN = getattr(cls, "NDOFN", None)
         pcoords = np.array(pcoords)
         if cls.shpmfnc is None:
-            cls.generalte_class_functions(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -250,7 +250,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.dshpfnc is None:
-            cls.generalte_class_functions(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -448,6 +448,34 @@ class PolyCell(CellData):
         topo = rewire(topo, imap, invert=invert).astype(int)
         self._wrapped[self._dbkey_nodes_] = topo
         return self
+    
+    def glob_to_loc(self, x: ndarray) -> ndarray:
+        """
+        Returns the local coordinates of the input points for each
+        cell in the block. The input 'x' can describe a single (1d array), 
+        or several vectors at once (2d array).
+        
+        Notes
+        -----
+        This function is useful when detecting if two bodies touch each other or not,
+        and if they do, where.
+        
+        Parameters
+        ----------
+        x: numpy.ndarray
+            A single point in 3d space as an 1d array, or a collection of points
+            as a 2d array.
+            
+        Returns
+        -------
+        numpy.ndarray
+            A NumPy array of shape (nE, nP, nD), where nP is the number of points in 'x',
+            nE is the number of cells in the block and nD is the number of spatial dimensions.
+        """
+        pass
+    
+    def loc_to_glob(self, x: ndarray) -> ndarray:
+        pass
 
 
 class PolyCell1d(PolyCell):

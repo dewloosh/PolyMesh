@@ -142,3 +142,57 @@ def faces_H8(topo: np.ndarray):
     faces[:, 5, 2] = topo[:, 6]
     faces[:, 5, 3] = topo[:, 7]
     return faces
+
+
+@njit(nogil=True, cache=__cache)
+def edges_W6(topo: np.ndarray):
+    nE = len(topo)
+    edges = np.zeros((nE, 9, 2), dtype=topo.dtype)
+    edges[:, 0, 0] = topo[:, 0]
+    edges[:, 0, 1] = topo[:, 1]
+    edges[:, 1, 0] = topo[:, 1]
+    edges[:, 1, 1] = topo[:, 2]
+    edges[:, 2, 0] = topo[:, 2]
+    edges[:, 2, 1] = topo[:, 0]
+    edges[:, 3, 0] = topo[:, 3]
+    edges[:, 3, 1] = topo[:, 4]
+    edges[:, 4, 0] = topo[:, 4]
+    edges[:, 4, 1] = topo[:, 5]
+    edges[:, 5, 0] = topo[:, 5]
+    edges[:, 5, 1] = topo[:, 3]
+    edges[:, 6, 0] = topo[:, 0]
+    edges[:, 6, 1] = topo[:, 3]
+    edges[:, 7, 0] = topo[:, 1]
+    edges[:, 7, 1] = topo[:, 4]
+    edges[:, 8, 0] = topo[:, 2]
+    edges[:, 8, 1] = topo[:, 5]
+    return edges
+
+
+@njit(nogil=True, cache=__cache)
+def faces_W6(topo: np.ndarray):
+    nE = len(topo)
+    
+    faces2 = np.zeros((nE, 2, 3), dtype=topo.dtype)    
+    faces2[:, 0, 0] = topo[:, 0]
+    faces2[:, 0, 1] = topo[:, 2]
+    faces2[:, 0, 2] = topo[:, 1]
+    faces2[:, 1, 3] = topo[:, 3]
+    faces2[:, 1, 0] = topo[:, 4]
+    faces2[:, 1, 1] = topo[:, 5]
+    
+    faces4 = np.zeros((nE, 3, 4), dtype=topo.dtype)
+    faces4[:, 0, 2] = topo[:, 0]
+    faces4[:, 0, 3] = topo[:, 1]
+    faces4[:, 0, 0] = topo[:, 4]
+    faces4[:, 0, 1] = topo[:, 3]
+    faces4[:, 1, 2] = topo[:, 1]
+    faces4[:, 1, 3] = topo[:, 2]
+    faces4[:, 1, 0] = topo[:, 5]
+    faces4[:, 1, 1] = topo[:, 4]
+    faces4[:, 2, 2] = topo[:, 2]
+    faces4[:, 2, 3] = topo[:, 0]
+    faces4[:, 2, 0] = topo[:, 3]
+    faces4[:, 2, 1] = topo[:, 5]
+    
+    return faces4, faces2

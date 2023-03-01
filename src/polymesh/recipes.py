@@ -2,19 +2,23 @@ from typing import Union
 import numpy as np
 from numpy import ndarray
 
-from .space import PointCloud
 from .pointdata import PointData
 from .grid import grid
 from .polydata import PolyData
 from .trimesh import TriMesh
-from .cells import H8, H27, TET4, TET10, T3
+from .cells import H8, H27, TET4, TET10, T3, W6, W18
 from .space import CartesianFrame
 from .triang import triangulate
 from .utils import cell_centers_bulk
-from .utils.topology import detach, H8_to_TET4, H27_to_TET10, TET4_to_TET10
-from .extrude import extrude_T3_TET4
+from .utils.topology import (
+    detach, 
+    H8_to_TET4, 
+    H27_to_TET10, 
+    TET4_to_TET10,
+    W6_to_W18
+)
+from .extrude import extrude_T3_TET4, extrude_T3_W6
 from .voxelize import voxelize_cylinder
-from .extrude import extrude_T3_TET4
 
 
 def circular_helix(a=None, b=None, *args, slope=None, pitch=None):
@@ -89,10 +93,10 @@ def cylinder(
     shape,
     size: Union[tuple, float, int] = None,
     *args,
-    regular=True,
-    voxelize=False,
+    regular:bool=True,
+    voxelize:bool=False,
     celltype=None,
-    frame=None,
+    frame:CartesianFrame=None,
     **kwargs,
 ) -> PolyData:
     """
@@ -130,12 +134,7 @@ def cylinder(
 
     Returns
     -------
-    PolyData
-
-    Examples
-    --------
-    >>> from polymesh.recipes import cylinder
-    >>> mesh = cylinder(120, 60, 5, 25)
+    polymesh.polydata.PolyData
     """
     if celltype is None:
         celltype = H8 if voxelize else TET4
@@ -331,16 +330,21 @@ def ribbed_plate(
     return PolyData(pd, cd, frame=frame)
 
 
-def hollow_cube(
+def perforated_cube(
     lx: float,
     ly: float,
     lz: float,
     radius: float,
     *,
-    nangles: int = 16,
+    nangles: int = None,
     lmax: float = None,
     order: int = 1,
-):
+    prismatic: bool=True
+) -> PolyData:
+    """
+    Returns a cube of side lengths 'lx', 'ly' and 'lz', with a circular hole
+    along the 'z' axis.
+    """
     size = (lx, ly)
     if lmax is not None:
         shape = (max([int(lx / lmax), 4]), max([int(ly / lmax), 4]))
@@ -381,13 +385,21 @@ def hollow_cube(
         zres = int(lz / lmax)
     else:
         zres = 4
-    coords, topo = extrude_T3_TET4(coords, topo, h=lz, zres=zres)
+    
+    if prismatic:
+        coords, topo = extrude_T3_W6(coords, topo, h=lz, zres=zres)
+    else:
+        coords, topo = extrude_T3_TET4(coords, topo, h=lz, zres=zres)
 
     if order == 1:
-        celltype = TET4
+        celltype = W6 if prismatic else TET4
     elif order == 2:
-        coords, topo = TET4_to_TET10(coords, topo)
-        celltype = TET10
+        if prismatic:
+            coords, topo = W6_to_W18(coords, topo)
+            celltype = W18
+        else:
+            coords, topo = TET4_to_TET10(coords, topo)
+            celltype = TET10
     else:
         raise ValueError("'order' must be either 1 or 2")
 

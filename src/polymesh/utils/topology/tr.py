@@ -20,6 +20,8 @@ from ..topodata import (
     edges_H8,
     faces_H8,
     edges_TET4,
+    edges_W6,
+    faces_W6
 )
 from .topo import unique_topo_data
 
@@ -45,6 +47,7 @@ __all__ = [
     "H27_to_TET10",
     "TET4_to_L2",
     "TET4_to_TET10",
+    "W6_to_W18"
 ]
 
 
@@ -506,4 +509,22 @@ def H8_to_H27(coords: ndarray, topo: ndarray):
     # assemble
     topo_res = np.hstack((topo, topo_e, topo_f, topo_c))
     coords_res = np.vstack((coords, coords_e, coords_f, coords_c))
+    return coords_res, topo_res
+
+
+def W6_to_W18(coords: ndarray, topo: ndarray):
+    nP, nE = len(coords), len(topo)
+    # new nodes on the edges
+    edges, edgeIDs = unique_topo_data(edges_W6(topo))
+    coords_e = np.mean(coords[edges], axis=1)
+    topo_e = edgeIDs + nP
+    nP += len(coords_e)
+    # new nodes on face centers
+    faces, faceIDs = unique_topo_data(faces_W6(topo)[0])
+    coords_f = np.mean(coords[faces], axis=1)
+    topo_f = faceIDs + nP
+    nP += len(coords_f)
+    # assemble
+    topo_res = np.hstack((topo, topo_e, topo_f))
+    coords_res = np.vstack((coords, coords_e, coords_f))
     return coords_res, topo_res

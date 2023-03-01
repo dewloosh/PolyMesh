@@ -62,7 +62,7 @@ class Wedge(PolyHedron):
 
 
 class BiquadraticWedge(PolyHedron):
-    """Class for 6-noded buquadratic wedges."""
+    """Class for 6-noded biquadratic wedges."""
 
     NNODE = 18
     vtkCellType = 32

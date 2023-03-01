@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 from os.path import exists
 
+from polymesh import PolyData
+from polymesh.space import StandardFrame
+from polymesh.cells import T3, T6, TET4, TET10
+from polymesh.utils.space import frames_of_surfaces
+
 from ..vtkutils import PolyData_to_mesh
 
 
@@ -26,7 +31,6 @@ def input_to_mesh(*args, **kwargs) -> tuple:
         A list of tuples, where the second item in each tuple is either a numpy
         array of node indices, or a dictionary of such arrays. The first item
         of the tuples is always a numpy cooridnate array.
-
     """
     candidate = kwargs.get("__candidate", None)
     if candidate is None:
@@ -70,3 +74,28 @@ def input_to_mesh(*args, **kwargs) -> tuple:
         coords is not None
     ), "Failed to read from this input, check the documentation!"
     return coords, topo
+
+
+def from_meshio(mesh):
+    GlobalFrame = StandardFrame(dim=3)
+
+    coords=mesh.points
+    polydata = PolyData(coords=coords, frame=GlobalFrame)
+
+    for cb in mesh.cells:
+        cd = None
+        cbtype = cb.type
+        if cbtype == "tetra":
+            cd = TET4(topo=cb.data, frames=GlobalFrame)
+        elif cbtype == "tetra10":
+            cd = TET10(topo=cb.data, frames=GlobalFrame)
+        elif cbtype == "triangle":
+            frames = frames_of_surfaces(coords, cb.data)
+            cd = T3(topo=cb.data, frames=frames)
+        elif cbtype == "triangle6":
+            frames = frames_of_surfaces(coords, cb.data)
+            cd = T6(topo=cb.data, frames=frames)
+        if cd:
+            polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
+            
+    return polydata

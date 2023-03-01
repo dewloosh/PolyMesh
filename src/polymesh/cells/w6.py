@@ -4,8 +4,8 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polyhedron import Wedge
-from ..utils.cells.gauss import Gauss_Legendre_Wedge_6
-from ..utils.cells.commons import volumes2
+from ..utils.cells.gauss import Gauss_Legendre_Wedge_3x2
+from ..utils.cells.utils import volumes2
 from ..utils.utils import cells_coords
 
 
@@ -19,7 +19,7 @@ class W6(Wedge):
     """
 
     quadrature = {
-        "full": Gauss_Legendre_Wedge_6(),
+        "full": Gauss_Legendre_Wedge_3x2(),
     }
 
     @classmethod
@@ -43,11 +43,11 @@ class W6(Wedge):
         return np.array(
             [
                 [0.0, 0.0, -1.0],
-                [0.0, 1.0, -1.0],
                 [1.0, 0.0, -1.0],
+                [0.0, 1.0, -1.0],
                 [0.0, 0.0, 1.0],
-                [0.0, 1.0, 1.0],
                 [1.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0],
             ]
         )
 
@@ -57,7 +57,7 @@ class W6(Wedge):
 
     def volumes(self) -> ndarray:
         coords = self.source_coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+        topo = self.topology().to_numpy()
         ecoords = cells_coords(coords, topo)
         qpos, qweight = self.quadrature["full"]
         dshp = self.shape_function_derivatives(qpos)
