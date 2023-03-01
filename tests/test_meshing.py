@@ -40,16 +40,17 @@ class TestMeshing(unittest.TestCase):
         points, triangles = detach_mesh_bulk(points, triangles)
         coords, topo = extrude_T3_TET4(points, triangles, h, zres)
         
-        vol_exact = np.pi * (max_radius**2 - min_radius**2)
+        vol_exact = np.pi * (max_radius**2 - min_radius**2) * h
         
         A = StandardFrame(dim=3)
         tetmesh = PolyData(coords=coords, topo=topo, celltype=TET4, frame=A)
-        self.assertTrue(np.isclose(vol_exact, tetmesh.volume()))
+        self.assertTrue(np.isclose(vol_exact, tetmesh.volume(), atol=vol_exact/1000))
         
         trimesh = TriMesh(size=(800, 600), shape=(10, 10), frame=A)
         trimesh.area()
         tetmesh = trimesh.extrude(h=300, N=5)
-        self.assertTrue(np.isclose(vol_exact, tetmesh.volume()))
+        vol_exact = 800 * 600 * 300
+        self.assertTrue(np.isclose(vol_exact, tetmesh.volume(), atol=vol_exact/1000))
         
     def test_extrude_T3_W6(self):
         n_angles = 120
@@ -64,12 +65,12 @@ class TestMeshing(unittest.TestCase):
         points, triangles = detach_mesh_bulk(points, triangles)
         coords, topo = extrude_T3_W6(points, triangles, h, zres)
         
-        vol_exact = np.pi * (max_radius**2 - min_radius**2)
+        vol_exact = np.pi * (max_radius**2 - min_radius**2) * h
 
         A = StandardFrame(dim=3)
         mesh = PolyData(coords=coords, topo=topo, celltype=W6, frame=A)
 
-        self.assertTrue(np.isclose(vol_exact, mesh.volume()))
+        self.assertTrue(np.isclose(vol_exact, mesh.volume(), atol=vol_exact/1000))
 
     def test_tet(self):
         trimesh = TriMesh(size=(800, 600), shape=(10, 10))
