@@ -25,7 +25,7 @@ class Triangle(PolyGon):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def trimap(cls):
+    def trimap(cls) -> np.ndarray:
         return np.array([[0, 1, 2]], dtype=int)
 
     def to_triangles(self):

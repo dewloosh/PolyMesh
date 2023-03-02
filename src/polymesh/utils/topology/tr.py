@@ -512,6 +512,54 @@ def H8_to_H27(coords: ndarray, topo: ndarray):
     return coords_res, topo_res
 
 
+def _W6_to_TET4(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
+    if isinstance(path, ndarray):
+        assert path.shape[1] == 4
+    else:
+        if path is None:
+            path = np.array(
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                dtype=topo.dtype,
+            )
+        elif isinstance(path, str):
+            raise NotImplementedError
+    if data is None:
+        return coords, +transform_topo(topo, path, *args, **kwargs)
+    else:
+        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+    
+
+def _W8_to_W6(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+):
+    if isinstance(path, ndarray):
+        assert path.shape[1] == 4
+    else:
+        if path is None:
+            path = np.array(
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                dtype=topo.dtype,
+            )
+        elif isinstance(path, str):
+            raise NotImplementedError
+    if data is None:
+        return coords, +transform_topo(topo, path, *args, **kwargs)
+    else:
+        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+
+
 def W6_to_W18(coords: ndarray, topo: ndarray):
     nP, nE = len(coords), len(topo)
     # new nodes on the edges

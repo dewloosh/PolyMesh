@@ -1,6 +1,7 @@
 pyvista
 tetgen
 pytest
+pytest-cov
 pandas
 pyarrow
 networkx>=3.0

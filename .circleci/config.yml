@@ -7,8 +7,33 @@ orbs:
   # so you dont have to copy and paste it everywhere.
   # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
   python: circleci/python@2.1.1
+  codecov: codecov/codecov@3
 
-jobs:
+jobs:  
+  test_pypi_publish:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          name: Deploy to testpypi
+          command: |  # create whl and use pipenv to install dependencies
+            pip install wheel twine
+            python setup.py sdist bdist_wheel
+            python -m twine upload --repository testpypi dist/*
+
+  pypi_publish:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout  # checkout source code to working directory
+      - run:
+          name: Deploy to pypi
+          command: |  # create whl and use pipenv to install dependencies
+            pip install wheel twine
+            python setup.py sdist bdist_wheel
+            python -m twine upload --skip-existing dist/*
+
   test38:  # This is the name of the job, feel free to change it to better match what you're trying to do!
     # These next lines defines a docker executors: https://circleci.com/docs/2.0/executor-types/
     # You can specify an image from dockerhub or use one of the convenience images from CircleCI's Developer Hub
@@ -35,11 +60,17 @@ jobs:
           pkg-manager: pip
           pip-dependency-file: test-requirements.txt
       - run:
-          command: pip install -e .
+          command: python setup.py install
       - run:
           name: Run tests
           # This assumes pytest is installed via the install-package step above
-          command: python -m pytest
+          command: pytest --cov
+      - run:
+          name: Generate Artifact
+          command: pytest --cov-report html
+      #- codecov/upload
+      - store_artifacts:
+          path: ~/project/htmlcov
   
   test310:  # This is the name of the job, feel free to change it to better match what you're trying to do!
     # These next lines defines a docker executors: https://circleci.com/docs/2.0/executor-types/
@@ -73,11 +104,29 @@ jobs:
       - run:
           name: Run tests
           # This assumes pytest is installed via the install-package step above
-          command: python -m pytest
+          command: pytest --cov
+      - run:
+          name: Generate Artifact
+          command: pytest --cov-report html
+      #- codecov/upload
+      - store_artifacts:
+          path: ~/project/htmlcov
 
 workflows:
-  main:  # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
-    # For more details on extending your workflow, see the configuration docs: https://circleci.com/docs/2.0/configuration-reference/#workflows
+  build_test_publish:
     jobs:
       - test310
+      - test_pypi_publish:
+          requires:
+            - test310
+          filters:
+            branches:
+              only:
+                - nightly
+      - pypi_publish:
+          requires:
+            - test310
+          filters:
+            branches:
+              only:
+                - main

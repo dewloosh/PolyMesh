@@ -21,6 +21,10 @@ class TetraHedron(PolyHedron):
     NNODE = 4
     vtkCellType = 10
     __label__ = "TET4"
+    
+    @classmethod
+    def tetmap(cls) -> np.ndarray:
+        return np.array([[0, 1, 2, 3]], dtype=int)
 
     def to_tetrahedra(self) -> np.ndarray:
         return self.topology().to_numpy()
@@ -32,6 +36,13 @@ class QuadraticTetraHedron(PolyHedron):
     NNODE = 10
     vtkCellType = 24
     __label__ = "TET10"
+    
+    @classmethod
+    def tetmap(cls, subdivide: bool = True) -> np.ndarray:
+        if subdivide:
+            raise NotImplementedError
+        else:
+            return np.array([[0, 1, 2, 3]], dtype=int)
 
 
 class HexaHedron(PolyHedron):
@@ -41,6 +52,13 @@ class HexaHedron(PolyHedron):
     vtkCellType = 12
     __label__ = "H8"
 
+    @classmethod
+    def tetmap(cls) -> np.ndarray:
+        return np.array(
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                dtype=int,
+            )
+    
     def to_tetrahedra(self) -> np.ndarray:
         return H8_to_TET4(None, self.topology().to_numpy())[1]
 

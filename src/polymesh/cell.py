@@ -264,7 +264,7 @@ class PolyCell(CellData):
     def measure(self, *args, **kwargs) -> float:
         """Ought to return the net measure for the cells in the
         database as a group."""
-        return np.sum(self.measure(*args, **kwargs))
+        return np.sum(self.measures(*args, **kwargs))
 
     def area(self, *args, **kwargs) -> float:
         """Returns the total area of the cells in the database. Only for 2d entities."""
@@ -282,11 +282,11 @@ class PolyCell(CellData):
         """Ought to return the volumes of the individual cells in the database."""
         raise NotImplementedError
 
-    def extract_surface(self, detach=False):
+    def extract_surface(self, detach:bool=False):
         """Extracts the surface of the mesh. Only for 3d meshes."""
         raise NotImplementedError
 
-    def jacobian_matrix(self, *, dshp: ndarray = None, **kwargs) -> ndarray:
+    def jacobian_matrix(self, *, dshp: ndarray = None, **__) -> ndarray:
         """
         Returns the jacobian matrices.
 
@@ -306,7 +306,7 @@ class PolyCell(CellData):
             dimensions. The number of evaluation points in the output
             is governed by the parameter 'dshp'.
         """
-        ecoords = kwargs.get("ecoords", self.local_coordinates())
+        ecoords = self.local_coordinates()
         return jacobian_matrix_bulk(dshp, ecoords)
 
     def jacobian(self, *, jac: ndarray = None, **kwargs) -> Union[float, ndarray]:
@@ -476,31 +476,48 @@ class PolyCell(CellData):
     
     def loc_to_glob(self, x: ndarray) -> ndarray:
         pass
+    
+    def pip(self, x: ndarray) -> ndarray:
+        pass
+    
+    def to_simplices(self) -> Tuple[ndarray]:
+        NDIM = self.__class__.NDIM
+        if NDIM == 1:
+            return self.to_simplices()
+        elif NDIM == 2:
+            return self.to_triangles()
+        elif NDIM == 3:
+            return self.to_tetrahedra()
 
-
+    def _simplify(self) -> Tuple[ndarray]:
+        # this should modify the object inplace
+        raise NotImplementedError
+        return self.to_simplices()
+        
+        
 class PolyCell1d(PolyCell):
     """Base class for 1d cells"""
 
     NDIM = 1
 
-    def lenth(self, *args, **kwargs):
+    def lenth(self):
         """Returns the total length of the cells in
         the database."""
-        return np.sum(self.lengths(*args, **kwargs))
+        return np.sum(self.lengths())
 
-    def area(self, *args, **kwargs):
-        return np.sum(self.areas(*args, **kwargs))
-
-    def lengths(self, *args, coords=None, topo=None, **kwargs) -> ndarray:
+    def lengths(self) -> ndarray:
         """
         Returns the lengths as a NumPy array.
         """
-        if coords is None:
-            coords = self.root().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+        coords = self.container.source().coords()
+        topo = self.topology().to_numpy()
         return lengths_of_lines(coords, topo)
+    
+    def area(self) -> ndarray:
+        # should return area of the surface of the volume
+        raise NotImplementedError
 
-    def areas(self, *args, **kwargs) -> ndarray:
+    def areas(self) -> ndarray:
         """
         Returns the areas as a NumPy array.
         """
@@ -510,14 +527,14 @@ class PolyCell1d(PolyCell):
         else:
             return np.ones((len(self)))
 
-    def volumes(self, *args, **kwargs):
+    def volumes(self) -> ndarray:
         """
         Returns the volumes as a NumPy array.
         """
-        return self.lengths(*args, **kwargs) * self.areas(*args, **kwargs)
+        return self.lengths() * self.areas()
 
-    def measures(self, *args, **kwargs):
-        return self.lengths(*args, **kwargs)
+    def measures(self) -> ndarray:
+        return self.lengths()
 
     def points_of_cells(
         self,
@@ -579,14 +596,14 @@ class PolyCell2d(PolyCell):
 
     NDIM = 2
 
-    def area(self, *args, **kwargs) -> float:
+    def area(self) -> float:
         """
         Returns the total area of the cells in the block.
         """
-        return np.sum(self.areas(*args, **kwargs))
+        return np.sum(self.areas())
 
     @classmethod
-    def trimap(cls):
+    def trimap(cls) -> Iterable:
         """
         Returns a mapper to transform topology and other data to
         a collection of T3 triangles.
@@ -606,14 +623,14 @@ class PolyCell2d(PolyCell):
         """
         return cell_center_2d(cls.lcoords())
 
-    def to_triangles(self):
+    def to_triangles(self) -> ndarray:
         """
         Returns the topology as a collection of T3 triangles.
         """
         t = self.topology().to_numpy()
         return transform_topo(t, self.trimap())
 
-    def areas(self, *_, **__) -> ndarray:
+    def areas(self) -> ndarray:
         """
         Returns the areas of the cells.
         """
@@ -628,19 +645,19 @@ class PolyCell2d(PolyCell):
         res = np.sum(areas_tri.reshape(nE, int(len(areas_tri) / nE)), axis=1)
         return res
 
-    def volumes(self, *args, **kwargs) -> ndarray:
+    def volumes(self) -> ndarray:
         """
         Returns the volumes of the cells.
         """
-        areas = self.areas(*args, **kwargs)
+        areas = self.areas()
         t = self.thickness()
         return areas * t
 
-    def measures(self, *args, **kwargs) -> ndarray:
+    def measures(self) -> ndarray:
         """
         Returns the areas of the cells.
         """
-        return self.areas(*args, **kwargs)
+        return self.areas()
 
     def local_coordinates(self, *_, target: CartesianFrame = None) -> ndarray:
         ec = super(PolyCell2d, self).local_coordinates(target=target)
@@ -669,11 +686,26 @@ class PolyCell3d(PolyCell):
 
     def measures(self, *args, **kwargs):
         return self.volumes(*args, **kwargs)
-
-    def to_tetrahedra(self) -> np.ndarray:
+    
+    @classmethod
+    def tetmap(cls) -> Iterable:
+        """
+        Returns a mapper to transform topology and other data to
+        a collection of T3 triangles.
+        """
         raise NotImplementedError
 
-    def to_vtk(self, detach=False):
+    def to_tetrahedra(self) -> np.ndarray:
+        """
+        Returns the topology as a collection of TET4 tetrahedra.
+        """
+        t = self.topology().to_numpy()
+        return transform_topo(t, self.tetmap())
+
+    def to_vtk(self, detach:bool=False):
+        """
+        Returns the block as a VTK object.
+        """
         coords = self.container.root().coords()
         topo = self.topology().to_numpy()
         vtkid = self.__class__.vtkCellType
@@ -686,9 +718,15 @@ class PolyCell3d(PolyCell):
     if __haspyvista__:
 
         def to_pv(self, detach=False) -> pv.UnstructuredGrid:
+            """
+            Returns the block as a pyVista object.
+            """
             return pv.wrap(self.to_vtk(detach=detach))
 
-    def extract_surface(self, detach=False):
+    def extract_surface(self, detach:bool=False) -> Tuple[ndarray]:
+        """
+        Extracts the surface of the object.
+        """
         pvs = self.to_pv(detach=detach).extract_surface(pass_pointid=True)
         s = pvs.triangulate().cast_to_unstructured_grid()
         topo = s.cells_dict[5]
@@ -699,16 +737,18 @@ class PolyCell3d(PolyCell):
         else:
             return self.container.root().coords(), topo
 
-    def boundary(self, detach=False):
-        return self.surface(detach=detach)
+    def boundary(self, detach=False) -> Tuple[ndarray]:
+        """
+        Returns the boundary of the block as 2 NumPy arrays.
+        """
+        return self.extract_surface(detach=detach)
 
-    def volumes(self, *_, coords=None, topo=None, **__):
+    def volumes(self):
         # NOTE implement `tetmap` class attribute, then it can be used
         # to check if calculation should be based on splitting or Gauss integration
         # Look at the examples for Gauss integration at child classes.
-        if coords is None:
-            coords = self.container.root().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+        coords = self.container.root().coords()
+        topo = self.topology().to_numpy()
         topo_tet = self.to_tetrahedra()
         volumes = tet_vol_bulk(cells_coords(coords, topo_tet))
         res = np.sum(
