@@ -103,11 +103,10 @@ jobs:
           command: python setup.py install
       - run:
           name: Run tests
-          # This assumes pytest is installed via the install-package step above
-          command: pytest --cov
-      - run:
-          name: Generate Artifact
           command: pytest --cov-report html
+      - run:
+          name: Generate artifact
+          command: coverage html
       #- codecov/upload
       - store_artifacts:
           path: ~/project/htmlcov
