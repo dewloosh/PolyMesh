@@ -172,15 +172,15 @@ def edges_W6(topo: np.ndarray):
 @njit(nogil=True, cache=__cache)
 def faces_W6(topo: np.ndarray):
     nE = len(topo)
-    
-    faces2 = np.zeros((nE, 2, 3), dtype=topo.dtype)    
+
+    faces2 = np.zeros((nE, 2, 3), dtype=topo.dtype)
     faces2[:, 0, 0] = topo[:, 0]
     faces2[:, 0, 1] = topo[:, 2]
     faces2[:, 0, 2] = topo[:, 1]
     faces2[:, 1, 3] = topo[:, 3]
     faces2[:, 1, 0] = topo[:, 4]
     faces2[:, 1, 1] = topo[:, 5]
-    
+
     faces4 = np.zeros((nE, 3, 4), dtype=topo.dtype)
     faces4[:, 0, 2] = topo[:, 0]
     faces4[:, 0, 3] = topo[:, 1]
@@ -194,5 +194,5 @@ def faces_W6(topo: np.ndarray):
     faces4[:, 2, 3] = topo[:, 0]
     faces4[:, 2, 0] = topo[:, 3]
     faces4[:, 2, 1] = topo[:, 5]
-    
+
     return faces4, faces2

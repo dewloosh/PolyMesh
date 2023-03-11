@@ -11,6 +11,7 @@ from ..utils.cells.t6 import (
     dshp_T6_multi,
     areas_T6,
     shape_function_matrix_T6_multi,
+    monoms_T6,
 )
 from ..utils.cells.gauss import Gauss_Legendre_Tri_3a
 
@@ -27,6 +28,7 @@ class T6(Triangle):
     shpfnc = shp_T6_multi
     shpmfnc = shape_function_matrix_T6_multi
     dshpfnc = dshp_T6_multi
+    monomsfnc = monoms_T6
 
     quadrature = {
         "full": Gauss_Legendre_Tri_3a(),

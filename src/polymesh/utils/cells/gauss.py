@@ -149,7 +149,7 @@ def Gauss_Legendre_Wedge_3x3():
     p = np.zeros((n, 3), dtype=float)
     w = np.zeros((n,), dtype=float)
     for i in range(len(w_line)):
-        p[i*3:(i+1)*3, :2] = p_tri
-        p[i*3:(i+1)*3, 2] = p_line[i]
-        w[i*3:(i+1)*3] = w_tri * w_line[i]
+        p[i * 3 : (i + 1) * 3, :2] = p_tri
+        p[i * 3 : (i + 1) * 3, 2] = p_line[i]
+        w[i * 3 : (i + 1) * 3] = w_tri * w_line[i]
     return p, w

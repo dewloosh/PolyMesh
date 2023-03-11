@@ -2,6 +2,9 @@ import numpy as np
 import unittest
 
 from polymesh.cells import H8, TET10
+from polymesh import grid, PolyData, CartesianFrame
+from polymesh.cells import H8
+from polymesh.space import PointCloud
 
 
 class TestGeneratedExpressions(unittest.TestCase):
@@ -24,6 +27,41 @@ class TestGeneratedExpressions(unittest.TestCase):
         self.assertTrue(np.all(np.isclose(_shpf(pcoords), shpf(pcoords))))
         self.assertTrue(np.all(np.isclose(_dshpf(pcoords), dshpf(pcoords))))
         self.assertTrue(np.all(np.isclose(_shpmf(pcoords), shpmf(pcoords))))
+
+
+class TestPIP(unittest.TestCase):
+    def test_pip_H8(self):
+        Lx, Ly, Lz = 800, 600, 100
+        nx, ny, nz = 2, 2, 2
+        xbins = np.linspace(0, Lx, nx + 1)
+        ybins = np.linspace(0, Ly, ny + 1)
+        zbins = np.linspace(0, Lz, nz + 1)
+        bins = xbins, ybins, zbins
+        coords, topo = grid(bins=bins, eshape="H8")
+        frame = CartesianFrame(dim=3)
+        pd = PolyData(coords=coords, topo=topo, celltype=H8, frame=frame)
+        self.assertTrue(pd.cd.pip(coords[0, :], tol=1e-12))
+        self.assertTrue(pd.cd.pip(coords[-1, :], tol=1e-12))
+        self.assertFalse(pd.cd.pip(coords[0, :] - 1, tol=1e-12))
+        self.assertFalse(pd.cd.pip(coords[-1, :] + 1, tol=1e-12))
+
+
+class TestLocToGlob(unittest.TestCase):
+    def test_l2g_H8(self):
+        Lx, Ly, Lz = 800, 600, 100
+        nx, ny, nz = 2, 2, 2
+        xbins = np.linspace(0, Lx, nx + 1)
+        ybins = np.linspace(0, Ly, ny + 1)
+        zbins = np.linspace(0, Lz, nz + 1)
+        bins = xbins, ybins, zbins
+        coords, topo = grid(bins=bins, eshape="H8")
+        frame = CartesianFrame(dim=3)
+        pd = PolyData(coords=coords, topo=topo, celltype=H8, frame=frame)
+        gcoords = pd.cd.loc_to_glob(pd.cd.lcoords())
+        nE, nP, nD = gcoords.shape
+        gcoords = gcoords.reshape(nE * nP, nD)
+        isclose = np.allclose(PointCloud(coords).bounds(), PointCloud(gcoords).bounds())
+        self.assertTrue(isclose)
 
 
 if __name__ == "__main__":

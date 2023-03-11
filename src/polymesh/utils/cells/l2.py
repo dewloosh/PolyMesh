@@ -6,6 +6,11 @@ __cache = True
 
 
 @njit(nogil=True, cache=__cache)
+def monoms_L2(r: float) -> ndarray:
+    return np.array([1, r], dtype=float)
+
+
+@njit(nogil=True, cache=__cache)
 def shp_L2(r):
     """
     Evaluates the shape functions at one location in the range [-1, 1].

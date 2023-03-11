@@ -5,8 +5,9 @@ from sympy import symbols
 
 from ..polyhedron import Wedge
 from ..utils.cells.gauss import Gauss_Legendre_Wedge_3x2
-from ..utils.cells.utils import volumes2
+from ..utils.cells.utils import volumes
 from ..utils.utils import cells_coords
+from ..utils.cells.w6 import monoms_W6
 
 
 class W6(Wedge):
@@ -17,6 +18,8 @@ class W6(Wedge):
     --------
     :class:`~polymesh.polyhedron.Wedge`
     """
+
+    monomsfnc = monoms_W6
 
     quadrature = {
         "full": Gauss_Legendre_Wedge_3x2(),
@@ -61,4 +64,4 @@ class W6(Wedge):
         ecoords = cells_coords(coords, topo)
         qpos, qweight = self.quadrature["full"]
         dshp = self.shape_function_derivatives(qpos)
-        return volumes2(ecoords, dshp, qweight)
+        return volumes(ecoords, dshp, qweight)

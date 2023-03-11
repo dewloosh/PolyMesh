@@ -8,38 +8,8 @@ from neumann.linalg import inv
 __cache = True
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_multi(
-    pcoords: np.ndarray, shpfnc: Callable, nDOF: int = 3, nNE: int = 8
-) -> ndarray:
-    nP = pcoords.shape[0]
-    eye = np.eye(nDOF, dtype=pcoords.dtype)
-    res = np.zeros((nP, nDOF, nDOF * nNE), dtype=pcoords.dtype)
-    for iP in prange(nP):
-        shp = shpfnc(pcoords[iP])
-        for i in prange(nNE):
-            res[iP, :, i * nDOF : (i + 1) * nDOF] = eye * shp[i]
-    return res
-
-
 @njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
-def volumes(
-    ecoords: ndarray, qpos: ndarray, qweight: ndarray, dshpfnc: Callable
-) -> ndarray:
-    nE = ecoords.shape[0]
-    volumes = np.zeros(nE, dtype=ecoords.dtype)
-    nQ = len(qweight)
-    for iQ in range(nQ):
-        dshp = dshpfnc(qpos[iQ])
-        for i in prange(nE):
-            jac = ecoords[i].T @ dshp
-            djac = np.linalg.det(jac)
-            volumes[i] += qweight[iQ] * djac
-    return volumes
-
-
-@njit(nogil=True, parallel=True, fastmath=True, cache=__cache)
-def volumes2(ecoords: ndarray, dshp: ndarray, qweight: ndarray) -> ndarray:
+def volumes(ecoords: ndarray, dshp: ndarray, qweight: ndarray) -> ndarray:
     nE = ecoords.shape[0]
     volumes = np.zeros(nE, dtype=ecoords.dtype)
     nQ = len(qweight)
@@ -52,36 +22,36 @@ def volumes2(ecoords: ndarray, dshp: ndarray, qweight: ndarray) -> ndarray:
     return volumes
 
 
-@njit(nogil=True, cache=__cache)
-def loc_to_glob(shp: ndarray, gcoords: ndarray) -> ndarray:
+@njit(nogil=True, parallel=True, cache=__cache)
+def _loc_to_glob_bulk_(shp: ndarray, gcoords: ndarray) -> ndarray:
     """
-    Local to global transformation for a single cell and point.
-
-    Returns global coordinates of a point in an element, provided the global
-    corodinates of the points of the element, an array of parametric
-    coordinates and a function to evaluate the shape functions.
+    Local to global transformation for several cells and points.
 
     Parameters
     ----------
-    gcoords : (nNE, nD) ndarray
-        2D array containing coordinates for every node of a single element.
-            nNE : number of vertices of the element
-            nD : number of dimensions of the model space
-    shp : (nNE, nP) ndarray
-        The shape functions evaluated at a nP number of local coordinates.
-    
+    shp : numpy.ndarray
+        The shape functions evaluated at a 'nP' number of local coordinates.
+    gcoords : numpy.ndarray
+        2D array of shape (nNE, nD) containing coordinates global for every node of
+        a single element.
+
     Returns
     -------
-    (nD, ) ndarray
-        Global cooridnates of the specified point.
+    numpy.ndarray
+        Array of global cooridnates of shape (nE, nP, nD).
     """
-    return gcoords.T @ shp
+    nP = shp.shape[-1]
+    nE, _, nD = gcoords.shape
+    res = np.zeros((nE, nP, nD), shp.dtype)
+    for i in prange(nE):
+        res[i, :, :] = shp @ gcoords[i]
+    return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def glob_to_loc(
-    coord: np.ndarray, gcoords: np.ndarray, lcoords: np.ndarray, monomsfnc: Callable
-):
+def _glob_to_loc_bulk_(
+    lcoords: ndarray, monoms_glob_cells: ndarray, monoms_glob_points: ndarray
+) -> ndarray:
     """
     Global to local transformation for a single point and cell.
 
@@ -92,90 +62,35 @@ def glob_to_loc(
 
     Parameters
     ----------
-    gcoords : (nNE, nD) ndarray
-        2D array containing coordinates for every node of a single element.
-            nNE : number of vertices of the element
-            nD : number of dimensions of the model space
-    coord : (nD, ) ndarray
-        1D array of global coordinates for a single point.
-            nD : number of dimensions of the model space
-    lcoords : (nNE, nDP) ndarray
+    gcoords: numpy.ndarray
+        3D array of shape (nE, nNE, nD) containing global coordinates for every
+        node of several elements.
+    x: numpy.ndarray
+        2D array of global coordinates of shape (nP, nD) of several points.
+    lcoords: numpy.ndarray
         2D array of local coordinates of the parametric element.
-            nNE : number of vertices of the element
-            nDP : number of dimensions of the parametric space
-    monomsfnc : Callable
+    monomsfnc: Callable
         A function that evaluates monomials of the shape functions at a point
         specified with parametric coordinates.
 
     Returns
     -------
-    (nDP, ) ndarray
-        Parametric cooridnates of the specified point.
+    numpy.ndarray
+        Array of shape (nP, nE, nD) of parametric cooridnates of the specified
+        points.
 
     Notes
     -----
     'shpfnc' must be a numba-jitted function, that accepts a 1D array of
-    exactly nDP number of components.
+    exactly nD number of components.
     """
-    nNE = gcoords.shape[0]
-    monoms = np.zeros((nNE, nNE), dtype=coord.dtype)
-    for i in prange(nNE):
-        monoms[:, i] = monomsfnc(gcoords[i])
-    coeffs = inv(monoms)
-    shp = coeffs @ monomsfnc(coord)
-    return lcoords.T @ shp
-
-
-@njit(nogil=True, cache=__cache)
-def point_in_polygon(
-    coord: np.ndarray,
-    gcoords: np.ndarray,
-    lcoords: np.ndarray,
-    monomsfnc: Callable,
-    shpfnc: Callable,
-    tol=1e-12,
-):
-    """
-    Point-in-polygon test for a single cell and point.
-
-    Performs the point-in-poligon test for a single point and cell.
-    False means that the point is outside of the cell, True means the point
-    is either inside, or on the boundary of the cell.
-    
-    ::note
-        This function is Numba-jittable in 'nopython' mode.
-    
-    Parameters
-    ----------
-    gcoords : (nNE, nD) ndarray
-        2D array containing coordinates for every node of a single element.
-            nNE : number of vertices of the element
-            nD : number of dimensions of the model space
-    coord : (nD, ) ndarray
-        1D array of global coordinates for a single point.
-            nD : number of dimensions of the model space
-    lcoords : (nNE, nDP) ndarray
-        2D array of local coordinates of the parametric element.
-            nNE : number of vertices of the element
-            nDP : number of dimensions of the parametric space
-    monomsfnc : Callable
-        A function that evaluates monomials of the shape functions at a point
-        specified with parametric coordinates.
-    shpfnc : Callable
-        A function that evaluates shape function values at a point,
-        specified with parametric coordinates.
-
-    Returns
-    -------
-    bool
-        False if points is outside of the cell, True otherwise.
-
-    Notes
-    -----
-    'shpfnc'  and 'monomsfnc' must be numba-jitted functions, that accept
-    a 1D array of exactly nDP number of components, where nDP is the number
-    of paramatric cooridnate dimensions.
-    """
-    limit = 1 + tol
-    loc = glob_to_loc(coord, gcoords, lcoords, monomsfnc)
-    return np.all(shpfnc(loc) <= limit)
+    nP = monoms_glob_points.shape[0]
+    nE = monoms_glob_cells.shape[0]
+    nD = lcoords.shape[-1]
+    res = np.zeros((nE, nP, nD), dtype=lcoords.dtype)
+    for i in prange(nE):
+        coeffs = inv(monoms_glob_cells[i]).T
+        for k in prange(nP):
+            shp = coeffs @ monoms_glob_points[k]
+            res[i, k, :] = shp @ lcoords
+    return res

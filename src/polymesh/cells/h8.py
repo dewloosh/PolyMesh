@@ -1,9 +1,11 @@
-from typing import Tuple, List
+from typing import Union, Iterable, Tuple, List
+
 from sympy import symbols
 import numpy as np
 from numpy import ndarray
 
 from neumann.numint import gauss_points as gp
+from neumann import atleast2d
 
 from ..polyhedron import HexaHedron
 from ..utils.utils import cells_coords
@@ -12,9 +14,12 @@ from ..utils.cells.h8 import (
     dshp_H8_multi,
     volumes_H8,
     shape_function_matrix_H8_multi,
+    monoms_H8,
+    _pip_H8_bulk_,
+    _pip_H8_bulk_knn_
 )
 from ..utils.cells.gauss import Gauss_Legendre_Hex_Grid
-
+from ..utils.knn import k_nearest_neighbours
 
 class H8(HexaHedron):
     """
@@ -40,6 +45,7 @@ class H8(HexaHedron):
     shpfnc = shp_H8_multi
     shpmfnc = shape_function_matrix_H8_multi
     dshpfnc = dshp_H8_multi
+    monomsfnc = monoms_H8
 
     quadrature = {
         "full": Gauss_Legendre_Hex_Grid(2, 2, 2),
@@ -94,7 +100,7 @@ class H8(HexaHedron):
         """
         return np.array([0.0, 0.0, 0.0])
 
-    def volumes(self, coords: ndarray = None, topo: ndarray = None) -> ndarray:
+    def volumes(self) -> ndarray:
         """
         Returns the volumes of the cells.
 
@@ -102,12 +108,54 @@ class H8(HexaHedron):
         -------
         numpy.ndarray
         """
-        if coords is None:
-            if self.pointdata is not None:
-                coords = self.pointdata.x
-            else:
-                coords = self.container.source().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+        coords = self.source_coords()
+        topo = self.topology().to_numpy()
         ecoords = cells_coords(coords, topo)
         qpos, qweight = gp(2, 2, 2)
         return volumes_H8(ecoords, qpos, qweight)
+    
+    def pip(
+        self, x: Union[Iterable, ndarray], 
+        tol: float = 1e-12,
+        lazy:bool=True, 
+        k:int=4, 
+        tetrahedralize: bool=True,
+    ) -> Union[bool, ndarray]:
+        """
+        Returns an 1d boolean integer array that tells if the points specified by 'x'
+        are included in any of the cells in the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+        lazy: bool, Optional
+            If False, the ckeck is performed for all cells in the block. If True,
+            it is used in combination with parameter 'k' and the check is only performed
+            for the k nearest neighbours of the input points. Default is True.
+        k: int, Optional
+            The number of neighbours for the case when 'lazy' is true. Default is 4.
+        tetrahedralize: bool, Optional
+            Wether to perform the check on a tetrahedralized version of the block or not.
+
+        Returns
+        -------
+        bool or numpy.ndarray
+            A single or NumPy array of booleans for every input point.
+        """
+        if tetrahedralize:
+            return super().pip(x, tol, lazy, k)
+        else:
+            x = atleast2d(x, front=True)
+            x_loc = self.glob_to_loc(x)
+            pips = _pip_H8_bulk_(x_loc, tol)
+            
+            if lazy:
+                centers = self.centers()
+                k = min(4, len(centers))
+                knn = k_nearest_neighbours(centers, x, k=k)
+                pips = _pip_H8_bulk_knn_(x_loc, knn, tol)
+            else:
+                pips = _pip_H8_bulk_(x_loc, tol)
+            
+            return np.squeeze(np.any(pips, axis=1))

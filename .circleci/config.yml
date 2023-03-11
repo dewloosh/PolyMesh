@@ -73,6 +73,8 @@ workflows:
     jobs:
       - test310
       - test_pypi_publish:
+          context:
+            - pypi deploy
           requires:
             - test310
           filters:
@@ -80,6 +82,8 @@ workflows:
               only:
                 - nightly
       - pypi_publish:
+          context:
+            - pypi deploy
           requires:
             - test310
           filters:

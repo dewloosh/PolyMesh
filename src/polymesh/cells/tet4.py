@@ -9,6 +9,7 @@ from ..utils.cells.tet4 import (
     shp_TET4_multi,
     dshp_TET4_multi,
     shape_function_matrix_TET4_multi,
+    monoms_TET4,
 )
 from ..utils.cells.gauss import Gauss_Legendre_Tet_1
 
@@ -25,6 +26,7 @@ class TET4(TetraHedron):
     shpfnc = shp_TET4_multi
     shpmfnc = shape_function_matrix_TET4_multi
     dshpfnc = dshp_TET4_multi
+    monomsfnc = monoms_TET4
 
     quadrature = {
         "full": Gauss_Legendre_Tet_1(),

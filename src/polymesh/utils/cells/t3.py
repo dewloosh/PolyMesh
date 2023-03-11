@@ -6,6 +6,12 @@ __cache = True
 
 
 @njit(nogil=True, cache=__cache)
+def monoms_T3(x: ndarray) -> ndarray:
+    r, s = x
+    return np.array([1, r, s], dtype=float)
+
+
+@njit(nogil=True, cache=__cache)
 def shp_T3(pcoord: ndarray):
     r, s = pcoord
     return np.array([1 - r - s, r, s], dtype=pcoord.dtype)

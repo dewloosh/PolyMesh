@@ -6,64 +6,38 @@ __cache = True
 
 
 @njit(nogil=True, cache=__cache)
-def shp_TET10(pcoord: ndarray):
-    r, s, t = pcoord
-    u = 1 - r - s - t
+def monoms_TET10_single(x: ndarray) -> ndarray:
+    r, s, t = x
     return np.array(
-        [
-            u * (2 * u - 1),
-            r * (2 * r - 1),
-            s * (2 * s - 1),
-            t * (2 * t - 1),
-            4 * u * r,
-            4 * r * s,
-            4 * s * u,
-            4 * u * t,
-            4 * r * t,
-            4 * s * t,
-        ]
+        [1, r, s, t, r * s, r * t, s * t, r**2, s**2, t**2], dtype=x.dtype
     )
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shp_TET10_multi(pcoords: np.ndarray):
-    nP = pcoords.shape[0]
-    res = np.zeros((nP, 10), dtype=pcoords.dtype)
-    for iP in prange(nP):
-        res[iP, :] = shp_TET10(pcoords[iP])
+def monoms_TET10_multi(x: ndarray) -> ndarray:
+    nP = x.shape[0]
+    res = np.zeros((nP, 10), dtype=x.dtype)
+    for i in prange(nP):
+        res[i] = monoms_TET10_single(x[i])
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET10(pcoord: np.ndarray, ndof: int = 3):
-    eye = np.eye(ndof, dtype=pcoord.dtype)
-    shp = shp_TET10(pcoord)
-    res = np.zeros((ndof, ndof * 10), dtype=pcoord.dtype)
-    for i in prange(10):
-        res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
+def monoms_TET10_bulk_multi(x: ndarray) -> ndarray:
+    nE = x.shape[0]
+    res = np.zeros((nE, 10, 10), dtype=x.dtype)
+    for i in prange(nE):
+        res[i] = monoms_TET10_multi(x[i])
     return res
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_TET10_multi(pcoords: np.ndarray, ndof: int = 3):
-    nP = pcoords.shape[0]
-    res = np.zeros((nP, ndof, ndof * 10), dtype=pcoords.dtype)
-    for iP in prange(nP):
-        res[iP] = shape_function_matrix_TET10(pcoords[iP], ndof)
-    return res
-
-
-@njit(nogil=True, cache=__cache)
-def dshp_TET10(x):
-    return np.array(
-        [[-1.0, -1.0, -1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-    )
-
-
-@njit(nogil=True, parallel=True, cache=__cache)
-def dshp_TET10_multi(pcoords: ndarray):
-    nP = pcoords.shape[0]
-    res = np.zeros((nP, 10, 3), dtype=pcoords.dtype)
-    for iP in prange(nP):
-        res[iP] = dshp_TET10(pcoords[iP])
-    return res
+def monoms_TET10(x: ndarray) -> ndarray:
+    N = len(x.shape)
+    if N == 1:
+        return monoms_TET10_single(x)
+    elif N == 2:
+        return monoms_TET10_multi(x)
+    elif N == 3:
+        return monoms_TET10_bulk_multi(x)
+    else:
+        raise NotImplementedError

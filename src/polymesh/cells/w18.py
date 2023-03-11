@@ -5,8 +5,9 @@ from sympy import symbols
 
 from ..polyhedron import BiquadraticWedge
 from ..utils.cells.gauss import Gauss_Legendre_Wedge_3x3
-from ..utils.cells.utils import volumes2
+from ..utils.cells.utils import volumes
 from ..utils.utils import cells_coords
+from ..utils.cells.w18 import monoms_W18
 
 
 class W18(BiquadraticWedge):
@@ -17,6 +18,8 @@ class W18(BiquadraticWedge):
     --------
     :class:`~polymesh.polyhedron.Wedge`
     """
+
+    monomsfnc = monoms_W18
 
     quadrature = {
         "full": Gauss_Legendre_Wedge_3x3(),
@@ -36,10 +39,25 @@ class W18(BiquadraticWedge):
         """
         locvars = r, s, t = symbols("r s t", real=True)
         monoms = [
-            1, r, s, r**2, s**2, r * s,
-            t, t*r, t*s, t*r**2, t*s**2, t*r * s,
-            t**2, t**2*r, t**2*s, t**2*r**2, t**2*s**2, t**2*r * s
-            ]
+            1,
+            r,
+            s,
+            r**2,
+            s**2,
+            r * s,
+            t,
+            t * r,
+            t * s,
+            t * r**2,
+            t * s**2,
+            t * r * s,
+            t**2,
+            t**2 * r,
+            t**2 * s,
+            t**2 * r**2,
+            t**2 * s**2,
+            t**2 * r * s,
+        ]
         return locvars, monoms
 
     @classmethod
@@ -64,7 +82,6 @@ class W18(BiquadraticWedge):
                 [0.5, 0.0, 0.0],
                 [0.5, 0.5, 0.0],
                 [0.0, 0.5, 0.0],
-            
             ]
         )
 
@@ -78,4 +95,4 @@ class W18(BiquadraticWedge):
         ecoords = cells_coords(coords, topo)
         qpos, qweight = self.quadrature["full"]
         dshp = self.shape_function_derivatives(qpos)
-        return volumes2(ecoords, dshp, qweight)
+        return volumes(ecoords, dshp, qweight)

@@ -6,6 +6,7 @@ from sympy import symbols
 
 from ..line import QuadraticLine
 from ..utils.cells.gauss import Gauss_Legendre_Line_Grid
+from ..utils.cells.l3 import monoms_L3
 
 
 __all__ = ["L3"]
@@ -19,6 +20,8 @@ class L3(QuadraticLine):
     --------
     :class:`~polymesh.polygon.QuadraticLine`
     """
+
+    monomsfnc = monoms_L3
 
     quadrature = {
         "full": Gauss_Legendre_Line_Grid(3),

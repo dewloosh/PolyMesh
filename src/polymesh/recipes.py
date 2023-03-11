@@ -10,13 +10,7 @@ from .cells import H8, H27, TET4, TET10, T3, W6, W18
 from .space import CartesianFrame
 from .triang import triangulate
 from .utils import cell_centers_bulk
-from .utils.topology import (
-    detach, 
-    H8_to_TET4, 
-    H27_to_TET10, 
-    TET4_to_TET10,
-    W6_to_W18
-)
+from .utils.topology import detach, H8_to_TET4, H27_to_TET10, TET4_to_TET10, W6_to_W18
 from .extrude import extrude_T3_TET4, extrude_T3_W6
 from .voxelize import voxelize_cylinder
 
@@ -93,10 +87,10 @@ def cylinder(
     shape,
     size: Union[tuple, float, int] = None,
     *args,
-    regular:bool=True,
-    voxelize:bool=False,
+    regular: bool = True,
+    voxelize: bool = False,
     celltype=None,
-    frame:CartesianFrame=None,
+    frame: CartesianFrame = None,
     **kwargs,
 ) -> PolyData:
     """
@@ -339,7 +333,7 @@ def perforated_cube(
     nangles: int = None,
     lmax: float = None,
     order: int = 1,
-    prismatic: bool=True
+    prismatic: bool = True,
 ) -> PolyData:
     """
     Returns a cube of side lengths 'lx', 'ly' and 'lz', with a circular hole
@@ -385,7 +379,7 @@ def perforated_cube(
         zres = int(lz / lmax)
     else:
         zres = 4
-    
+
     if prismatic:
         coords, topo = extrude_T3_W6(coords, topo, h=lz, zres=zres)
     else:

@@ -3,7 +3,7 @@ import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
-from .utils.topology import unique_topo_data, detach_mesh_bulk, transform_topo
+from .utils.topology import unique_topo_data, detach_mesh_bulk, transform_topology
 from .utils import center_of_points, k_nearest_neighbours as knn, knn_to_lines
 from .polydata import PolyData
 
@@ -203,7 +203,7 @@ def gridQ4(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(2, 2), **kwargs)
     path = np.array([0, 2, 3, 1], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
 def gridQ9(*args, **kwargs) -> Tuple[ndarray, ndarray]:
@@ -217,7 +217,7 @@ def gridQ9(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(3, 3), **kwargs)
     path = np.array([0, 6, 8, 2, 3, 7, 5, 1, 4], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
 def gridH8(*args, **kwargs) -> Tuple[ndarray, ndarray]:
@@ -231,7 +231,7 @@ def gridH8(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(2, 2, 2), **kwargs)
     path = np.array([0, 4, 6, 2, 1, 5, 7, 3], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
 # fmt: off
@@ -253,7 +253,7 @@ def gridH27(*args, **kwargs) -> Tuple[ndarray, ndarray]:
         ],
         dtype=int,
     )
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 # fmt: on
 
 

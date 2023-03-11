@@ -9,6 +9,12 @@ from ..tri import area_tri_bulk
 __cache = True
 
 
+@njit(nogil=True, cache=__cache)
+def monoms_Q4(x: ndarray) -> ndarray:
+    r, s = x
+    return np.array([1, r, s, r * s], dtype=float)
+
+
 @njit(nogil=True, parallel=True, cache=__cache)
 def area_Q4_bulk(ecoords: np.ndarray):
     nE = len(ecoords)

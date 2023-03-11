@@ -5,7 +5,12 @@ from numpy import ndarray
 from sympy import symbols
 
 from ..polygon import Quadrilateral
-from ..utils.cells.q4 import shp_Q4_multi, dshp_Q4_multi, shape_function_matrix_Q4_multi
+from ..utils.cells.q4 import (
+    shp_Q4_multi,
+    dshp_Q4_multi,
+    shape_function_matrix_Q4_multi,
+    monoms_Q4,
+)
 from ..utils.cells.gauss import Gauss_Legendre_Quad_4
 
 
@@ -21,6 +26,7 @@ class Q4(Quadrilateral):
     shpfnc = shp_Q4_multi
     shpmfnc = shape_function_matrix_Q4_multi
     dshpfnc = dshp_Q4_multi
+    monomsfnc = monoms_Q4
 
     quadrature = {
         "full": Gauss_Legendre_Quad_4(),

@@ -2,6 +2,7 @@ import unittest
 
 from polymesh.triang import triangulate
 from polymesh.grid import grid
+from polymesh.extrude import extrude_T3_W6
 from polymesh.utils.topology import (
     T3_to_T6,
     T6_to_T3,
@@ -19,6 +20,9 @@ from polymesh.utils.topology import (
     Q4_to_Q8,
     Q8_to_T3,
     H27_to_H8,
+    W6_to_TET4,
+    W18_to_W6,
+    W6_to_W18,
 )
 
 
@@ -101,7 +105,6 @@ class TestTopoTR(unittest.TestCase):
         def test_7(Lx, Ly, Lz, nx, ny, nz):
             """H27 -> H8 -> TET4 -> L2 -> L3"""
             coords, topo = grid(size=(Lx, Ly, Lz), shape=(nx, ny, nz), eshape="H27")
-
             H8_to_L2(*H27_to_H8(coords, topo))
             coords, topo = H8_to_TET4(*H27_to_H8(coords, topo))
             coords, topo = TET4_to_L2(coords, topo)
@@ -109,6 +112,18 @@ class TestTopoTR(unittest.TestCase):
             return True
 
         assert test_7(1, 1, 1, 2, 2, 2)
+
+    def test_8(self):
+        def test_8(Lx, Ly, Lz, nx, ny, nz):
+            """T3 -> W6 -> W18 -> W6 -> TET4"""
+            coords, topo, _ = triangulate(size=(Lx, Ly), shape=(nx, ny))
+            coords, topo = extrude_T3_W6(coords, topo, Lz, nz)
+            coords, topo = W6_to_W18(coords, topo)
+            coords, topo = W18_to_W6(coords, topo)
+            coords, topo = W6_to_TET4(coords, topo)
+            return True
+
+        assert test_8(1, 1, 1, 2, 2, 2)
 
 
 if __name__ == "__main__":

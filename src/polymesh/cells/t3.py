@@ -6,7 +6,12 @@ from sympy import symbols
 
 from ..polygon import Triangle
 from ..utils.cells.gauss import Gauss_Legendre_Tri_1
-from ..utils.cells.t3 import shp_T3_multi, dshp_T3_multi, shape_function_matrix_T3_multi
+from ..utils.cells.t3 import (
+    shp_T3_multi,
+    dshp_T3_multi,
+    shape_function_matrix_T3_multi,
+    monoms_T3,
+)
 
 
 class T3(Triangle):
@@ -21,6 +26,7 @@ class T3(Triangle):
     shpfnc = shp_T3_multi
     shpmfnc = shape_function_matrix_T3_multi
     dshpfnc = dshp_T3_multi
+    monomsfnc = monoms_T3
 
     quadrature = {
         "full": Gauss_Legendre_Tri_1(),

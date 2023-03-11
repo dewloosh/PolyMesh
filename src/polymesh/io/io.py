@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from os.path import exists
 
+import numpy as np
+
 from polymesh import PolyData
 from polymesh.space import StandardFrame
 from polymesh.cells import T3, T6, TET4, TET10
@@ -79,23 +81,24 @@ def input_to_mesh(*args, **kwargs) -> tuple:
 def from_meshio(mesh):
     GlobalFrame = StandardFrame(dim=3)
 
-    coords=mesh.points
+    coords = mesh.points
     polydata = PolyData(coords=coords, frame=GlobalFrame)
 
     for cb in mesh.cells:
         cd = None
         cbtype = cb.type
+        topo = np.array(cb.data, dtype=int)
         if cbtype == "tetra":
-            cd = TET4(topo=cb.data, frames=GlobalFrame)
+            cd = TET4(topo=topo, frames=GlobalFrame)
         elif cbtype == "tetra10":
-            cd = TET10(topo=cb.data, frames=GlobalFrame)
+            cd = TET10(topo=topo, frames=GlobalFrame)
         elif cbtype == "triangle":
-            frames = frames_of_surfaces(coords, cb.data)
-            cd = T3(topo=cb.data, frames=frames)
+            frames = frames_of_surfaces(coords, topo)
+            cd = T3(topo=topo, frames=frames)
         elif cbtype == "triangle6":
-            frames = frames_of_surfaces(coords, cb.data)
-            cd = T6(topo=cb.data, frames=frames)
+            frames = frames_of_surfaces(coords, topo)
+            cd = T6(topo=topo, frames=frames)
         if cd:
             polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
-            
+
     return polydata

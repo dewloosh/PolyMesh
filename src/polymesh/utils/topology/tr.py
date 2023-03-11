@@ -2,7 +2,7 @@
 import numpy as np
 from awkward import Array
 from numba import njit, prange
-from typing import Union, Sequence
+from typing import Union, Sequence, Tuple
 
 try:
     from collections.abc import Iterable
@@ -21,7 +21,7 @@ from ..topodata import (
     faces_H8,
     edges_TET4,
     edges_W6,
-    faces_W6
+    faces_W6,
 )
 from .topo import unique_topo_data
 
@@ -29,7 +29,8 @@ __cache = True
 
 
 __all__ = [
-    "transform_topo",
+    "transform_topology",
+    "compose_trmap",
     "L2_to_L3",
     "T3_to_T6",
     "T6_to_T3",
@@ -47,14 +48,16 @@ __all__ = [
     "H27_to_TET10",
     "TET4_to_L2",
     "TET4_to_TET10",
-    "W6_to_W18"
+    "W6_to_W18",
+    "W6_to_TET4",
+    "W18_to_W6",
 ]
 
 
 DataLike = Union[ndarray, Sequence[ndarray]]
 
 
-def transform_topo(
+def transform_topology(
     topo: ndarray,
     path: ndarray,
     data: ndarray = None,
@@ -62,13 +65,67 @@ def transform_topo(
     MT: bool = True,
     max_workers: int = 4,
     **__
-):
+) -> Union[ndarray, Tuple[ndarray]]:
+    """
+    Transforms a mesh by canging the celltype, but keeping the topology of
+    the overall configuration.
+
+    Parameters
+    ----------
+    topo: numpy.ndarray
+    path: numpy.ndarray
+    data: numpy.ndarray, Optional
+        Default is None.
+    MT: bool, Optional
+        Default is True
+    max_workers: int, Optional
+        Only relevant if MT is True. Default is 4.
+
+    Returns
+    -------
+    Union[ndarray, Tuple[ndarray]]
+        Topology, and optionally data as NumPy arrays.
+
+    Example
+    -------
+    For instance, this could be a way of producing a more coarse triangulation:
+
+    >>> from polymesh.utils.topology import transform_topology
+    >>> from polymesh.triang import triangulate
+    >>> from polymesh.grid import grid
+    >>> coords, topo, _ = triangulate(size=(Lx, Ly), shape=(nx, ny))
+    >>> nE1 = topo.shape[0]
+    >>> coords, topo = T3_to_T6(coords, topo)
+    >>> coords, topo = T6_to_T3(coords, topo)
+    >>> nE2 = topo.shape[0]
+    >>> nE1 * 4 == nE2
+    True
+
+    The functions `T3_to_T6` and `T6_to_T3` call `transform_topology` to do
+    the transformations. The same with calling `transform_topology` directly
+    could be like this:
+
+    >>> coords, topo, _ = triangulate(size=(Lx, Ly), shape=(nx, ny))
+    >>> nE1 = topo.shape[0]
+    >>> coords, topo = T3_to_T6(coords, topo)
+    >>> path = np.array(
+    ...     [[0, 3, 5], [3, 1, 4], [5, 4, 2], [5, 3, 4]], dtype=int
+    ...            )
+    >>> topo = transform_topology(topo, path)
+    >>> nE2 = topo.shape[0]
+    >>> nE1 * 4 == nE2
+    True
+
+    Both time, the original triangulation is splitted to 4 subtriangles per
+    each cell. Hence, `transform_topology` is more general, since you have more
+    control over how you want to split the cells that make up the original mesh.
+    """
     nD = len(path.shape)
     if nD == 1:
         path = path.reshape(1, len(path))
     assert nD <= 2, "Path must be 1 or 2 dimensional."
     if data is None:
-        return _transform_topo_(topo, path)
+        return _transform_topology_(topo, path)
     else:
         if isinstance(data, Array):
             try:
@@ -76,22 +133,22 @@ def transform_topo(
             except Exception:
                 raise TypeError("Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
-            data = transform_topo_data(topo, data, path)
-            return _transform_topo_(topo, path), data
+            data = transform_topology_data(topo, data, path)
+            return _transform_topology_(topo, path), data
         elif isinstance(data, Iterable):
 
             def foo(d):
-                return transform_topo_data(topo, d, path)
+                return transform_topology_data(topo, d, path)
 
             if MT:
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     dmap = executor.map(foo, data)
             else:
                 dmap = map(foo, data)
-            return _transform_topo_(topo, path), list(dmap)
+            return _transform_topology_(topo, path), list(dmap)
 
 
-def transform_topo_data(topo: ndarray, data: ndarray, path: ndarray):
+def transform_topology_data(topo: ndarray, data: ndarray, path: ndarray) -> ndarray:
     if data.shape[:2] == topo.shape[:2]:
         # it is assumed that values are provided for each node of each cell
         res = repeat_cell_nodal_data(data, path)
@@ -104,7 +161,7 @@ def transform_topo_data(topo: ndarray, data: ndarray, path: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _transform_topo_(topo: ndarray, path: ndarray):
+def _transform_topology_(topo: ndarray, path: ndarray) -> ndarray:
     nE = len(topo)
     nSub, nSubN = path.shape
     res = np.zeros((nSub * nE, nSubN), dtype=topo.dtype)
@@ -117,7 +174,7 @@ def _transform_topo_(topo: ndarray, path: ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def repeat_cell_nodal_data(edata: ndarray, path: ndarray):
+def repeat_cell_nodal_data(edata: ndarray, path: ndarray) -> ndarray:
     nSub, nSubN = path.shape
     nE = edata.shape[0]
     res = np.zeros((nSub * nE, nSubN) + edata.shape[2:], dtype=edata.dtype)
@@ -130,6 +187,19 @@ def repeat_cell_nodal_data(edata: ndarray, path: ndarray):
     return res
 
 
+def compose_trmap(map1: ndarray, map2: ndarray) -> ndarray:
+    nE1 = map1.shape[0]
+    nE2, nNE2 = map2.shape
+    res = np.zeros((int(nE1 * nE2), nNE2), dtype=map1.dtype)
+    c = 0
+    for i in range(nE1):
+        for j in range(nE2):
+            for k in range(nNE2):
+                res[c, k] = map1[i, map2[j, k]]
+            c += 1
+    return res
+
+    
 def T6_to_T3(
     coords: ndarray,
     topo: ndarray,
@@ -138,7 +208,7 @@ def T6_to_T3(
     path: ndarray = None,
     subdivide: bool = True,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
@@ -150,9 +220,9 @@ def T6_to_T3(
             else:
                 path = np.array([[0, 1, 2]], dtype=topo.dtype)
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def H27_to_H8(
@@ -163,7 +233,7 @@ def H27_to_H8(
     path: ndarray = None,
     subdivide: bool = True,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 8
     else:
@@ -185,9 +255,9 @@ def H27_to_H8(
             else:
                 path = np.array([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=topo.dtype)
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def Q9_to_Q4(
@@ -197,7 +267,7 @@ def Q9_to_Q4(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
@@ -213,9 +283,9 @@ def Q9_to_Q4(
                     dtype=topo.dtype,
                 )
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray = None):
@@ -243,7 +313,7 @@ def H8_to_TET4(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
@@ -255,9 +325,9 @@ def H8_to_TET4(
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def H27_to_TET10(
@@ -267,7 +337,7 @@ def H27_to_TET10(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 10
     else:
@@ -285,9 +355,9 @@ def H27_to_TET10(
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def H8_to_Q4(
@@ -297,7 +367,7 @@ def H8_to_Q4(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 4
     else:
@@ -316,9 +386,9 @@ def H8_to_Q4(
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def TET4_to_L2(
@@ -328,7 +398,7 @@ def TET4_to_L2(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[0] == 6, "Invalid shape!"
         assert path.shape[1] == 2, "Invalid shape!"
@@ -340,7 +410,7 @@ def TET4_to_L2(
     if data is None:
         nE = len(topo)
         nSub, nSubN = path.shape
-        topo = np.reshape(transform_topo(topo, path), (nE, nSub, nSubN))
+        topo = np.reshape(transform_topology(topo, path), (nE, nSub, nSubN))
         edges, _ = unique_topo_data(topo)
         return coords, edges
     else:
@@ -354,7 +424,7 @@ def H8_to_L2(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[0] == 12, "Invalid shape!"
         assert path.shape[1] == 2, "Invalid shape!"
@@ -366,7 +436,7 @@ def H8_to_L2(
     if data is None:
         nE = len(topo)
         nSub, nSubN = path.shape
-        topo = np.reshape(transform_topo(topo, path), (nE, nSub, nSubN))
+        topo = np.reshape(transform_topology(topo, path), (nE, nSub, nSubN))
         edges, _ = unique_topo_data(topo)
         return coords, edges
     else:
@@ -380,7 +450,7 @@ def Q4_to_T3(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
@@ -390,9 +460,9 @@ def Q4_to_T3(
             if path == "grid":
                 path = np.array([[0, 2, 3], [0, 3, 1]], dtype=topo.dtype)
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
 def Q8_to_T3(
@@ -402,7 +472,7 @@ def Q8_to_T3(
     *args,
     path: ndarray = None,
     **kwargs
-):
+) -> Tuple[ndarray]:
     if isinstance(path, ndarray):
         assert path.shape[1] == 3
     else:
@@ -421,12 +491,12 @@ def Q8_to_T3(
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
-def L2_to_L3(coords: ndarray, topo: ndarray, order="ikj"):
+def L2_to_L3(coords: ndarray, topo: ndarray, order="ikj") -> Tuple[ndarray]:
     nP = len(coords)
     nodes, nodeIDs = unique_topo_data(topo[:, newaxis, :])
     new_coords = np.mean(coords[nodes], axis=1)
@@ -442,7 +512,7 @@ def L2_to_L3(coords: ndarray, topo: ndarray, order="ikj"):
     return coords, topo
 
 
-def T3_to_T6(coords: ndarray, topo: ndarray):
+def T3_to_T6(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     nP = len(coords)
     edges, edgeIDs = unique_topo_data(edges_tri(topo))
     new_coords = np.mean(coords[edges], axis=1)
@@ -452,7 +522,7 @@ def T3_to_T6(coords: ndarray, topo: ndarray):
     return coords, topo
 
 
-def Q4_to_Q8(coords: ndarray, topo: ndarray):
+def Q4_to_Q8(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     nP = len(coords)
     edges, edgeIDs = unique_topo_data(edges_Q4(topo))
     new_coords = np.mean(coords[edges], axis=1)
@@ -462,7 +532,7 @@ def Q4_to_Q8(coords: ndarray, topo: ndarray):
     return coords_res, topo_res
 
 
-def Q4_to_Q9(coords: ndarray, topo: ndarray):
+def Q4_to_Q9(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     nP, nE = len(coords), len(topo)
     # new nodes on the edges
     edges, edgeIDs = unique_topo_data(edges_Q4(topo))
@@ -479,7 +549,7 @@ def Q4_to_Q9(coords: ndarray, topo: ndarray):
     return coords_res, topo_res
 
 
-def TET4_to_TET10(coords: ndarray, topo: ndarray):
+def TET4_to_TET10(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     nP = len(coords)
     # new nodes on the edges
     edges, edgeIDs = unique_topo_data(edges_TET4(topo))
@@ -490,7 +560,7 @@ def TET4_to_TET10(coords: ndarray, topo: ndarray):
     return coords_res, topo_res
 
 
-def H8_to_H27(coords: ndarray, topo: ndarray):
+def H8_to_H27(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
     nP, nE = len(coords), len(topo)
     ecoords = cells_coords(coords, topo)
     # new nodes on the edges
@@ -512,7 +582,7 @@ def H8_to_H27(coords: ndarray, topo: ndarray):
     return coords_res, topo_res
 
 
-def _W6_to_TET4(
+def W6_to_TET4(
     coords: ndarray,
     topo: ndarray,
     data: DataLike = None,
@@ -525,43 +595,56 @@ def _W6_to_TET4(
     else:
         if path is None:
             path = np.array(
-                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                [[0, 1, 2, 4], [3, 5, 4, 2], [2, 5, 0, 4]],
                 dtype=topo.dtype,
             )
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
-    
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
-def _W8_to_W6(
+
+def W18_to_W6(
     coords: ndarray,
     topo: ndarray,
     data: DataLike = None,
     *args,
     path: ndarray = None,
+    subdivide: bool = True,
     **kwargs
 ):
     if isinstance(path, ndarray):
-        assert path.shape[1] == 4
+        assert path.shape[1] == 6
     else:
         if path is None:
-            path = np.array(
-                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
-                dtype=topo.dtype,
-            )
+            if subdivide:
+                path = np.array(
+                    [
+                        [15, 13, 16, 9, 4, 10],
+                        [17, 16, 14, 11, 10, 5],
+                        [17, 15, 16, 11, 9, 10],
+                        [12, 15, 17, 3, 9, 11],
+                        [6, 1, 7, 15, 13, 16],
+                        [8, 6, 7, 17, 15, 16],
+                        [8, 7, 2, 17, 16, 14],
+                        [8, 0, 6, 12, 15, 17],
+                    ],
+                    dtype=topo.dtype,
+                )
+            else:
+                path = np.array([[0, 1, 2, 3, 4, 5]], dtype=topo.dtype)
         elif isinstance(path, str):
             raise NotImplementedError
     if data is None:
-        return coords, +transform_topo(topo, path, *args, **kwargs)
+        return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
-        return (coords,) + transform_topo(topo, path, data, *args, **kwargs)
+        return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
 
 
-def W6_to_W18(coords: ndarray, topo: ndarray):
-    nP, nE = len(coords), len(topo)
+def W6_to_W18(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
+    nP = len(coords)
     # new nodes on the edges
     edges, edgeIDs = unique_topo_data(edges_W6(topo))
     coords_e = np.mean(coords[edges], axis=1)

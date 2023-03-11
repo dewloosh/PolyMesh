@@ -7,6 +7,25 @@ __cache = True
 
 
 @njit(nogil=True, cache=__cache)
+def monoms_Q9(x: ndarray) -> ndarray:
+    r, s = x
+    return np.array(
+        [
+            1,
+            r,
+            s,
+            r * s,
+            r**2,
+            s**2,
+            r * s**2,
+            s * r**2,
+            s**2 * r**2,
+        ],
+        dtype=float,
+    )
+
+
+@njit(nogil=True, cache=__cache)
 def shp_Q9(pcoord: np.ndarray):
     r, s = pcoord[:2]
     return np.array(
