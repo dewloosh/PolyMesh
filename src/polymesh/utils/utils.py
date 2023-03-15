@@ -383,6 +383,23 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
     return np.mean(cells_coords(coords, topo), axis=1)
 
 
+def cell_centers_bulk2(ecoords: ndarray) -> ndarray:
+    """
+    Returns coordinates of the centers of cells of the same kind.
+
+    Parameters
+    ----------
+    ecoords : numpy.ndarray
+        3d coordinate array of element coordinates.
+
+    Returns
+    -------
+    numpy.ndarray
+        2d coordinate array.
+    """
+    return np.mean(ecoords, axis=1)
+
+
 @njit(nogil=True, parallel=True, cache=__cache)
 def _nodal_distribution_factors_csr_(topo: csr_matrix, w: ndarray) -> ndarray:
     """
@@ -874,6 +891,18 @@ def distances_of_points(coords: ndarray) -> ndarray:
     res = np.zeros(nP, dtype=coords.dtype)
     for i in prange(1, nP):
         res[i] = norm(coords[i] - coords[i - 1])
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def pcoords_to_coords(pcoords: ndarray, ecoords: ndarray, shp: ndarray) -> ndarray:
+    nP = pcoords.shape[0]
+    nE, nNE, nD = ecoords.shape
+    res = np.zeros((nE, nP, nD), dtype=ecoords.dtype)
+    for iE in prange(nE):
+        for iP in prange(nP):
+            for iNE in range(nNE):
+                res[iE, iP, :] += ecoords[iE, iNE] * shp[iP, iNE]
     return res
 
 

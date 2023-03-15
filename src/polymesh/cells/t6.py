@@ -11,7 +11,9 @@ from ..utils.cells.t6 import (
     dshp_T6_multi,
     areas_T6,
     shape_function_matrix_T6_multi,
+    monoms_T6,
 )
+from ..utils.cells.gauss import Gauss_Legendre_Tri_3a
 
 
 class T6(Triangle):
@@ -26,6 +28,11 @@ class T6(Triangle):
     shpfnc = shp_T6_multi
     shpmfnc = shape_function_matrix_T6_multi
     dshpfnc = dshp_T6_multi
+    monomsfnc = monoms_T6
+
+    quadrature = {
+        "full": Gauss_Legendre_Tri_3a(),
+    }
 
     @classmethod
     def polybase(cls) -> Tuple[List]:
@@ -38,7 +45,6 @@ class T6(Triangle):
             A list of SymPy symbols.
         list
             A list of monomials.
-
         """
         locvars = r, s = symbols("r s", real=True)
         monoms = [1, r, s, r**2, s**2, r * s]
@@ -52,7 +58,6 @@ class T6(Triangle):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array(
             [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]]
@@ -66,7 +71,6 @@ class T6(Triangle):
         Returns
         -------
         numpy.ndarray
-
         """
         return np.array([[1 / 3, 1 / 3]])
 
@@ -77,15 +81,9 @@ class T6(Triangle):
         Returns
         -------
         numpy.ndarray
-
         """
-        if self.pointdata is not None:
-            coords = self.pointdata.x
-        else:
-            coords = self.container.source().coords()
+        coords = self.source_coords()
         topo = self.topology().to_numpy()
         ecoords = cells_coords(coords[:, :2], topo)
-        qpos, qweight = np.array(
-            [[1 / 6, 1 / 6], [2 / 3, 1 / 6], [1 / 6, 2 / 3]]
-        ), np.array([1 / 6, 1 / 6, 1 / 6])
+        qpos, qweight = self.quadrature["full"]
         return areas_T6(ecoords, qpos, qweight)

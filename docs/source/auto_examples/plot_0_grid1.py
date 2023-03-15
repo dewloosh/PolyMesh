@@ -11,11 +11,11 @@ Plotting in 2d with `matplotlib`
 from polymesh.grid import grid
 
 gridparams = {
-    'size' : (1200, 600),
-    'shape' : (30, 15),
-    'eshape' : (2, 2),
-    'origo' : (0, 0),
-    'start' : 0
+    "size": (1200, 600),
+    "shape": (30, 15),
+    "eshape": (2, 2),
+    "origo": (0, 0),
+    "start": 0,
 }
 coordsQ4, topoQ4 = grid(**gridparams)
 
@@ -26,7 +26,7 @@ coordsQ4, topoQ4 = grid(**gridparams)
 from polymesh.utils.topology import Q4_to_T3
 from polymesh.trimesh import triangulate
 
-points, triangles = Q4_to_T3(coordsQ4, topoQ4, path='grid')
+points, triangles = Q4_to_T3(coordsQ4, topoQ4, path="grid")
 triobj = triangulate(points=points[:, :2], triangles=triangles)[-1]
 
 # %% [markdown]
@@ -64,14 +64,12 @@ triplot(triobj, data=data)
 
 # %%
 data = np.random.rand(len(points))
-triplot(triobj, data=data, cmap='bwr')
+triplot(triobj, data=data, cmap="bwr")
 
 # %%
 data = np.random.rand(len(points))
-triplot(triobj, data=data, cmap='Set1', axis='off')
+triplot(triobj, data=data, cmap="Set1", axis="off")
 
 # %%
 data = np.random.rand(len(points))
-triplot(triobj, data=data, cmap='gnuplot', axis='off', ecolor='k', lw=0.8)
-
-
+triplot(triobj, data=data, cmap="gnuplot", axis="off", ecolor="k", lw=0.8)

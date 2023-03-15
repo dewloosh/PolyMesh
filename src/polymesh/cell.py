@@ -1,5 +1,4 @@
-from typing import Union, MutableMapping, Iterable
-from typing import Tuple, List, Callable
+from typing import Union, MutableMapping, Iterable, Tuple, List, Callable
 
 import numpy as np
 from numpy import ndarray
@@ -7,22 +6,39 @@ from sympy import Matrix, lambdify
 
 from neumann import atleast1d, atleast2d, ascont
 from neumann.utils import to_range_1d
+from neumann.linalg import ReferenceFrame as FrameLike
 
+from polymesh.space import PointCloud
 from .celldata import CellData
 from .utils.utils import (
     jacobian_matrix_bulk,
     points_of_cells,
+    pcoords_to_coords,
     pcoords_to_coords_1d,
     cells_coords,
-    lengths_of_lines
+    lengths_of_lines,
 )
-from .utils.tri import area_tri_bulk
-from .utils.tet import tet_vol_bulk
+from .utils.cells.utils import (
+    _loc_to_glob_bulk_,
+    _find_first_hits_,
+    _find_first_hits_knn_,
+    _ntet_to_loc_bulk_,
+)
+from .utils.tri import area_tri_bulk, _pip_tri_bulk_
+from .utils.tet import (
+    vol_tet_bulk,
+    _pip_tet_bulk_knn_,
+    _pip_tet_bulk_,
+    _glob_to_nat_tet_bulk_,
+    _glob_to_nat_tet_bulk_knn_,
+    __pip_tet_bulk__,
+)
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .utils.topology.topo import detach_mesh_bulk, rewire
-from .utils.topology import transform_topo
+from .utils.topology import transform_topology
 from .utils.tri import triangulate_cell_coords
-from .utils import cell_center, cell_center_2d
+from .utils import cell_center, cell_center_2d, cell_centers_bulk
+from .utils.knn import k_nearest_neighbours
 from .topoarray import TopologyArray
 from .space import CartesianFrame
 from .triang import triangulate
@@ -47,6 +63,7 @@ class PolyCell(CellData):
     shpfnc: Callable = None  # evaluator for shape functions
     shpmfnc: Callable = None  # evaluator for shape function matrices
     dshpfnc: Callable = None  # evaluator for shape function derivatives
+    monomsfnc: Callable = None  # evaluator for monomials
 
     def __init__(self, *args, i: ndarray = None, **kwargs):
         if isinstance(i, ndarray):
@@ -61,7 +78,6 @@ class PolyCell(CellData):
         Returns
         -------
         numpy.ndarray
-
         """
         raise NotImplementedError
 
@@ -92,7 +108,9 @@ class PolyCell(CellData):
         raise NotImplementedError
 
     @classmethod
-    def generate(cls, return_symbolic: bool = True, update: bool = True) -> Tuple:
+    def generate_class_functions(
+        cls, return_symbolic: bool = True, update: bool = True
+    ) -> Tuple:
         """
         Generates functions to evaulate shape functions, their derivatives
         and the shape function matrices using SymPy. For this to work, the
@@ -139,7 +157,7 @@ class PolyCell(CellData):
             r = np.stack([_shpf(p[i])[0] for i in range(len(p))])
             return ascont(r)
 
-        def shpmf(p: ndarray, ndof:int=nDOF) -> ndarray:
+        def shpmf(p: ndarray, ndof: int = nDOF) -> ndarray:
             """
             Evaluates the shape function matrix at multiple points
             in the master domain.
@@ -190,7 +208,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.shpfnc is None:
-            cls.generate(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -198,7 +216,7 @@ class PolyCell(CellData):
         return cls.shpfnc(pcoords).astype(float)
 
     @classmethod
-    def shape_function_matrix(cls, pcoords: ndarray) -> ndarray:
+    def shape_function_matrix(cls, pcoords: ndarray, N: int = None) -> ndarray:
         """
         Evaluates the shape function matrix at the specified locations.
 
@@ -206,6 +224,8 @@ class PolyCell(CellData):
         ----------
         pcoords : numpy.ndarray
             Locations of the evaluation points.
+        N: integer, Optional
+            Number of unknowns per node.
 
         Returns
         -------
@@ -214,10 +234,10 @@ class PolyCell(CellData):
             are the number of evaluation points, degrees of freedom per node
             and nodes per cell.
         """
-        nDOFN = getattr(cls, "NDOFN", None)
+        nDOFN = getattr(cls, "NDOFN", N) if N is None else N
         pcoords = np.array(pcoords)
         if cls.shpmfnc is None:
-            cls.generate(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -248,7 +268,7 @@ class PolyCell(CellData):
         """
         pcoords = np.array(pcoords)
         if cls.dshpfnc is None:
-            cls.generate(update=True)
+            cls.generate_class_functions(update=True)
         if cls.NDIM == 3:
             if len(pcoords.shape) == 1:
                 pcoords = atleast2d(pcoords, front=True)
@@ -262,7 +282,7 @@ class PolyCell(CellData):
     def measure(self, *args, **kwargs) -> float:
         """Ought to return the net measure for the cells in the
         database as a group."""
-        return np.sum(self.measure(*args, **kwargs))
+        return np.sum(self.measures(*args, **kwargs))
 
     def area(self, *args, **kwargs) -> float:
         """Returns the total area of the cells in the database. Only for 2d entities."""
@@ -280,11 +300,11 @@ class PolyCell(CellData):
         """Ought to return the volumes of the individual cells in the database."""
         raise NotImplementedError
 
-    def extract_surface(self, detach=False):
+    def extract_surface(self, detach: bool = False):
         """Extracts the surface of the mesh. Only for 3d meshes."""
         raise NotImplementedError
 
-    def jacobian_matrix(self, *, dshp: ndarray = None, **kwargs) -> ndarray:
+    def jacobian_matrix(self, *, dshp: ndarray = None, **__) -> ndarray:
         """
         Returns the jacobian matrices.
 
@@ -303,9 +323,8 @@ class PolyCell(CellData):
             are the number of elements, evaluation points and spatial
             dimensions. The number of evaluation points in the output
             is governed by the parameter 'dshp'.
-
         """
-        ecoords = kwargs.get("ecoords", self.local_coordinates())
+        ecoords = self.local_coordinates()
         return jacobian_matrix_bulk(dshp, ecoords)
 
     def jacobian(self, *, jac: ndarray = None, **kwargs) -> Union[float, ndarray]:
@@ -328,26 +347,70 @@ class PolyCell(CellData):
         See Also
         --------
         :func:`jacobian_matrix`
-
         """
         if jac is None:
             jac = self.jacobian_matrix(**kwargs)
         return np.linalg.det(jac)
 
-    def points_of_cells(self, *_, **kwargs) -> ndarray:
+    def source_points(self) -> PointCloud:
         """
-        Returns the points of the cells as a 3d float numpy array.
+        Returns the hosting pointcloud.
+        """
+        return self.container.source().points()
 
-        See Also
-        --------
-        :func:`PolyCell1d.points_of_cells`
+    def source_coords(self) -> ndarray:
+        """
+        Returns the coordinates of the hosting pointcloud.
         """
         if self.pointdata is not None:
             coords = self.pointdata.x
         else:
             coords = self.container.source().coords()
-        topo = self.topology().to_numpy()
-        return points_of_cells(coords, topo, centralize=False)
+        return coords
+
+    def source_frame(self) -> FrameLike:
+        """
+        Returns the frame of the hosting pointcloud.
+        """
+        return self.container.source().frame
+
+    def points_of_cells(
+        self,
+        *,
+        points: Union[float, Iterable] = None,
+        cells: Union[int, Iterable] = None,
+        target: Union[str, CartesianFrame] = "global"
+    ) -> ndarray:
+        """
+        Returns the points of the cells as a NumPy array.
+        """
+        if cells is not None:
+            cells = atleast1d(cells)
+            conds = np.isin(cells, self.id)
+            cells = atleast1d(cells[conds])
+            assert len(cells) > 0, "Length of cells is zero!"
+        else:
+            cells = np.s_[:]
+
+        if isinstance(target, str):
+            assert target.lower() in ["global", "g"]
+        else:
+            raise NotImplementedError
+
+        coords = self.source_coords()
+        topo = self.topology().to_numpy()[cells]
+        ecoords = points_of_cells(coords, topo, centralize=False)
+
+        if points is None:
+            return ecoords
+        else:
+            points = np.array(points)
+
+        shp = self.shape_function_values(points)
+        if len(shp) == 3:  # variable metric cells
+            shp = shp if len(shp) == 2 else shp[cells]
+
+        return pcoords_to_coords(points, ecoords, shp)  # (nE, nP, nD)
 
     def local_coordinates(self, *, target: CartesianFrame = None) -> ndarray:
         """
@@ -416,33 +479,181 @@ class PolyCell(CellData):
         self._wrapped[self._dbkey_nodes_] = topo
         return self
 
+    def glob_to_loc(self, x: Union[Iterable, ndarray]) -> ndarray:
+        """
+        Returns the local coordinates of the input points for each
+        cell in the block. The input 'x' can describe a single (1d array),
+        or several positions at once (2d array).
+
+        Notes
+        -----
+        This function is useful when detecting if two bodies touch each other or not,
+        and if they do, where.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            A single point in 3d space as an 1d array, or a collection of points
+            as a 2d array.
+
+        Returns
+        -------
+        numpy.ndarray
+            A NumPy array of shape (nE, nP, nD), where nP is the number of points in 'x',
+            nE is the number of cells in the block and nD is the number of spatial dimensions.
+        """
+        raise NotImplementedError
+
+    def loc_to_glob(self, x: Union[Iterable, ndarray]) -> ndarray:
+        """
+        Returns the global coordinates of the input points for each
+        cell in the block. The input 'x' can describe a single (1d array),
+        or several local positions at once (2d array).
+
+        Notes
+        -----
+        This function is useful when detecting if two bodies touch each other or not,
+        and if they do, where.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            A single point as an 1d array, or a collection of points
+            as a 2d array.
+
+        Returns
+        -------
+        numpy.ndarray
+            A NumPy array of shape (nE, nP, nD), where nP is the number of points in 'x',
+            nE is the number of cells in the block and nD is the number of spatial dimensions.
+        """
+        x = atleast2d(x, front=True)
+        shp = self.shape_function_values(x)
+        ecoords = self.points_of_cells()
+        return _loc_to_glob_bulk_(shp.T, ecoords)
+
+    def pip(
+        self,
+        x: Union[Iterable, ndarray],
+        tol: float = 1e-12,
+        lazy: bool = True,
+        k: int = 4,
+    ) -> Union[bool, ndarray]:
+        """
+        Returns an 1d boolean integer array that tells if the points specified by 'x'
+        are included in any of the cells in the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+        tol: float, Optional
+            Floating point tolerance for detecting boundaries. Default is 1e-12.
+        lazy: bool, Optional
+            If False, the ckeck is performed for all cells in the block. If True,
+            it is used in combination with parameter 'k' and the check is only performed
+            for the k nearest neighbours of the input points. Default is True.
+        k: int, Optional
+            The number of neighbours for the case when 'lazy' is true. Default is 4.
+
+        Returns
+        -------
+        bool or numpy.ndarray
+            A single or NumPy array of booleans for every input point.
+        """
+        raise NotImplementedError
+    
+    def locate(
+        self,
+        x: Union[Iterable, ndarray],
+        lazy: bool = True,
+        tol: float = 1e-12,
+        k: int = 4,
+    ) -> Tuple[ndarray]:
+        """
+        Locates a set of points inside the cells of the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+        tol: float, Optional
+            Floating point tolerance for detecting boundaries. Default is 1e-12.
+        lazy: bool, Optional
+            If False, the ckeck is performed for all cells in the block. If True,
+            it is used in combination with parameter 'k' and the check is only performed
+            for the k nearest neighbours of the input points. Default is True.
+        k: int, Optional
+            The number of neighbours for the case when 'lazy' is true. Default is 4.
+
+        Returns
+        -------
+        numpy.ndarray
+            The indices of 'x' that are inside a cell of the block.
+        numpy.ndarray
+            The block-local indices of the cells that include the points with
+            the returned indices.
+        numpy.ndarray
+            The parametric coordinates of the located points inside the including cells.    
+        """
+        raise NotImplementedError
+
+    def to_simplices(self) -> Tuple[ndarray]:
+        """
+        Returns the cells of the block, refactorized into simplices.
+        """
+        NDIM = self.__class__.NDIM
+        if NDIM == 1:
+            return self.to_simplices()
+        elif NDIM == 2:
+            return self.to_triangles()
+        elif NDIM == 3:
+            return self.to_tetrahedra()
+
+    def centers(self, target: FrameLike = None) -> ndarray:
+        """Returns the centers of the cells."""
+        coords = self.source_coords()
+        t = self.topology().to_numpy()
+        centers = cell_centers_bulk(coords, t)
+        if target:
+            pc = PointCloud(centers, frame=self.source_frame())
+            centers = pc.show(target)
+        return centers
+
+    def unique_indices(self) -> ndarray:
+        """
+        Returns the indices of the points involved in the cells of the block.
+        """
+        return np.unique(self.topology())
+
+    def points_involved(self) -> PointCloud:
+        """Returns the points involved in the cells of the block."""
+        return self.source_points()[self.unique_indices()]
+
 
 class PolyCell1d(PolyCell):
     """Base class for 1d cells"""
 
     NDIM = 1
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def lenth(self, *args, **kwargs):
+    def lenth(self) -> float:
         """Returns the total length of the cells in
         the database."""
-        return np.sum(self.lengths(*args, **kwargs))
+        return np.sum(self.lengths())
 
-    def area(self, *args, **kwargs):
-        return np.sum(self.areas(*args, **kwargs))
-    
-    def lengths(self, *args, coords=None, topo=None, **kwargs) -> ndarray:
+    def lengths(self) -> ndarray:
         """
         Returns the lengths as a NumPy array.
         """
-        if coords is None:
-            coords = self.root().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+        coords = self.container.source().coords()
+        topo = self.topology().to_numpy()
         return lengths_of_lines(coords, topo)
 
-    def areas(self, *args, **kwargs) -> ndarray:
+    def area(self) -> float:
+        # should return area of the surface of the volume
+        raise NotImplementedError
+
+    def areas(self) -> ndarray:
         """
         Returns the areas as a NumPy array.
         """
@@ -452,17 +663,15 @@ class PolyCell1d(PolyCell):
         else:
             return np.ones((len(self)))
 
-    def volumes(self, *args, **kwargs):
+    def volumes(self) -> ndarray:
         """
         Returns the volumes as a NumPy array.
         """
-        return self.lengths(*args, **kwargs) * self.areas(*args, **kwargs)
+        return self.lengths() * self.areas()
 
-    def measures(self, *args, **kwargs):
-        return self.lengths(*args, **kwargs)
-    
-    # NOTE The functionality of `pcoords_to_coords_1d` needs to be generalized
-    # for higher order cells.
+    def measures(self) -> ndarray:
+        return self.lengths()
+
     def points_of_cells(
         self,
         *,
@@ -472,7 +681,7 @@ class PolyCell1d(PolyCell):
         target: Union[str, CartesianFrame] = "global",
         rng: Iterable = None,
         **kwargs
-    ) -> Union[dict, ndarray]:
+    ) -> ndarray:
         if isinstance(target, str):
             assert target.lower() in ["global", "g"]
         else:
@@ -508,25 +717,14 @@ class PolyCell1d(PolyCell):
             rng = np.array([0, 1]) if rng is None else np.array(rng)
 
         points, rng = to_range_1d(points, source=rng, target=[0, 1]).flatten(), [0, 1]
-        datacoords = pcoords_to_coords_1d(points, ecoords)  # (nE * nP, nD)
+        res = pcoords_to_coords_1d(points, ecoords)  # (nE * nP, nD)
 
         if not flatten:
             nE = ecoords.shape[0]
             nP = points.shape[0]
-            datacoords = datacoords.reshape(
-                nE, nP, datacoords.shape[-1]
-            )  # (nE, nP, nD)
+            res = res.reshape(nE, nP, res.shape[-1])  # (nE, nP, nD)
 
-        # values : (nE, nP, nDOF, nRHS) or (nE, nP * nDOF, nRHS)
-        if isinstance(cells, slice):
-            # results are requested on all elements
-            data = datacoords
-        elif isinstance(cells, Iterable):
-            data = {c: datacoords[i] for i, c in enumerate(cells)}
-        else:
-            raise TypeError("Invalid data type <> for cells.".format(type(cells)))
-
-        return data
+        return res
 
 
 class PolyCell2d(PolyCell):
@@ -534,24 +732,21 @@ class PolyCell2d(PolyCell):
 
     NDIM = 2
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def area(self, *args, **kwargs) -> float:
+    def area(self) -> float:
         """
         Returns the total area of the cells in the block.
         """
-        return np.sum(self.areas(*args, **kwargs))
+        return np.sum(self.areas())
 
     @classmethod
-    def trimap(cls):
+    def trimap(cls) -> Iterable:
         """
         Returns a mapper to transform topology and other data to
         a collection of T3 triangles.
         """
         _, t, _ = triangulate(points=cls.lcoords())
         return t
-    
+
     @classmethod
     def lcenter(cls) -> ndarray:
         """
@@ -564,14 +759,14 @@ class PolyCell2d(PolyCell):
         """
         return cell_center_2d(cls.lcoords())
 
-    def to_triangles(self):
+    def to_triangles(self) -> ndarray:
         """
         Returns the topology as a collection of T3 triangles.
         """
         t = self.topology().to_numpy()
-        return transform_topo(t, self.trimap())
+        return transform_topology(t, self.trimap())
 
-    def areas(self, *_, **__) -> ndarray:
+    def areas(self) -> ndarray:
         """
         Returns the areas of the cells.
         """
@@ -586,21 +781,24 @@ class PolyCell2d(PolyCell):
         res = np.sum(areas_tri.reshape(nE, int(len(areas_tri) / nE)), axis=1)
         return res
 
-    def volumes(self, *args, **kwargs) -> ndarray:
+    def volumes(self) -> ndarray:
         """
         Returns the volumes of the cells.
         """
-        areas = self.areas(*args, **kwargs)
+        areas = self.areas()
         t = self.thickness()
         return areas * t
 
-    def measures(self, *args, **kwargs) -> ndarray:
+    def measures(self) -> ndarray:
         """
         Returns the areas of the cells.
         """
-        return self.areas(*args, **kwargs)
+        return self.areas()
 
     def local_coordinates(self, *_, target: CartesianFrame = None) -> ndarray:
+        """
+        Returns the local coordinates of the cells of the block.
+        """
         ec = super(PolyCell2d, self).local_coordinates(target=target)
         return ascont(ec[:, :, :2])
 
@@ -616,6 +814,30 @@ class PolyCell2d(PolyCell):
             t = np.ones(len(self), dtype=float)
         return t
 
+    def pip(
+        self, x: Union[Iterable, ndarray], tol: float = 1e-12
+    ) -> Union[bool, ndarray]:
+        """
+        Returns an 1d boolean integer array that tells if the points specified by 'x'
+        are included in any of the cells in the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+
+        Returns
+        -------
+        bool or numpy.ndarray
+            A single or NumPy array of booleans for every input point.
+        """
+        x = atleast2d(x, front=True)
+        coords = self.source_coords()
+        topo = self.to_triangles()
+        ecoords = points_of_cells(coords, topo, centralize=False)
+        pips = _pip_tri_bulk_(x, ecoords, tol)
+        return np.squeeze(np.any(pips, axis=1))
+
 
 class PolyCell3d(PolyCell):
     """Base class for 3d cells"""
@@ -625,13 +847,46 @@ class PolyCell3d(PolyCell):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def measures(self, *args, **kwargs):
+    def measures(self, *args, **kwargs) -> ndarray:
+        """
+        Returns the measures of the block.
+        """
         return self.volumes(*args, **kwargs)
 
-    def to_tetrahedra(self) -> np.ndarray:
+    @classmethod
+    def tetmap(cls) -> Iterable:
+        """
+        Returns a mapper to transform topology and other data to
+        a collection of T3 triangles.
+        """
         raise NotImplementedError
 
-    def to_vtk(self, detach=False):
+    def to_tetrahedra(self, flatten: bool = True) -> ndarray:
+        """
+        Returns the topology as a collection of TET4 tetrahedra.
+
+        Parameters
+        ----------
+        flatten: bool, Optional
+            If True, the topology is returned as a 2d array. If False, the
+            length of the first axis equals the number of cells in the block,
+            the length of the second axis equals the number of tetrahedra per
+            cell.
+        """
+        t = self.topology().to_numpy()
+        tetmap = self.tetmap()
+        tetra = transform_topology(t, tetmap)
+        if flatten:
+            return tetra
+        else:
+            nE = len(t)
+            nT = len(tetmap)
+            return tetra.reshape(nE, nT, 4)
+
+    def to_vtk(self, detach: bool = False):
+        """
+        Returns the block as a VTK object.
+        """
         coords = self.container.root().coords()
         topo = self.topology().to_numpy()
         vtkid = self.__class__.vtkCellType
@@ -644,9 +899,15 @@ class PolyCell3d(PolyCell):
     if __haspyvista__:
 
         def to_pv(self, detach=False) -> pv.UnstructuredGrid:
+            """
+            Returns the block as a pyVista object.
+            """
             return pv.wrap(self.to_vtk(detach=detach))
 
-    def extract_surface(self, detach=False):
+    def extract_surface(self, detach: bool = False) -> Tuple[ndarray]:
+        """
+        Extracts the surface of the object.
+        """
         pvs = self.to_pv(detach=detach).extract_surface(pass_pointid=True)
         s = pvs.triangulate().cast_to_unstructured_grid()
         topo = s.cells_dict[5]
@@ -657,16 +918,139 @@ class PolyCell3d(PolyCell):
         else:
             return self.container.root().coords(), topo
 
-    def boundary(self, detach=False):
-        return self.surface(detach=detach)
+    def boundary(self, detach: bool = False) -> Tuple[ndarray]:
+        """
+        Returns the boundary of the block as 2 NumPy arrays.
+        """
+        return self.extract_surface(detach=detach)
 
-    def volumes(self, *_, coords=None, topo=None, **__):
-        if coords is None:
-            coords = self.container.root().coords()
-        topo = self.topology().to_numpy() if topo is None else topo
+    def volumes(self) -> ndarray:
+        """
+        Returns the volumes of the block as an 1d float array.
+        """
+        coords = self.container.root().coords()
+        topo = self.topology().to_numpy()
         topo_tet = self.to_tetrahedra()
-        volumes = tet_vol_bulk(cells_coords(coords, topo_tet))
+        volumes = vol_tet_bulk(cells_coords(coords, topo_tet))
         res = np.sum(
             volumes.reshape(topo.shape[0], int(len(volumes) / topo.shape[0])), axis=1
         )
         return res
+
+    def locate(
+        self,
+        x: Union[Iterable, ndarray],
+        lazy: bool = True,
+        tol: float = 1e-12,
+        k: int = 4,
+    ) -> Tuple[ndarray]:
+        """
+        Locates a set of points inside the cells of the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+        tol: float, Optional
+            Floating point tolerance for detecting boundaries. Default is 1e-12.
+        lazy: bool, Optional
+            If False, the ckeck is performed for all cells in the block. If True,
+            it is used in combination with parameter 'k' and the check is only performed
+            for the k nearest neighbours of the input points. Default is True.
+        k: int, Optional
+            The number of neighbours for the case when 'lazy' is true. Default is 4.
+
+        Returns
+        -------
+        numpy.ndarray
+            The indices of 'x' that are inside a cell of the block.
+        numpy.ndarray
+            The block-local indices of the cells that include the points with
+            the returned indices.
+        numpy.ndarray
+            The parametric coordinates of the located points inside the including cells.    
+        """
+        x = atleast2d(x, front=True)
+
+        coords = self.source_coords()
+        topo = self.topology()
+        tetra = self.to_tetrahedra(flatten=True)
+        ecoords_tet = points_of_cells(coords, tetra, centralize=False)
+        tetmap = self.tetmap()
+
+        # perform point-in-polygon test
+        if lazy:
+            centers = cell_centers_bulk(coords, tetra)
+            k = min(k, len(centers))
+            neighbours = k_nearest_neighbours(centers, x, k=k)
+            nat_tet = _glob_to_nat_tet_bulk_knn_(
+                x, ecoords_tet, neighbours
+            )  # (nP, kTET, 4)
+            pips = __pip_tet_bulk__(nat_tet, tol)  # (nP, kTET)
+        else:
+            # pips = _pip_tet_bulk_(x, ecoords_tet, tol)
+            nat_tet = _glob_to_nat_tet_bulk_(x, ecoords_tet)  # (nP, nTET, 4)
+            pips = __pip_tet_bulk__(nat_tet, tol)  # (nP, nTET)
+
+        # locate the points that are inside any of the cells
+        pip = np.squeeze(np.any(pips, axis=1))  # (nP)
+        ipip = np.where(pip)[0]  # (nP_)
+        if lazy:
+            points_to_tets = _find_first_hits_knn_(pips[ipip], neighbours[ipip])
+        else:
+            points_to_tets = _find_first_hits_(pips[ipip])
+        tets_to_cells = np.floor(np.arange(len(tetra)) / len(tetmap)).astype(int)
+        points_to_cells = tets_to_cells[points_to_tets]  # (nP_)
+
+        # locate the cells that contain the points
+        cell_tet_indices = np.tile(np.arange(tetmap.shape[0]), len(topo))[
+            points_to_tets
+        ]
+        nat_tet = nat_tet[ipip]  # (nP_, nTET, 4)
+        lcoords = _ntet_to_loc_bulk_(
+            self.lcoords(), nat_tet, tetmap, cell_tet_indices
+        )
+
+        return ipip, points_to_cells, lcoords
+
+    def pip(
+        self,
+        x: Union[Iterable, ndarray],
+        tol: float = 1e-12,
+        lazy: bool = True,
+        k: int = 4,
+    ) -> Union[bool, ndarray]:
+        """
+        Returns an 1d boolean integer array that tells if the points specified by 'x'
+        are included in any of the cells in the block.
+
+        Parameters
+        ----------
+        x: Iterable or numpy.ndarray
+            The coordinates of the points that we want to investigate.
+        tol: float, Optional
+            Floating point tolerance for detecting boundaries. Default is 1e-12.
+        lazy: bool, Optional
+            If False, the ckeck is performed for all cells in the block. If True,
+            it is used in combination with parameter 'k' and the check is only performed
+            for the k nearest neighbours of the input points. Default is True.
+        k: int, Optional
+            The number of neighbours for the case when 'lazy' is true. Default is 4.
+
+        Returns
+        -------
+        bool or numpy.ndarray
+            A single or NumPy array of booleans for every input point.
+        """
+        x = atleast2d(x, front=True)
+        coords = self.source_coords()
+        tetra = self.to_tetrahedra(flatten=True)
+        ecoords = points_of_cells(coords, tetra, centralize=False)
+        if lazy:
+            centers = cell_centers_bulk(coords, tetra)
+            k = min(k, len(centers))
+            knn = k_nearest_neighbours(centers, x, k=k)
+            pips = _pip_tet_bulk_knn_(x, ecoords, knn, tol)
+        else:
+            pips = _pip_tet_bulk_(x, ecoords, tol)
+        return np.squeeze(np.any(pips, axis=1))

@@ -1,4 +1,4 @@
-__version__ = "0.0.12"
+__version__ = "0.0.14"
 __description__ = "A Python package to build, manipulate and analyze polygonal meshes."
 
 from .space import PointCloud
@@ -13,3 +13,4 @@ from .trimesh import TriMesh
 from .tetmesh import TetMesh
 from .triang import triangulate
 from .grid import grid, Grid
+from .tetrahedralize import tetrahedralize

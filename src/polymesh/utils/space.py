@@ -6,6 +6,7 @@ from neumann.linalg import normalize, normalize2d, norm2d
 from neumann import atleast2d
 
 from .utils import center_of_points, cell_center, cell_coords
+from .knn import k_nearest_neighbours
 
 __cache = True
 
@@ -189,7 +190,7 @@ def is_planar_surface(normals: ndarray, tol: float = 1e-8) -> bool:
 
     Returns
     -------
-    Bool
+    bool
         True if the surfaces whose normal vectors are provided form
         a flat surface, False otherwise.
     """
@@ -238,7 +239,6 @@ def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
     int or Iterable[int]
         One or more indices of 'coords', for which the distance from
         one or more points described by 'target' is minimal.
-
     """
     if len(target.shape) == 1:
         assert (
@@ -246,8 +246,7 @@ def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
         ), "The dimensions of `coords` and `target` are not compatible."
         return _index_of_closest_point(coords, target)
     else:
-        d = distance_matrix(target, coords)
-        return np.argmin(d, axis=1)
+        return k_nearest_neighbours(coords, target)
 
 
 def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
@@ -267,7 +266,6 @@ def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
     int or Iterable[int]
         One or more indices of 'coords', for which the distance from
         one or more points described by 'target' is maximal.
-
     """
     if len(target.shape) == 1:
         assert (
@@ -304,10 +302,9 @@ def is_line(coords: ndarray, tol=1e-8) -> bool:
 
     Returns
     -------
-    Bool
+    bool
         True if all absolute deviations from the line between the first
         and the last point is smaller than 'tol'.
-
     """
     nP = coords.shape[0]
     c = normalize2d(move_points(coords, -coords[0]))
@@ -332,8 +329,7 @@ def is_planar(coords: ndarray, tol: float = 1e-8) -> bool:
 
     Returns
     -------
-    Bool
-
+    bool
     """
     nP = coords.shape[0]
     dA = distances_from_point(coords, coords[0])

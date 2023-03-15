@@ -102,7 +102,6 @@ def area_tri(ecoords: np.ndarray):
     float
         Returns a positive number if the vertices are listed counterclockwise,
         negative if they are listed clockwise.
-
     """
     A = (
         (ecoords[1, 0] * ecoords[2, 1] - ecoords[2, 0] * ecoords[1, 1])
@@ -135,7 +134,6 @@ def inscribed_radius(ecoords: ndarray):
     Returns
     -------
     float
-
     """
     a = norm(ecoords[1] - ecoords[0])
     b = norm(ecoords[2] - ecoords[1])
@@ -162,7 +160,6 @@ def inscribed_radii(ecoords: ndarray) -> ndarray:
     -------
     numpy.ndarray
         1d numpy float array
-
     """
     nE = ecoords.shape[0]
     res = np.zeros(nE)
@@ -189,7 +186,6 @@ def areas_tri(ecoords: np.ndarray) -> ndarray:
     -------
     float
         The sum of areas of all triangles.
-
     """
     A = 0.0
     nE = len(ecoords)
@@ -226,7 +222,6 @@ def area_tri_bulk(ecoords: np.ndarray) -> ndarray:
     -------
     numpy.ndarray
         1d numpy float array
-
     """
     nE = len(ecoords)
     res = np.zeros(nE, dtype=ecoords.dtype)
@@ -253,7 +248,6 @@ def area_tri_u(x1, y1, x2, y2, x3, y3) -> float:
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return (x2 * y3 - x3 * y2 + x3 * y1 - x1 * y3 + x1 * y2 - x2 * y1) / 2
 
@@ -267,7 +261,6 @@ def area_tri_u2(x1, x2, x3, y1, y2, y3):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return (x2 * y3 - x3 * y2 + x3 * y1 - x1 * y3 + x1 * y2 - x2 * y1) / 2
 
@@ -280,7 +273,6 @@ def loc_to_glob_tri(lcoord: np.ndarray, gcoords: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return gcoords.T @ shp_tri_loc(lcoord)
 
@@ -293,7 +285,6 @@ def glob_to_loc_tri(gcoord: np.ndarray, gcoords: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     monoms = monoms_tri_loc_bulk(gcoords)
     coeffs = np.linalg.inv(monoms)
@@ -309,7 +300,6 @@ def glob_to_nat_tri(gcoord: np.ndarray, ecoords: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     x, y = gcoord[0:2]
     (x1, x2, x3), (y1, y2, y3) = ecoords[:, 0], ecoords[:, 1]
@@ -317,6 +307,30 @@ def glob_to_nat_tri(gcoord: np.ndarray, ecoords: np.ndarray):
     n1 = (x2 * y3 - x * y3 - x3 * y2 + x * y2 + x3 * y - x2 * y) / A2
     n2 = (x * y3 - x1 * y3 + x3 * y1 - x * y1 - x3 * y + x1 * y) / A2
     return np.array([n1, n2, 1 - n1 - n2], dtype=gcoord.dtype)
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _glob_to_nat_tri_bulk_(points: ndarray, ecoords: ndarray) -> ndarray:
+    nE = ecoords.shape[0]
+    nP = points.shape[0]
+    res = np.zeros((nP, nE, 3), dtype=points.dtype)
+    for i in prange(nP):
+        for j in prange(nE):
+            res[i, j] = glob_to_nat_tri(points[i], ecoords[j])
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _pip_tri_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> ndarray:
+    nat = _glob_to_nat_tri_bulk_(points, ecoords)
+    nP, nE = nat.shape[:2]
+    res = np.zeros((nP, nE), dtype=np.bool_)
+    for i in prange(nP):
+        for j in prange(nE):
+            c1 = np.all(nat[i, j] > (-tol))
+            c2 = np.all(nat[i, j] < (1 + tol))
+            res[i, j] = c1 and c2
+    return res
 
 
 @njit(nogil=True, cache=__cache)
@@ -327,7 +341,6 @@ def nat_to_glob_tri(ncoord: np.ndarray, ecoords: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return ecoords.T @ ncoord
 
@@ -340,7 +353,6 @@ def loc_to_nat_tri(lcoord: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return shp_tri_loc(lcoord)
 
@@ -353,7 +365,6 @@ def nat_to_loc_tri(acoord: np.ndarray):
     Notes
     -----
     This function is numba-jittable in 'nopython' mode.
-
     """
     return acoord.T @ lcoords_tri()
 

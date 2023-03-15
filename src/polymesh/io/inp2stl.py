@@ -51,7 +51,6 @@ def computeLength(aVector):
 
 
 def computeNormal(p1, p2, p3):
-
     u = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]]
     v = [p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]]
 
@@ -77,7 +76,6 @@ def isFileExtensionSTL(anOutputFileName):
 
 
 def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
-
     # Open the file if it is an INF file
     if not isFileExtensionINF(anInputFileName):
         raise Exception('The file name "' + anInputFileName + '" is not an .inf file')
@@ -96,7 +94,6 @@ def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
 
     # Read all the lines of the file
     for line in input_file:
-
         # Change of record type
         if line[0] == "*":
             if line[1] != "*":
@@ -181,7 +178,6 @@ def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
         temp = []
 
         for triangle_set in triangle_index_set:
-
             temp.append([])
 
             for triangle in triangle_set:
@@ -197,7 +193,6 @@ def readInpFile(anInputFileName, aFlipNormalVectorFlag=False):
 
 
 def writeStlFile(anOutputFileName, aVertexSet, aTriangleIndexSet):
-
     # Open the file if it is an STL file
     if not isFileExtensionSTL(anOutputFileName):
         raise Exception('The file name "' + anOutputFileName + '" is not an .stl file')
@@ -207,7 +202,6 @@ def writeStlFile(anOutputFileName, aVertexSet, aTriangleIndexSet):
     i = 0
     output_file.write("solid\n")
     for triangle in aTriangleIndexSet:
-
         # Save normal here
         p1_index = triangle[0]
         p1 = aVertexSet[p1_index]
@@ -250,13 +244,11 @@ def writeStlFile(anOutputFileName, aVertexSet, aTriangleIndexSet):
 
 
 def getMeshBBox(vertex_set, triangle_index_set):
-
     min_corner = None
     max_corner = None
 
     for triangle in triangle_index_set:
         for vertex_id in triangle:
-
             if isinstance(min_corner, NoneType):
                 min_corner = copy.deepcopy(vertex_set[vertex_id])
             else:
@@ -275,13 +267,11 @@ def getMeshBBox(vertex_set, triangle_index_set):
 
 
 def getBBox(vertex_set, triangle_index_set):
-
     # Get the bounding box
     if len(triangle_index_set) == 1:
         min_corner, max_corner = getMeshBBox(vertex_set, triangle_index_set[0])
     else:
         for i, triangle_index in enumerate(triangle_index_set):
-
             if i == 0:
                 min_corner, max_corner = getMeshBBox(vertex_set, triangle_index)
             else:
@@ -299,7 +289,6 @@ def getBBox(vertex_set, triangle_index_set):
 
 
 if __name__ == "__main__":
-
     # Load the arguments from the command line
     args = processCmdLine()
 

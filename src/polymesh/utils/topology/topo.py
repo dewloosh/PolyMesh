@@ -778,8 +778,9 @@ def inds_to_invmap_as_array(inds: np.ndarray):
     return res
 
 
-def nodal_adjacency(topo: TopoLike, *args, frmt:str=None, 
-                    assume_regular:bool=False, **kwargs):
+def nodal_adjacency(
+    topo: TopoLike, *args, frmt: str = None, assume_regular: bool = False, **kwargs
+):
     """
     Returns nodal adjacency information of a mesh.
 
@@ -848,12 +849,12 @@ def unique_topo_data(topo3d: TopoLike) -> Tuple[ndarray, ndarray]:
     Parameters
     ----------
     topo : numpy.ndarray
-        Hierarchical topology array. The array must be 3 dimensional containing node 
-        indices for every node as a subarray. For instance for a 2d cell, the node 
+        Hierarchical topology array. The array must be 3 dimensional containing node
+        indices for every node as a subarray. For instance for a 2d cell, the node
         indices of the j-th edge of the i-th element read as `topo[i, j]`. In general,
         the first axis runs for the elements, the second axis runs for edges (2d) or
         faces (3d).
-        
+
     Returns
     -------
     numpy.ndarray

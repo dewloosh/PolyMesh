@@ -3,15 +3,14 @@ import numpy as np
 from numpy import ndarray
 from numba import njit, prange
 
-from .utils.topology import unique_topo_data, detach_mesh_bulk, transform_topo
+from .utils.topology import unique_topo_data, detach_mesh_bulk, transform_topology
 from .utils import center_of_points, k_nearest_neighbours as knn, knn_to_lines
 from .polydata import PolyData
 
 __cache = True
 
 
-__all__ = ["grid", "gridQ4", "gridQ9",
-           "gridH8", "gridH27", "knngridL2", "Grid"]
+__all__ = ["grid", "gridQ4", "gridQ9", "gridH8", "gridH27", "knngridL2", "Grid"]
 
 
 def grid(
@@ -161,8 +160,7 @@ def grid(
         if len(bins) == 2:
             coords, topo = grid_2d_bins(bins[0], bins[1], eshape, shift, start)
         elif len(bins) == 3:
-            coords, topo = grid_3d_bins(
-                bins[0], bins[1], bins[2], eshape, shift, start)
+            coords, topo = grid_3d_bins(bins[0], bins[1], bins[2], eshape, shift, start)
         else:
             raise NotImplementedError
     else:
@@ -205,7 +203,7 @@ def gridQ4(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(2, 2), **kwargs)
     path = np.array([0, 2, 3, 1], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
 def gridQ9(*args, **kwargs) -> Tuple[ndarray, ndarray]:
@@ -219,7 +217,7 @@ def gridQ9(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(3, 3), **kwargs)
     path = np.array([0, 6, 8, 2, 3, 7, 5, 1, 4], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
 def gridH8(*args, **kwargs) -> Tuple[ndarray, ndarray]:
@@ -233,9 +231,10 @@ def gridH8(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     coords, topo = grid(*args, eshape=(2, 2, 2), **kwargs)
     path = np.array([0, 4, 6, 2, 1, 5, 7, 3], dtype=int)
-    return coords, transform_topo(topo, path)
+    return coords, transform_topology(topo, path)
 
 
+# fmt: off
 def gridH27(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     """
     Customized version of `grid` dedicated to H27 elements.
@@ -246,10 +245,16 @@ def gridH27(*args, **kwargs) -> Tuple[ndarray, ndarray]:
     `eshape` being obsolete.
     """
     coords, topo = grid(*args, eshape=(3, 3, 3), **kwargs)
-    path = np.array([0, 18, 24, 6, 2, 20, 26, 8, 9, 21, 15, 3, 11,
-                     23, 17, 5, 1, 19, 25, 7, 4, 22, 10, 16, 12,
-                     14, 13], dtype=int)
-    return coords, transform_topo(topo, path)
+    path = np.array(
+        [
+            0, 18, 24, 6, 2, 20, 26, 8, 9, 21,
+            15, 3, 11, 23, 17, 5, 1, 19, 25, 7,
+            4, 22, 10, 16, 12, 14, 13,
+        ],
+        dtype=int,
+    )
+    return coords, transform_topology(topo, path)
+# fmt: on
 
 
 @njit(nogil=True, cache=__cache)
@@ -326,10 +331,8 @@ def _rgridST(size, shape, eshape, shift, start=0):
                             + (nNodeY - 1) * (j - 1)
                             + m
                         )
-                        coords[n - 1, 0] = shift[0] + \
-                            dX * (i - 1) + ddX * (k - 1)
-                        coords[n - 1, 1] = shift[1] + \
-                            dY * (j - 1) + ddY * (m - 1)
+                        coords[n - 1, 0] = shift[0] + dX * (i - 1) + ddX * (k - 1)
+                        coords[n - 1, 1] = shift[1] + dY * (j - 1) + ddY * (m - 1)
                         ne += 1
                         topo[elem, ne] = n
     elif nDime == 3:
@@ -433,10 +436,8 @@ def rgridMT(size, shape, eshape, shift, start=0):
                             + m
                         )
                         ne = (k - 1) * nNodeY + m - 1
-                        coords[n - 1, 0] = shift[0] + \
-                            dX * (i - 1) + ddX * (k - 1)
-                        coords[n - 1, 1] = shift[1] + \
-                            dY * (j - 1) + ddY * (m - 1)
+                        coords[n - 1, 0] = shift[0] + dX * (i - 1) + ddX * (k - 1)
+                        coords[n - 1, 1] = shift[1] + dY * (j - 1) + ddY * (m - 1)
                         topo[elem, ne] = n
     elif nDime == 3:
         for i in prange(1, ndivX + 1):
@@ -458,8 +459,7 @@ def rgridMT(size, shape, eshape, shift, start=0):
                                     + p
                                 )
                                 ne = (
-                                    (m - 1) * nNodeY * nNodeZ +
-                                    (q - 1) * nNodeZ + p - 1
+                                    (m - 1) * nNodeY * nNodeZ + (q - 1) * nNodeZ + p - 1
                                 )
                                 coords[n - 1, 0] = (
                                     shift[0] + dX * (i - 1) + ddX * (m - 1)
@@ -487,8 +487,8 @@ def grid_2d_bins(xbins, ybins, eshape, shift, start=0):
     nC = nEX * nEY
     # number of nodes
     nNEX, nNEY = eshape
-    nDIVX = (nNEX - 1)
-    nDIVY = (nNEY - 1)
+    nDIVX = nNEX - 1
+    nDIVY = nNEY - 1
     nNE = nNEX * nNEY
     nNX = nEX * nDIVX + 1
     nNY = nEY * nDIVY + 1
@@ -525,9 +525,9 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
     nC = nEX * nEY * nEZ
     # number of nodes
     nNEX, nNEY, nNEZ = eshape
-    nDIVX = (nNEX - 1)
-    nDIVY = (nNEY - 1)
-    nDIVZ = (nNEZ - 1)
+    nDIVX = nNEX - 1
+    nDIVY = nNEY - 1
+    nDIVZ = nNEZ - 1
     nNE = nNEX * nNEY * nNEZ
     nNX = nEX * nDIVX + 1
     nNY = nEY * nDIVY + 1
@@ -547,8 +547,7 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
                     for q in prange(nNEY):
                         for r in prange(nNEZ):
                             n = (
-                                ((nDIVX * i + p) * nNY +
-                                 nDIVY * j + q) * nNZ
+                                ((nDIVX * i + p) * nNY + nDIVY * j + q) * nNZ
                                 + nDIVZ * k
                                 + r
                             )
@@ -560,8 +559,9 @@ def grid_3d_bins(xbins, ybins, zbins, eshape, shift, start=0):
     return coords, topo + start
 
 
-def knngridL2(*args, max_distance: float = None, k: int = 3, 
-              X: ndarray=None, **kwargs) -> Tuple[ndarray, ndarray]:
+def knngridL2(
+    *args, max_distance: float = None, k: int = 3, X: ndarray = None, **kwargs
+) -> Tuple[ndarray, ndarray]:
     """
     Returns a KNN grid of L2 lines. First a grid of points is created
     using :func:``grid``, then points are connected based on a KNN-tree.
@@ -610,7 +610,7 @@ class Grid(PolyData):
 
     See also
     --------
-    :func:``grid``
+    :func:`~polymesh.grid.grid`
     """
 
     def __init__(self, *args, celltype=None, frame=None, eshape=None, **kwargs):

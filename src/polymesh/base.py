@@ -19,7 +19,6 @@ from .abcdata import ABC_MeshData
 
 
 class PointDataBase(AkWrapper, ABC_MeshData):
-    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the points."""
@@ -37,7 +36,6 @@ class PointDataBase(AkWrapper, ABC_MeshData):
 
 
 class CellDataBase(AkWrapper, ABC_MeshData):
-    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the cells."""
@@ -65,6 +63,10 @@ class CellDataBase(AkWrapper, ABC_MeshData):
 
     def to_triangles(self, *args, **kwargs) -> ndarray:
         """Ought to return a triangular representation of the mesh."""
+        raise NotImplementedError
+
+    def to_tetrahedra(self, *args, **kwargs) -> ndarray:
+        """Ought to return a tetrahedral representation of the mesh."""
         raise NotImplementedError
 
 

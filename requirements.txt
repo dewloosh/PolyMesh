@@ -1,4 +1,5 @@
 packaging
-linkeddeepdict==1.0.0
-neumann==1.0.0
-fsspec==2023.1.0  # to use awkward.to_parquet
+linkeddeepdict>=1.0.0
+neumann>=1.0.3
+fsspec>=2023.1.0  # to use awkward.to_parquet
+sectionproperties>=2.1.3

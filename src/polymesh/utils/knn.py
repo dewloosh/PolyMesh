@@ -93,7 +93,6 @@ def k_nearest_neighbours(
     >>> grid = Grid(size=size, shape=shape, eshape='H8')
     >>> X = grid.centers()
     >>> i = KNN(X, X, k=3, max_distance=10.0)
-
     """
     tree_kwargs = {} if tree_kwargs is None else tree_kwargs
     query_kwargs = {} if query_kwargs is None else query_kwargs

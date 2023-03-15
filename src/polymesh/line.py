@@ -1,6 +1,4 @@
-from .utils.utils import lengths_of_lines
 from .cell import PolyCell1d
-import numpy as np
 from numpy import ndarray
 
 from .utils.utils import jacobian_matrix_bulk_1d, jacobian_det_bulk_1d
@@ -12,7 +10,6 @@ __all__ = ["Line", "QuadraticLine", "NonlinearLine"]
 class Line(PolyCell1d):
     """
     Base class for all lines.
-
     """
 
     NNODE = 2

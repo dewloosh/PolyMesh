@@ -26,7 +26,7 @@ class CellData(CellDataBase):
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every
     polygonal data structure, it is useful to understand how it works.
-    
+
     Parameters
     ----------
     activity : numpy.ndarray, Optional
@@ -75,8 +75,8 @@ class CellData(CellDataBase):
         fields: dict = None,
         activity: ndarray = None,
         frames: Union[ndarray, ReferenceFrame] = None,
-        areas: Union[ndarray, float]=None,
-        t: Union[ndarray, float]=None,
+        areas: Union[ndarray, float] = None,
+        t: Union[ndarray, float] = None,
         db: AwkwardLike = None,
         container: PolyData = None,
         **kwargs,
@@ -85,8 +85,8 @@ class CellData(CellDataBase):
         assert isinstance(fields, dict)
         if len(fields) > 0:
             attr_map = self._attr_map_
-            fields = {attr_map.get(k, k) : v for k, v in fields.items()}
-        
+            fields = {attr_map.get(k, k): v for k, v in fields.items()}
+
         if db is not None:
             wrap = db
         else:
@@ -107,7 +107,7 @@ class CellData(CellDataBase):
                     if isinstance(v, ndarray):
                         if v.shape[0] == N:
                             fields[k] = v
-                            
+
             if isinstance(areas, np.ndarray):
                 fields[self._dbkey_areas_] = areas
 
@@ -117,18 +117,19 @@ class CellData(CellDataBase):
         self._container = container
 
         if self.db is not None:
-            
             if frames is not None:
                 if isinstance(frames, (ReferenceFrame, ndarray)):
                     self.frames = frames
                 else:
-                    msg = ("'frames' must be a NumPy array, or a ",
-                        "neumann.linalg.ReferenceFrame instance.")
+                    msg = (
+                        "'frames' must be a NumPy array, or a ",
+                        "neumann.linalg.ReferenceFrame instance.",
+                    )
                     raise TypeError(msg)
-                
+
             if t is not None:
                 self.t = t
-                
+
             if areas is not None:
                 self.A = areas
 
@@ -163,15 +164,15 @@ class CellData(CellDataBase):
     @property
     def has_id(self) -> ndarray:
         return self._dbkey_id_ in self._wrapped.fields
-    
+
     @property
     def has_frames(self):
         return self._dbkey_frames_ in self._wrapped.fields
-    
+
     @property
     def has_thickness(self):
         return self._dbkey_thickness_ in self._wrapped.fields
-    
+
     @property
     def has_areas(self):
         return self._dbkey_areas_ in self._wrapped.fields
@@ -366,24 +367,24 @@ class CellData(CellDataBase):
         else:
             assert len(frames) == len(self._wrapped)
         self._wrapped[self._dbkey_frames_] = frames
-    
+
     @property
     def t(self):
         """Returns the thicknesses of the cells."""
         return self._wrapped[self._dbkey_thickness_].to_numpy()
-    
+
     @t.setter
     def t(self, value: Union[float, int, ndarray]):
         """Returns the thicknesses of the cells."""
         if isinstance(value, (int, float)):
             value = np.full(len(self), value)
         self._wrapped[self._dbkey_thickness_] = value
-        
+
     @property
     def A(self):
         """Returns the thicknesses of the cells."""
         return self._wrapped[self._dbkey_areas_].to_numpy()
-    
+
     @A.setter
     def A(self, value: Union[float, int, ndarray]):
         """Returns the thicknesses of the cells."""

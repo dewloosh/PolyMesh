@@ -45,6 +45,14 @@ except Exception:
     __hask3d__ = False
 
 
+try:
+    import tetgen
+
+    __has_tetgen__ = True
+except Exception:
+    __has_tetgen__ = False
+
+
 def set_config_file(filepath):
     try:
         import vtk

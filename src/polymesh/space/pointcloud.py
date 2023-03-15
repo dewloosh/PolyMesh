@@ -185,7 +185,7 @@ class PointCloud(Vector):
             self._frame = target
         else:
             raise TypeError("Value must be a {} instance".format(FrameLike))
-        
+
     @property
     def id(self) -> ndarray:
         """
@@ -223,7 +223,7 @@ class PointCloud(Vector):
             res[2] = minmax(arr[:, 2])
         return res
 
-    def center(self, target: FrameLike = None):
+    def center(self, target: FrameLike = None) -> ndarray:
         """
         Returns the center of the points in a specified frame,
         or the root frame if there is no target provided.
@@ -245,7 +245,7 @@ class PointCloud(Vector):
 
         return np.array(list(map(foo, range(self.shape[1]))))
 
-    def index_of_closest(self, p: VectorLike, frame: FrameLike = None):
+    def index_of_closest(self, p: VectorLike, frame: FrameLike = None) -> int:
         """
         Returns the index of the point being closest to `p`.
 

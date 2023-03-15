@@ -6,12 +6,12 @@ from .pointdata import PointData
 from .grid import grid
 from .polydata import PolyData
 from .trimesh import TriMesh
-from .cells import H8, H27, TET4, TET10, T3
+from .cells import H8, H27, TET4, TET10, T3, W6, W18
 from .space import CartesianFrame
 from .triang import triangulate
 from .utils import cell_centers_bulk
-from .utils.topology import detach, H8_to_TET4
-from .extrude import extrude_T3_TET4
+from .utils.topology import detach, H8_to_TET4, H27_to_TET10, TET4_to_TET10, W6_to_W18
+from .extrude import extrude_T3_TET4, extrude_T3_W6
 from .voxelize import voxelize_cylinder
 
 
@@ -19,7 +19,6 @@ def circular_helix(a=None, b=None, *args, slope=None, pitch=None):
     """
     Returns the function :math:`f(t) = [a \cdot cos(t), a \cdot sin(t), b \cdot t]`,
     which describes a circular helix of radius a and slope a/b (or pitch 2πb).
-
     """
     if pitch is not None:
         b = b if b is not None else pitch / 2 / np.pi
@@ -61,7 +60,6 @@ def circular_disk(
     --------
     >>> from polymesh.recipes import circular_disk
     >>> mesh = circular_disk(120, 60, 5, 25)
-
     """
     radii = np.linspace(rmin, rmax, nradii)
     angles = np.linspace(0, 2 * np.pi, nangles, endpoint=False)
@@ -89,11 +87,11 @@ def cylinder(
     shape,
     size: Union[tuple, float, int] = None,
     *args,
-    regular=True,
-    voxelize=False,
+    regular: bool = True,
+    voxelize: bool = False,
     celltype=None,
-    frame=None,
-    **kwargs
+    frame: CartesianFrame = None,
+    **kwargs,
 ) -> PolyData:
     """
     Returns the coordinates and the topology of cylinder as numpy arrays.
@@ -130,13 +128,7 @@ def cylinder(
 
     Returns
     -------
-    PolyData
-
-    Examples
-    --------
-    >>> from polymesh.recipes import cylinder
-    >>> mesh = cylinder(120, 60, 5, 25)
-
+    polymesh.polydata.PolyData
     """
     if celltype is None:
         celltype = H8 if voxelize else TET4
@@ -193,15 +185,24 @@ def cylinder(
     return PolyData(coords=coords, topo=topo, celltype=celltype, frame=frame)
 
 
-def ribbed_plate(lx:float, ly:float, t:float, *,
-                 wx:float=None, wy:float=None, 
-                 hx:float=None, hy:float=None, 
-                 ex:float=None, ey:float=None,
-                 lmax : float=None, order:int=1,
-                 tetrahedralize:bool=False) -> PolyData:
+def ribbed_plate(
+    lx: float,
+    ly: float,
+    t: float,
+    *,
+    wx: float = None,
+    wy: float = None,
+    hx: float = None,
+    hy: float = None,
+    ex: float = None,
+    ey: float = None,
+    lmax: float = None,
+    order: int = 1,
+    tetrahedralize: bool = False,
+) -> PolyData:
     """
     Creates a ribbed plate.
-    
+
     Parameters
     ----------
     lx : float
@@ -234,48 +235,50 @@ def ribbed_plate(lx:float, ly:float, t:float, *,
         hexahedra or TET10 tetrahedra are returned.
     tetrahedralize : bool, Optional
         If True, a mesh of 4-noded tetrahedra is returned. Default is False.
-        
+
     Example
     -------
     >>> from polymesh.recipes import ribbed_plate
-    >>> mesh = ribbed_plate(lx=5.0, ly=5.0, t=1.0, 
+    >>> mesh = ribbed_plate(lx=5.0, ly=5.0, t=1.0,
     >>>                     wx=1.0, hx=2.0, ex=0.05,
     >>>                     wy=1.0, hy=2.0, ey=-0.05)
     """
-    
+
     def subdivide(bins, lmax):
         _bins = []
-        for i in range(len(bins)-1):
+        for i in range(len(bins) - 1):
             a = bins[i]
-            b = bins[i+1]
-            if (b-a) > lmax:
-                ndiv = int(np.ceil((b-a)/lmax))
+            b = bins[i + 1]
+            if (b - a) > lmax:
+                ndiv = int(np.ceil((b - a) / lmax))
             else:
-                ndiv = 1    
-            ldiv = (b-a)/ndiv
+                ndiv = 1
+            ldiv = (b - a) / ndiv
             for j in range(ndiv):
-                _bins.append(a + j*ldiv)
+                _bins.append(a + j * ldiv)
         _bins.append(bins[-1])
         return np.array(_bins)
-    
+
     xbins, ybins, zbins = [], [], []
-    xbins.extend([-lx/2, 0, lx/2])
-    ybins.extend([-ly/2, 0, ly/2])
-    zbins.extend([-t/2, 0, t/2])
+    xbins.extend([-lx / 2, 0, lx / 2])
+    ybins.extend([-ly / 2, 0, ly / 2])
+    zbins.extend([-t / 2, 0, t / 2])
+
     if wx is not None and hx is not None:
         ex = 0.0 if ex is None else ex
-        ybins.extend([-wx/2, wx/2])
-        if (ex - hx/2) < (-t/2):
-            zbins.append(ex - hx/2)
-        if (ex + hx/2) > (t/2):
-            zbins.append(ex + hx/2)     
+        ybins.extend([-wx / 2, wx / 2])
+        if (ex - hx / 2) < (-t / 2):
+            zbins.append(ex - hx / 2)
+        if (ex + hx / 2) > (t / 2):
+            zbins.append(ex + hx / 2)
     if wy is not None and hy is not None:
         ey = 0.0 if ey is None else ey
-        xbins.extend([-wy/2, wy/2])
-        if (ey - hy/2) < (-t/2):
-            zbins.append(ey - hy/2)
-        if (ey + hy/2) > (t/2):
-            zbins.append(ey + hy/2) 
+        xbins.extend([-wy / 2, wy / 2])
+        if (ey - hy / 2) < (-t / 2):
+            zbins.append(ey - hy / 2)
+        if (ey + hy / 2) > (t / 2):
+            zbins.append(ey + hy / 2)
+
     xbins = np.unique(np.sort(xbins))
     ybins = np.unique(np.sort(ybins))
     zbins = np.unique(np.sort(zbins))
@@ -284,36 +287,116 @@ def ribbed_plate(lx:float, ly:float, t:float, *,
         ybins = subdivide(ybins, lmax)
         zbins = subdivide(zbins, lmax)
     bins = xbins, ybins, zbins
+
     if order == 1:
-        coords, topo = grid(bins=bins, eshape='H8')
+        coords, topo = grid(bins=bins, eshape="H8")
     elif order == 2:
-        coords, topo = grid(bins=bins, eshape='H27')
+        coords, topo = grid(bins=bins, eshape="H27")
     else:
-        raise NotImplementedError
+        raise ValueError("'order' must be either 1 or 2")
+
     centers = cell_centers_bulk(coords, topo)
-    mask = (centers[:, 2] > (-t/2)) & (centers[:, 2] < (t/2))
+    mask = (centers[:, 2] > (-t / 2)) & (centers[:, 2] < (t / 2))
     if wx is not None and hx is not None:
-        m = (centers[:, 1] > (-wx/2)) & (centers[:, 1] < (wx/2))
-        m = m & (centers[:, 2] > (ex - hx/2)) & (centers[:, 2] < (ex + hx/2))
+        m = (centers[:, 1] > (-wx / 2)) & (centers[:, 1] < (wx / 2))
+        m = m & (centers[:, 2] > (ex - hx / 2)) & (centers[:, 2] < (ex + hx / 2))
         mask = mask | m
     if wy is not None and hy is not None:
-        m = (centers[:, 0] > (-wy/2)) & (centers[:, 0] < (wy/2))
-        m = m & (centers[:, 2] > (ey - hy/2)) & (centers[:, 2] < (ey + hy/2))
+        m = (centers[:, 0] > (-wy / 2)) & (centers[:, 0] < (wy / 2))
+        m = m & (centers[:, 2] > (ey - hy / 2)) & (centers[:, 2] < (ey + hy / 2))
         mask = mask | m
-    topo=topo[mask, :]
+    topo = topo[mask, :]
+
     if tetrahedralize:
         if order == 1:
             coords, topo = H8_to_TET4(coords, topo)
             celltype = TET4
-        elif order == 2:
-            raise NotImplementedError
+        else:
             coords, topo = H27_to_TET10(coords, topo)
             celltype = TET10
-        else:
-            raise NotImplementedError
     else:
-        celltype = H8
+        celltype = H8 if order == 1 else H27
+
     coords, topo = detach(coords, topo)
+    frame = CartesianFrame(dim=3)
+    pd = PointData(coords=coords, frame=frame)
+    cd = celltype(topo=topo, frames=frame)
+    return PolyData(pd, cd, frame=frame)
+
+
+def perforated_cube(
+    lx: float,
+    ly: float,
+    lz: float,
+    radius: float,
+    *,
+    nangles: int = None,
+    lmax: float = None,
+    order: int = 1,
+    prismatic: bool = True,
+) -> PolyData:
+    """
+    Returns a cube of side lengths 'lx', 'ly' and 'lz', with a circular hole
+    along the 'z' axis.
+    """
+    size = (lx, ly)
+    if lmax is not None:
+        shape = (max([int(lx / lmax), 4]), max([int(ly / lmax), 4]))
+    else:
+        shape = (4, 4)
+    coords, _ = grid(size=size, shape=shape, eshape=(2, 2), centralize=True)
+    if lmax is not None:
+        where = np.hypot(coords[:, 0], coords[:, 1]) > (radius + lmax)
+    else:
+        where = np.hypot(coords[:, 0], coords[:, 1]) > (radius * 1.1)
+    coords = coords[where]
+
+    if nangles is None:
+        if lmax is not None:
+            nangles = max(int(2 * np.pi * radius / lmax), 8)
+        else:
+            nangles = 16
+    angles = np.linspace(0, 2 * np.pi, nangles, endpoint=False)
+    x_circle = (radius * np.cos(angles)).flatten()
+    y_circle = (radius * np.sin(angles)).flatten()
+    circle_coords = np.stack([x_circle, y_circle], axis=1)
+
+    coords = np.vstack([coords, circle_coords])
+
+    *_, triobj = triangulate(points=coords, backend="mpl")
+    triobj.set_mask(
+        np.hypot(
+            coords[:, 0][triobj.triangles].mean(axis=1),
+            coords[:, 1][triobj.triangles].mean(axis=1),
+        )
+        < radius
+    )
+    topo = triobj.get_masked_triangles()
+    coords = np.stack((triobj.x, triobj.y, np.zeros(coords.shape[0])), axis=1)
+    coords, topo = detach(coords, topo)
+
+    if lmax is not None:
+        zres = int(lz / lmax)
+    else:
+        zres = 4
+
+    if prismatic:
+        coords, topo = extrude_T3_W6(coords, topo, h=lz, zres=zres)
+    else:
+        coords, topo = extrude_T3_TET4(coords, topo, h=lz, zres=zres)
+
+    if order == 1:
+        celltype = W6 if prismatic else TET4
+    elif order == 2:
+        if prismatic:
+            coords, topo = W6_to_W18(coords, topo)
+            celltype = W18
+        else:
+            coords, topo = TET4_to_TET10(coords, topo)
+            celltype = TET10
+    else:
+        raise ValueError("'order' must be either 1 or 2")
+
     frame = CartesianFrame(dim=3)
     pd = PointData(coords=coords, frame=frame)
     cd = celltype(topo=topo, frames=frame)

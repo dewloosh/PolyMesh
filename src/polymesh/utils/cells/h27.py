@@ -7,6 +7,73 @@ __cache = True
 
 
 @njit(nogil=True, cache=__cache)
+def monoms_H27_single(x: ndarray) -> ndarray:
+    r, s, t = x
+    return np.array(
+        [
+            1,
+            r,
+            s,
+            t,
+            s * t,
+            r * t,
+            r * s,
+            r * s * t,
+            r**2,
+            s**2,
+            t**2,
+            r**2 * s,
+            r * s**2,
+            r * t**2,
+            r**2 * t,
+            s**2 * t,
+            s * t**2,
+            r**2 * s * t,
+            r * s**2 * t,
+            r * s * t**2,
+            r**2 * s**2,
+            s**2 * t**2,
+            r**2 * t**2,
+            r**2 * s**2 * t**2,
+            r**2 * s**2 * t,
+            r**2 * s * t**2,
+            r * s**2 * t**2,
+        ],
+        dtype=x.dtype,
+    )
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def monoms_H27_multi(x: ndarray) -> ndarray:
+    nP = x.shape[0]
+    res = np.zeros((nP, 27), dtype=x.dtype)
+    for i in prange(nP):
+        res[i] = monoms_H27_single(x[i])
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def monoms_H27_bulk_multi(x: ndarray) -> ndarray:
+    nE = x.shape[0]
+    res = np.zeros((nE, 27, 27), dtype=x.dtype)
+    for i in prange(nE):
+        res[i] = monoms_H27_multi(x[i])
+    return res
+
+
+def monoms_H27(x: ndarray) -> ndarray:
+    N = len(x.shape)
+    if N == 1:
+        return monoms_H27_single(x)
+    elif N == 2:
+        return monoms_H27_multi(x)
+    elif N == 3:
+        return monoms_H27_bulk_multi(x)
+    else:
+        raise NotImplementedError
+
+
+@njit(nogil=True, cache=__cache)
 def shp_H27(pcoord):
     r, s, t = pcoord
     return np.array(
@@ -241,19 +308,19 @@ def shp_H27_multi(pcoords: np.ndarray):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_H27(pcoord: np.ndarray, ndof:int=3):
+def shape_function_matrix_H27(pcoord: np.ndarray, ndof: int = 3):
     eye = np.eye(ndof, dtype=pcoord.dtype)
     shp = shp_H27(pcoord)
-    res = np.zeros((ndof, ndof*27), dtype=pcoord.dtype)
+    res = np.zeros((ndof, ndof * 27), dtype=pcoord.dtype)
     for i in prange(27):
         res[:, i * ndof : (i + 1) * ndof] = eye * shp[i]
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def shape_function_matrix_H27_multi(pcoords: np.ndarray, ndof:int=3):
+def shape_function_matrix_H27_multi(pcoords: np.ndarray, ndof: int = 3):
     nP = pcoords.shape[0]
-    res = np.zeros((nP, ndof, ndof*27), dtype=pcoords.dtype)
+    res = np.zeros((nP, ndof, ndof * 27), dtype=pcoords.dtype)
     for iP in prange(nP):
         res[iP] = shape_function_matrix_H27(pcoords[iP], ndof)
     return res
