@@ -26,13 +26,13 @@ class TetraHedron(PolyHedron):
     def tetmap(cls) -> np.ndarray:
         return np.array([[0, 1, 2, 3]], dtype=int)
 
-    def to_tetrahedra(self, flatten:bool=True) -> np.ndarray:
+    def to_tetrahedra(self, flatten: bool = True) -> np.ndarray:
         tetra = self.topology().to_numpy()
         if flatten:
             return tetra
         else:
-            return tetra.reshape(len(tetra), 1, 4) 
-        
+            return tetra.reshape(len(tetra), 1, 4)
+
 
 class QuadraticTetraHedron(PolyHedron):
     """Class for 10-noded quadratic tetrahedra."""
@@ -105,9 +105,9 @@ class BiquadraticWedge(PolyHedron):
                 [6, 1, 7, 15, 13, 16],
                 [8, 6, 7, 17, 15, 16],
                 [8, 7, 2, 17, 16, 14],
-                [8, 0, 6, 12, 15, 17],
+                [8, 0, 6, 17, 12, 15],
             ],
-            dtype=int
+            dtype=int,
         )
         w6_to_tet4 = Wedge.tetmap()
         return compose_trmap(w18_to_w6, w6_to_tet4)

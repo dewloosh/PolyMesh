@@ -199,7 +199,7 @@ def compose_trmap(map1: ndarray, map2: ndarray) -> ndarray:
             c += 1
     return res
 
-    
+
 def T6_to_T3(
     coords: ndarray,
     topo: ndarray,
@@ -629,7 +629,7 @@ def W18_to_W6(
                         [6, 1, 7, 15, 13, 16],
                         [8, 6, 7, 17, 15, 16],
                         [8, 7, 2, 17, 16, 14],
-                        [8, 0, 6, 12, 15, 17],
+                        [8, 0, 6, 17, 12, 15],
                     ],
                     dtype=topo.dtype,
                 )

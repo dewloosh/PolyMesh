@@ -383,6 +383,23 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
     return np.mean(cells_coords(coords, topo), axis=1)
 
 
+def cell_centers_bulk2(ecoords: ndarray) -> ndarray:
+    """
+    Returns coordinates of the centers of cells of the same kind.
+
+    Parameters
+    ----------
+    ecoords : numpy.ndarray
+        3d coordinate array of element coordinates.
+
+    Returns
+    -------
+    numpy.ndarray
+        2d coordinate array.
+    """
+    return np.mean(ecoords, axis=1)
+
+
 @njit(nogil=True, parallel=True, cache=__cache)
 def _nodal_distribution_factors_csr_(topo: csr_matrix, w: ndarray) -> ndarray:
     """

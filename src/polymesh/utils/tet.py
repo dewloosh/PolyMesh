@@ -103,8 +103,7 @@ def _glob_to_nat_tet_bulk_(points: ndarray, ecoords: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _pip_tet_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> ndarray:
-    nat = _glob_to_nat_tet_bulk_(points, ecoords)
+def __pip_tet_bulk__(nat: ndarray, tol: float = 1e-12) -> ndarray:
     nP, nE = nat.shape[:2]
     res = np.zeros((nP, nE), dtype=np.bool_)
     for i in prange(nP):
@@ -115,31 +114,30 @@ def _pip_tet_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> nda
     return res
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
-def _glob_to_nat_tet_bulk_knn_(
-    points: ndarray, ecoords: ndarray, knn: ndarray
-) -> ndarray:
-    kE = knn.shape[1]
-    nP = points.shape[0]
-    res = np.zeros((nP, kE, 4), dtype=points.dtype)
-    for i in prange(nP):
-        for k in prange(kE):
-            res[i, k, :] = glob_to_nat_tet(points[i], ecoords[knn[i, k]])
-    return res
+@njit(nogil=True, cache=__cache)
+def _pip_tet_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> ndarray:
+    nat = _glob_to_nat_tet_bulk_(points, ecoords)
+    return __pip_tet_bulk__(nat, tol)
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def _pip_tet_bulk_knn_(
-    points: ndarray, ecoords: ndarray, knn: ndarray, tol: float = 1e-12
+    points: ndarray, ecoords: ndarray, neighbours: ndarray, tol: float = 1e-12
 ) -> ndarray:
-    nat = _glob_to_nat_tet_bulk_knn_(points, ecoords, knn)
-    nP, nK = nat.shape[:2]
-    res = np.zeros((nP, nK), dtype=np.bool_)
+    nat = _glob_to_nat_tet_bulk_knn_(points, ecoords, neighbours)
+    return __pip_tet_bulk__(nat, tol)
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _glob_to_nat_tet_bulk_knn_(
+    points: ndarray, ecoords: ndarray, neighbours: ndarray
+) -> ndarray:
+    kE = neighbours.shape[1]
+    nP = points.shape[0]
+    res = np.zeros((nP, kE, 4), dtype=points.dtype)
     for i in prange(nP):
-        for k in prange(nK):
-            c1 = np.all(nat[i, k] > (-tol))
-            c2 = np.all(nat[i, k] < (1 + tol))
-            res[i, k] = c1 & c2
+        for k in prange(kE):
+            res[i, k, :] = glob_to_nat_tet(points[i], ecoords[neighbours[i, k]])
     return res
 
 

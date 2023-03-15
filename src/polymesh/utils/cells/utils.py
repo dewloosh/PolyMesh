@@ -32,7 +32,7 @@ def _loc_to_glob_bulk_(shp: ndarray, gcoords: ndarray) -> ndarray:
     shp : numpy.ndarray
         The shape functions evaluated at a 'nP' number of local coordinates.
     gcoords : numpy.ndarray
-        2D array of shape (nNE, nD) containing coordinates global for every node of
+        3D array of shape (nE, nNE, nD) containing coordinates global for every node of
         a single element.
 
     Returns
@@ -52,38 +52,6 @@ def _loc_to_glob_bulk_(shp: ndarray, gcoords: ndarray) -> ndarray:
 def _glob_to_loc_bulk_(
     lcoords: ndarray, monoms_glob_cells: ndarray, monoms_glob_points: ndarray
 ) -> ndarray:
-    """
-    Global to local transformation for a single point and cell.
-
-    Returns local coordinates of a point in an element, provided the global
-    corodinates of the points of the element, an array of global
-    coordinates and a function to evaluate the monomials of the shape
-    functions.
-
-    Parameters
-    ----------
-    gcoords: numpy.ndarray
-        3D array of shape (nE, nNE, nD) containing global coordinates for every
-        node of several elements.
-    x: numpy.ndarray
-        2D array of global coordinates of shape (nP, nD) of several points.
-    lcoords: numpy.ndarray
-        2D array of local coordinates of the parametric element.
-    monomsfnc: Callable
-        A function that evaluates monomials of the shape functions at a point
-        specified with parametric coordinates.
-
-    Returns
-    -------
-    numpy.ndarray
-        Array of shape (nP, nE, nD) of parametric cooridnates of the specified
-        points.
-
-    Notes
-    -----
-    'shpfnc' must be a numba-jitted function, that accepts a 1D array of
-    exactly nD number of components.
-    """
     nP = monoms_glob_points.shape[0]
     nE = monoms_glob_cells.shape[0]
     nD = lcoords.shape[-1]
@@ -93,4 +61,58 @@ def _glob_to_loc_bulk_(
         for k in prange(nP):
             shp = coeffs @ monoms_glob_points[k]
             res[i, k, :] = shp @ lcoords
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _glob_to_loc_bulk_2_(
+    lcoords: ndarray, monoms_glob_cells: ndarray, monoms_glob_points: ndarray
+) -> ndarray:
+    nP = monoms_glob_points.shape[0]
+    nD = lcoords.shape[-1]
+    res = np.zeros((nP, nD), dtype=lcoords.dtype)
+    for i in prange(nP):
+        coeffs = inv(monoms_glob_cells[i]).T
+        shp = coeffs @ monoms_glob_points[i]
+        res[i, :] = shp @ lcoords
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _ntet_to_loc_bulk_(
+    lcoords: ndarray,
+    nat_tet: ndarray,
+    tetmap: ndarray,
+    cell_tet_indices: ndarray,
+) -> ndarray:
+    nP = cell_tet_indices.shape[0]
+    res = np.zeros((nP, 3), dtype=lcoords.dtype)
+    for i in prange(nP):
+        i_tet_rel = cell_tet_indices[i]
+        nat = nat_tet[i, i_tet_rel]
+        subtopo = tetmap[i_tet_rel]
+        for j in range(subtopo.shape[0]):
+            res[i] += lcoords[subtopo[j]] * nat[j]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _find_first_hits_(pips: ndarray) -> ndarray:
+    nP, nE = pips.shape
+    res = np.zeros(nP, dtype=np.int64)
+    for i in prange(nP):
+        for j in prange(nE):
+            if pips[i, j]:
+                res[i] = j
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _find_first_hits_knn_(pips: ndarray, neighbours: ndarray) -> ndarray:
+    nP, nE = pips.shape
+    res = np.zeros(nP, dtype=np.int64)
+    for i in prange(nP):
+        for j in prange(nE):
+            if pips[i, j]:
+                res[i] = neighbours[i, j]
     return res
