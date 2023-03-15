@@ -1,9 +1,12 @@
 from typing import Iterable
 import numpy as np
 
+from awkward import Array as akArray
+
 from neumann.linalg.sparse import JaggedArray
 from neumann.arraysetops import unique2d
 from neumann import atleast2d
+
 
 __all__ = ["TopologyArray"]
 
@@ -83,6 +86,8 @@ class TopologyArray(JaggedArray):
         if len(topo) == 1 and cuts is None:
             if isinstance(topo[0], np.ndarray):
                 data = atleast2d(topo[0], front=True)
+            elif isinstance(topo[0], akArray):
+                data = topo[0]
         elif len(topo) == 1 and cuts is not None:
             data = np.array(topo[0]).astype(int)
             cuts = np.array(cuts).astype(int)
