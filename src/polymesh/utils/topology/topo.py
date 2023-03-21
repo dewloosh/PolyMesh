@@ -756,6 +756,29 @@ def inds_to_invmap_as_dict(inds: np.ndarray):
     return res
 
 
+@njit(nogil=True, cache=__cache)
+def arrays_to_imap_as_dict(source: np.ndarray, target: np.ndarray):
+    """
+    Turns to index array into a dicionary such that `result[source[i]] = target[i]`.
+
+    Parameters
+    ----------
+    source : numpy.ndarray
+        An index array.
+    target : numpy.ndarray
+        An index array.
+
+    Returns
+    -------
+    dict
+        Mapping from global to local.
+    """
+    res = dict()
+    for i in range(len(source)):
+        res[source[i]] = target[i]
+    return res
+
+
 @njit(nogil=True, parallel=True, cache=__cache)
 def inds_to_invmap_as_array(inds: np.ndarray):
     """

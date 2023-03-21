@@ -562,7 +562,7 @@ class PolyCell(CellData):
             A single or NumPy array of booleans for every input point.
         """
         raise NotImplementedError
-    
+
     def locate(
         self,
         x: Union[Iterable, ndarray],
@@ -594,7 +594,7 @@ class PolyCell(CellData):
             The block-local indices of the cells that include the points with
             the returned indices.
         numpy.ndarray
-            The parametric coordinates of the located points inside the including cells.    
+            The parametric coordinates of the located points inside the including cells.
         """
         raise NotImplementedError
 
@@ -963,55 +963,56 @@ class PolyCell3d(PolyCell):
         Returns
         -------
         numpy.ndarray
-            The indices of 'x' that are inside a cell of the block.
+            The indices of 'x' that are inside one of the cells of the block.
         numpy.ndarray
             The block-local indices of the cells that include the points with
             the returned indices.
         numpy.ndarray
-            The parametric coordinates of the located points inside the including cells.    
+            The master coordinates of the located points inside the including cells.
         """
         x = atleast2d(x, front=True)
 
         coords = self.source_coords()
         topo = self.topology()
-        tetra = self.to_tetrahedra(flatten=True)
-        ecoords_tet = points_of_cells(coords, tetra, centralize=False)
+        topo_tet = self.to_tetrahedra(flatten=True)
+        ecoords_tet = points_of_cells(coords, topo_tet, centralize=False)
         tetmap = self.tetmap()
 
-        # perform point-in-polygon test
+        # perform point-in-polygon test for tetrahedra
         if lazy:
-            centers = cell_centers_bulk(coords, tetra)
-            k = min(k, len(centers))
-            neighbours = k_nearest_neighbours(centers, x, k=k)
+            centers_tet = cell_centers_bulk(coords, topo_tet)
+            k_tet = min(k, len(centers_tet))
+            neighbours_tet = k_nearest_neighbours(centers_tet, x, k=k_tet)
             nat_tet = _glob_to_nat_tet_bulk_knn_(
-                x, ecoords_tet, neighbours
+                x, ecoords_tet, neighbours_tet
             )  # (nP, kTET, 4)
-            pips = __pip_tet_bulk__(nat_tet, tol)  # (nP, kTET)
+            pips_tet = __pip_tet_bulk__(nat_tet, tol)  # (nP, kTET)
         else:
-            # pips = _pip_tet_bulk_(x, ecoords_tet, tol)
             nat_tet = _glob_to_nat_tet_bulk_(x, ecoords_tet)  # (nP, nTET, 4)
-            pips = __pip_tet_bulk__(nat_tet, tol)  # (nP, nTET)
+            pips_tet = __pip_tet_bulk__(nat_tet, tol)  # (nP, nTET)
 
         # locate the points that are inside any of the cells
-        pip = np.squeeze(np.any(pips, axis=1))  # (nP)
-        ipip = np.where(pip)[0]  # (nP_)
+        pip = np.squeeze(np.any(pips_tet, axis=1))  # (nP)
+        i_source = np.where(pip)[0]  # (nP_)
         if lazy:
-            points_to_tets = _find_first_hits_knn_(pips[ipip], neighbours[ipip])
+            points_to_tets, points_to_neighbours = _find_first_hits_knn_(
+                pips_tet[i_source], neighbours_tet[i_source]
+            )
         else:
-            points_to_tets = _find_first_hits_(pips[ipip])
-        tets_to_cells = np.floor(np.arange(len(tetra)) / len(tetmap)).astype(int)
-        points_to_cells = tets_to_cells[points_to_tets]  # (nP_)
+            points_to_tets, points_to_neighbours = _find_first_hits_(pips_tet[i_source])
+        tets_to_cells = np.floor(np.arange(len(topo_tet)) / len(tetmap)).astype(int)
+        i_target = tets_to_cells[points_to_tets]  # (nP_)
 
         # locate the cells that contain the points
         cell_tet_indices = np.tile(np.arange(tetmap.shape[0]), len(topo))[
             points_to_tets
         ]
-        nat_tet = nat_tet[ipip]  # (nP_, nTET, 4)
-        lcoords = _ntet_to_loc_bulk_(
-            self.lcoords(), nat_tet, tetmap, cell_tet_indices
+        nat_tet = nat_tet[i_source]  # (nP_, nTET, 4)
+        locations_target = _ntet_to_loc_bulk_(
+            self.lcoords(), nat_tet, tetmap, cell_tet_indices, points_to_neighbours
         )
 
-        return ipip, points_to_cells, lcoords
+        return i_source, i_target, locations_target
 
     def pip(
         self,

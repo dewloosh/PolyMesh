@@ -357,7 +357,10 @@ class PolyData(PolyDataBase):
 
         result.__dict__.update(self.__dict__)
         return result
-
+    
+    def __getitem__(self, key) -> "PolyData":
+        return super().__getitem__(key)
+        
     @property
     def pd(self) -> PointData:
         """
@@ -1051,7 +1054,7 @@ class PolyData(PolyDataBase):
 
         See Also
         --------
-        :class:`.space.PointCloud`
+        :class:`~polymesh.space.PointCloud`
         :func:`coords`
         """
         target = self.frame

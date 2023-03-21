@@ -168,7 +168,7 @@ def inscribed_radii(ecoords: ndarray) -> ndarray:
     return res
 
 
-@njit(nogil=True, parallel=True, cache=__cache)
+@njit(nogil=True, parallel=False, cache=__cache)
 def areas_tri(ecoords: np.ndarray) -> ndarray:
     """
     Returns the total sum of signed areas of several triangles.
