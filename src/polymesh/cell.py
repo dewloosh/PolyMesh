@@ -33,6 +33,7 @@ from .utils.tet import (
     _glob_to_nat_tet_bulk_knn_,
     __pip_tet_bulk__,
 )
+from .utils.space import index_of_closest_point
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .utils.topology.topo import detach_mesh_bulk, rewire
 from .utils.topology import transform_topology
@@ -887,7 +888,7 @@ class PolyCell3d(PolyCell):
         """
         Returns the block as a VTK object.
         """
-        coords = self.container.root().coords()
+        coords = self.container.source().coords()
         topo = self.topology().to_numpy()
         vtkid = self.__class__.vtkCellType
         if detach:
@@ -898,7 +899,7 @@ class PolyCell3d(PolyCell):
 
     if __haspyvista__:
 
-        def to_pv(self, detach=False) -> pv.UnstructuredGrid:
+        def to_pv(self, detach:bool=False) -> Union[pv.UnstructuredGrid, pv.PolyData]:
             """
             Returns the block as a pyVista object.
             """
@@ -908,15 +909,17 @@ class PolyCell3d(PolyCell):
         """
         Extracts the surface of the object.
         """
-        pvs = self.to_pv(detach=detach).extract_surface(pass_pointid=True)
+        coords = self.source_coords()
+        pvs = self.to_pv(detach=False).extract_surface()
         s = pvs.triangulate().cast_to_unstructured_grid()
-        topo = s.cells_dict[5]
-        imap = s.point_data["vtkOriginalPointIds"]
-        topo = rewire(topo, imap)
+        topo = s.cells_dict[5]        
         if detach:
             return s.points, topo
         else:
-            return self.container.root().coords(), topo
+            coords = self.source_coords()
+            imap = index_of_closest_point(coords, np.array(s.points, dtype=float))
+            topo = rewire(topo, imap)
+            return coords, topo
 
     def boundary(self, detach: bool = False) -> Tuple[ndarray]:
         """

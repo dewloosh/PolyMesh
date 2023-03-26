@@ -321,8 +321,7 @@ def _glob_to_nat_tri_bulk_(points: ndarray, ecoords: ndarray) -> ndarray:
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def _pip_tri_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> ndarray:
-    nat = _glob_to_nat_tri_bulk_(points, ecoords)
+def __pip_tri_bulk__(nat: ndarray, tol: float = 1e-12) -> ndarray:
     nP, nE = nat.shape[:2]
     res = np.zeros((nP, nE), dtype=np.bool_)
     for i in prange(nP):
@@ -331,6 +330,33 @@ def _pip_tri_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> nda
             c2 = np.all(nat[i, j] < (1 + tol))
             res[i, j] = c1 and c2
     return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _pip_tri_bulk_(points: ndarray, ecoords: ndarray, tol: float = 1e-12) -> ndarray:
+    nat = _glob_to_nat_tri_bulk_(points, ecoords)
+    return __pip_tri_bulk__(nat, tol)
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _glob_to_nat_tri_bulk_knn_(
+    points: ndarray, ecoords: ndarray, neighbours: ndarray
+) -> ndarray:
+    kE = neighbours.shape[1]
+    nP = points.shape[0]
+    res = np.zeros((nP, kE, 3), dtype=points.dtype)
+    for i in prange(nP):
+        for k in prange(kE):
+            res[i, k, :] = glob_to_nat_tri(points[i], ecoords[neighbours[i, k]])
+    return res
+
+
+@njit(nogil=True, cache=__cache)
+def _pip_tri_bulk_knn_(
+    points: ndarray, ecoords: ndarray, neighbours: ndarray, tol: float = 1e-12
+) -> ndarray:
+    nat = _glob_to_nat_tri_bulk_knn_(points, ecoords, neighbours)
+    return __pip_tri_bulk__(nat, tol)
 
 
 @njit(nogil=True, cache=__cache)

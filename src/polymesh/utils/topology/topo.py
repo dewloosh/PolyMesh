@@ -49,26 +49,7 @@ nbint64 = nbtypes.int64
 nbint64A = nbint64[:]
 
 
-def flatten_line_mesh(coords: ndarray, topo: ndarray):
-    raise NotImplementedError
-    count = count_cells_at_nodes(topo)
-    mess = np.where(count < 1)[0]
-    leafs = np.where(count == 1)[0]
-    forks = np.where(count > 2)[0]
-    inters = np.where(count == 2)[0]
-    nP, _ = coords.shape
-    nE, nNE = topo.shape
-    if nP == nE * nNE:
-        _, t = coords, topo
-    else:
-        _, t = explode_mesh_bulk(coords, topo)
-    t_ = np.sort(t, axis=1)[:, 0]
-    order = np.argsort(t[:, 0])
-    t_ = t_[order]
-    return coords, order
-
-
-def rewire(topo: TopoLike, imap: MappingLike, invert=False):
+def rewire(topo: TopoLike, imap: MappingLike, invert:bool=False) -> Iterable:
     """
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
@@ -112,7 +93,7 @@ def rewire(topo: TopoLike, imap: MappingLike, invert=False):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def remap_topo(topo: ndarray, imap):
+def remap_topo(topo: ndarray, imap) -> ndarray:
     """
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
@@ -127,7 +108,7 @@ def remap_topo(topo: ndarray, imap):
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
-def remap_topo_1d(topo1d: ndarray, imap):
+def remap_topo_1d(topo1d: ndarray, imap) -> ndarray:
     """
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
@@ -922,3 +903,4 @@ def unique_topo_data(topo3d: TopoLike) -> Tuple[ndarray, ndarray]:
         return topo3d, topoIDs
     elif isinstance(topo3d, JaggedArray):
         raise NotImplementedError
+    
