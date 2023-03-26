@@ -84,35 +84,66 @@ def _ntet_to_loc_bulk_(
     nat_tet: ndarray,
     tetmap: ndarray,
     cell_tet_indices: ndarray,
+    points_to_neighbours: ndarray,
 ) -> ndarray:
-    nP = cell_tet_indices.shape[0]
+    nP = points_to_neighbours.shape[0]
     res = np.zeros((nP, 3), dtype=lcoords.dtype)
     for i in prange(nP):
-        i_tet_rel = cell_tet_indices[i]
-        nat = nat_tet[i, i_tet_rel]
-        subtopo = tetmap[i_tet_rel]
-        for j in range(subtopo.shape[0]):
+        nat = nat_tet[i, points_to_neighbours[i]]
+        subtopo = tetmap[cell_tet_indices[i]]
+        for j in range(4):
             res[i] += lcoords[subtopo[j]] * nat[j]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _ntri_to_loc_bulk_(
+    lcoords: ndarray,
+    nat_tri: ndarray,
+    trimap: ndarray,
+    cell_tri_indices: ndarray,
+    points_to_neighbours: ndarray,
+) -> ndarray:
+    nP = points_to_neighbours.shape[0]
+    res = np.zeros((nP, 2), dtype=lcoords.dtype)
+    for i in prange(nP):
+        nat = nat_tri[i, points_to_neighbours[i]]
+        subtopo = trimap[cell_tri_indices[i]]
+        for j in range(3):
+            res[i] += lcoords[subtopo[j]] * nat[j]
+    return res
+
+
+@njit(nogil=True, parallel=True, cache=__cache)
+def _find_first_hits_1d_(indices: ndarray) -> ndarray:
+    N = np.max(indices) + 1
+    res = np.zeros(N, dtype=indices.dtype)
+    for i in prange(indices.shape[0]):
+        res[indices[i]] = i
     return res
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def _find_first_hits_(pips: ndarray) -> ndarray:
     nP, nE = pips.shape
-    res = np.zeros(nP, dtype=np.int64)
+    global_indices = np.zeros(nP, dtype=np.int64)
+    relative_indices = np.zeros(nP, dtype=np.int64)
     for i in prange(nP):
         for j in prange(nE):
             if pips[i, j]:
-                res[i] = j
-    return res
+                global_indices[i] = j
+                relative_indices[i] = j
+    return global_indices, relative_indices
 
 
 @njit(nogil=True, parallel=True, cache=__cache)
 def _find_first_hits_knn_(pips: ndarray, neighbours: ndarray) -> ndarray:
     nP, nE = pips.shape
-    res = np.zeros(nP, dtype=np.int64)
+    global_indices = np.zeros(nP, dtype=np.int64)
+    relative_indices = np.zeros(nP, dtype=np.int64)
     for i in prange(nP):
         for j in prange(nE):
             if pips[i, j]:
-                res[i] = neighbours[i, j]
-    return res
+                global_indices[i] = neighbours[i, j]
+                relative_indices[i] = j
+    return global_indices, relative_indices

@@ -22,6 +22,7 @@ from .utils.utils import (
     cells_around,
     cell_centers_bulk,
     explode_mesh_data_bulk,
+    nodal_distribution_factors
 )
 from .utils.knn import k_nearest_neighbours as KNN
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk, PolyData_to_mesh
@@ -33,7 +34,7 @@ from .cells import (
     Q9,
     TET10,
 )
-from .utils.utils import nodal_distribution_factors
+from .utils.cells.utils import _find_first_hits_1d_
 from .polyhedron import Wedge
 from .utils.space import index_of_closest_point, index_of_furthest_point
 from .utils.topology import (
@@ -357,7 +358,10 @@ class PolyData(PolyDataBase):
 
         result.__dict__.update(self.__dict__)
         return result
-
+    
+    def __getitem__(self, key) -> "PolyData":
+        return super().__getitem__(key)
+        
     @property
     def pd(self) -> PointData:
         """
@@ -1051,7 +1055,7 @@ class PolyData(PolyDataBase):
 
         See Also
         --------
-        :class:`.space.PointCloud`
+        :class:`~polymesh.space.PointCloud`
         :func:`coords`
         """
         target = self.frame
@@ -1120,14 +1124,22 @@ class PolyData(PolyDataBase):
     def surface(self) -> "PolyData":
         """
         Returns the surface of the mesh as another `PolyData` instance.
-        """
-        assert self.celldata is not None, "There are no cells here."
-        assert self.celldata.NDIM == 3, "This is only for 3d cells."
-        coords, topo = self.cd.extract_surface(detach=False)
+        """        
+        blocks = list(self.cellblocks(inclusive=True))
+        source = self.source()
+        coords = source.coords()
+        frame = source.frame
+        triangles = []
+        for block in blocks:
+            assert block.celldata.NDIM == 3, "This is only for 3d cells."    
+            triangles.append(block.cd.extract_surface(detach=False)[-1])
+        triangles = np.vstack(triangles)
+        if len(blocks) > 1:
+            _, indices = np.unique(triangles, axis=0, return_index=True)
+            triangles = triangles[indices] 
         pointtype = self.__class__._point_class_
-        frame = self.source().frame
         pd = pointtype(coords=coords, frame=frame)
-        cd = Triangle(topo=topo, pointdata=pd)
+        cd = Triangle(topo=triangles, pointdata=pd)
         return self.__class__(pd, cd, frame=frame)
 
     def topology(
@@ -1363,7 +1375,7 @@ class PolyData(PolyDataBase):
         pc.centralize(target)
         self.pd.x = pc.show(self.frame)
         return self
-
+    
     def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None, **kwargs):
         """
         Returns the k closest neighbours of the cells of the mesh, based
