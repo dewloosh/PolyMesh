@@ -2,6 +2,7 @@
 from os.path import exists
 
 import numpy as np
+import meshio
 
 from polymesh import PolyData
 from polymesh.space import StandardFrame
@@ -78,7 +79,7 @@ def input_to_mesh(*args, **kwargs) -> tuple:
     return coords, topo
 
 
-def from_meshio(mesh):
+def from_meshio(mesh: meshio.Mesh) -> PolyData:
     GlobalFrame = StandardFrame(dim=3)
 
     coords = mesh.points
