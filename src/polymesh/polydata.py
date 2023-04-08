@@ -990,6 +990,7 @@ class PolyData(PolyDataBase):
         assert self.is_root(), "This must be called on he root object!"
         if not inplace:
             return deepcopy(self).to_standard_form(inplace=True)
+        
         # merge points and point related data
         # + decorate the points with globally unique ids
         dpf = defaultdict(lambda: np.nan)
@@ -999,15 +1000,13 @@ class PolyData(PolyDataBase):
         pointtype = self.__class__._point_class_
         pointblocks = list(self.pointblocks(inclusive=True, deep=True))
         m = map(lambda pb: pb.pointdata.fields, pointblocks)
-        # fields = np.unique(np.array(list(m)).flatten())
         fields = set(np.concatenate(list(m)))
         frame, axis = self._frame, self._newaxis
         point_fields = {}
         data = {f: [] for f in fields}
         for pb in pointblocks:
             id = pim.generate_np(len(pb.pointdata))
-            if pb.celldata is not None:
-                pb.rewire(deep=True, imap=id)
+            pb.rewire(deep=True, imap=id)
             pb.pointdata.id = id
             pb.pd.x = Vector(pb.pd.x, frame=pb.frame).show(frame)
             for f in fields:
@@ -1021,6 +1020,7 @@ class PolyData(PolyDataBase):
         self.pointdata = pointtype(
             coords=X, frame=frame, newaxis=axis, fields=point_fields, container=self
         )
+        
         # merge cells and cell related data
         # + rewire the topology based on the ids set in the previous block
         dcf = defaultdict(lambda: np.nan)
@@ -1029,7 +1029,6 @@ class PolyData(PolyDataBase):
         cim = IndexManager()
         cellblocks = list(self.cellblocks(inclusive=True, deep=True))
         m = map(lambda pb: pb.celldata.fields, cellblocks)
-        # fields = np.unique(np.array(list(m)).flatten())
         fields = set(np.concatenate(list(m)))
         for cb in cellblocks:
             cb.cd.id = cim.generate_np(len(cb.celldata))
@@ -1037,6 +1036,7 @@ class PolyData(PolyDataBase):
                 if f not in cb.celldata.fields:
                     cb.celldata[f] = np.full(len(cb.cd), dcf[f])
             cb.cd.pointdata = None
+            
         # free resources
         for pb in self.pointblocks(inclusive=False, deep=True):
             pb._reset_point_data()

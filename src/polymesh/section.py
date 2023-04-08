@@ -385,4 +385,4 @@ class LineSection(Wrapper):
         if self.props is not None:
             return self.props
         else:
-            self.calculate_section_properties()
+            return self.calculate_section_properties()
