@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, Iterable
 
 import numpy as np
 from numpy import ndarray
@@ -978,3 +978,24 @@ def homogenize_nodal_values(data: ndarray, measure: ndarray) -> ndarray:
         for j in prange(nDATA):
             res[i, j] = np.sum(data[i, :, j]) / measure[i]
     return res
+
+
+def is_cw(points: Iterable) -> bool:
+    """
+    Returns True, if the polygon described by the points is clockwise,
+    False if it is counterclockwise.
+    """
+    area = 0
+    n = len(points)
+    for i in range(n):
+        j = (i + 1) % n
+        area += points[i][0] * points[j][1] - points[j][0] * points[i][1]
+    return area < 0
+
+
+def is_ccw(points: Iterable) -> bool:
+    """
+    Returns True, if the polygon described by the points is counterclockwise,
+    False if it is clockwise.
+    """
+    return not is_cw(points)

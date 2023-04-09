@@ -1006,7 +1006,6 @@ class PolyData(PolyDataBase):
         data = {f: [] for f in fields}
         for pb in pointblocks:
             id = pim.generate_np(len(pb.pointdata))
-            pb.rewire(deep=True, imap=id)
             pb.pointdata.id = id
             pb.pd.x = Vector(pb.pd.x, frame=pb.frame).show(frame)
             for f in fields:
@@ -1031,6 +1030,8 @@ class PolyData(PolyDataBase):
         m = map(lambda pb: pb.celldata.fields, cellblocks)
         fields = set(np.concatenate(list(m)))
         for cb in cellblocks:
+            id = cb.source().pd.id
+            cb.rewire(deep=False, imap=id)
             cb.cd.id = cim.generate_np(len(cb.celldata))
             for f in fields:
                 if f not in cb.celldata.fields:
