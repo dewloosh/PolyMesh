@@ -177,7 +177,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        target : ReferenceFrame
+        target : FrameLike
             A target frame of reference.
         """
         if isinstance(target, FrameLike):
@@ -235,7 +235,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        VectorBase
+        numpy.ndarray
             A numpy array.
         """
         arr = self.show(target)
@@ -308,7 +308,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        Point
+        ~`polymesh.space.point.Point`
         """
         id = self.index_of_closest(p, frame)
         arr = self._array[id, :]
@@ -337,7 +337,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        Point
+        ~`polymesh.space.point.Point`
         """
         id = self.index_of_furthest(p, frame)
         arr = self._array[id, :]
@@ -350,7 +350,7 @@ class PointCloud(Vector):
         else:
             return PointCloud(arr, frame=self.frame, inds=id)
 
-    def show(self, target: FrameLike = None):
+    def show(self, target: FrameLike = None, *args, **kwargs) -> ndarray:
         """
         Returns the coordinates of the points in a specified frame,
         or the root frame if there is no target provided.
@@ -360,16 +360,33 @@ class PointCloud(Vector):
         target : ReferenceFrame, Optional
             A frame of reference. Default is None.
 
+        Notes
+        -----
+        This function returns the coordinates of the points in a target
+        frame, but does not make any changes to the points themselves.
+        If you want to change the frame of the pointcloud, reset the
+        frame of the object by setting the `frame` property.
+        
+        See Also
+        --------
+        :func:`polymesh.space.pointcloud.PointCloud.frame`
+        
         Returns
         -------
         VectorBase
             The coordinates in the desired frame.
         """
-        x = super().show(target)
-        buf = x + dcoords(x, self.frame.origo(target))
+        # passing unexpected arguments is necessary here because the
+        # function might ocassionally be called from super()
+        x = super().show(target, *args, **kwargs)
+        frame = self.frame
+        if hasattr(frame, "origo"):
+            buf = x + dcoords(x, self.frame.origo(target))
+        else:
+            buf = x
         return self._array_cls_(shape=buf.shape, buffer=buf, dtype=buf.dtype)
 
-    def move(self, v: VectorLike, frame: FrameLike = None):
+    def move(self, v: VectorLike, frame: FrameLike = None) -> "PointCloud":
         """
         Moves the points wrt. to a specified frame, or the root
         frame if there is no target provided. Returns the object
@@ -440,6 +457,13 @@ class PointCloud(Vector):
         are passed to `ReferenceFrame.orient_new`, see its docs to know more.
 
         Returns the object for continuation.
+        
+        Parameters
+        ----------
+        *args: tuple,
+            The first positional argument can be a ReferenceFrame object.
+            If it is not, all positional and keyword arguments are forwarded
+            to `ReferenceFrame.orient_new`.
 
         Examples
         --------
@@ -448,7 +472,7 @@ class PointCloud(Vector):
         >>> coords.rotate('Body', [0, 0, np.pi/2], 'XYZ')
         """
         if isinstance(args[0], FrameLike):
-            self._array = self.show(args[0])
+            self.orient(dcm=args[0].dcm())
             return self
         else:
             target = self.frame.orient_new(*args, **kwargs)
@@ -472,10 +496,10 @@ class PointCloud(Vector):
         return self
 
     def __repr__(self):
-        return f"PointCloud({self._wrapped})"
+        return f"PointCloud({self._array})"
 
     def __str__(self):
-        return f"PointCloud({self._wrapped})"
+        return f"PointCloud({self._array})"
 
 
 class PointCloudType(nbtypes.Type):

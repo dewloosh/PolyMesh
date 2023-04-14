@@ -34,7 +34,6 @@ from .cells import (
     Q9,
     TET10,
 )
-from .utils.cells.utils import _find_first_hits_1d_
 from .polyhedron import Wedge
 from .utils.space import index_of_closest_point, index_of_furthest_point
 from .utils.topology import (
@@ -1248,13 +1247,13 @@ class PolyData(PolyDataBase):
         if self.is_root():
             pc = self.points()
             pc.move(v, frame)
-            self.pointdata["x"] = pc.array
+            self.pointdata.x = pc.array
         else:
             root = self.root()
             inds = np.unique(self.topology())
             pc = root.points()[inds]
             pc.move(v, frame)
-            root.pointdata["x"] = pc.array
+            root.pointdata.x = pc.array
         return self
 
     def rotate(self, *args, **kwargs) -> "PolyData":
@@ -1262,13 +1261,13 @@ class PolyData(PolyDataBase):
         if self.is_root():
             pc = self.points()
             pc.rotate(*args, **kwargs)
-            self.pointdata["x"] = pc.show(self.frame)
+            self.pointdata.x = pc.show(self.frame)
         else:
             root = self.root()
             inds = np.unique(self.topology())
             pc = root.points()[inds]
             pc.rotate(*args, **kwargs)
-            root.pointdata["x"] = pc.show(self.frame)
+            root.pointdata.x = pc.show(self.frame)
         return self
 
     def cells_at_nodes(self, *args, **kwargs) -> Iterable:
