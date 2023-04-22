@@ -537,7 +537,7 @@ class PolyData(PolyDataBase):
                 cells_dict = {ct.vtkCellType: topo}
         elif isinstance(pvobj, pv.UnstructuredGrid):
             coords = pvobj.points.astype(float)
-            cells_dict = ugrid.cells_dict
+            cells_dict = pvobj.cells_dict
         elif isinstance(pvobj, pv.PointGrid):
             ugrid = pvobj.cast_to_unstructured_grid()
             coords = pvobj.points.astype(float)
@@ -558,9 +558,9 @@ class PolyData(PolyDataBase):
                 
                 NDIM = celltype.NDIM
                 if NDIM == 1:
-                    frames = frames_of_lines(coords, topo)
+                    frames = frames_of_lines(coords, vtktopo)
                 elif NDIM == 2:
-                    frames = frames_of_surfaces(coords, topo)
+                    frames = frames_of_surfaces(coords, vtktopo)
                 elif NDIM == 3:
                     frames = GlobalFrame
                 
@@ -1850,7 +1850,7 @@ class PolyData(PolyDataBase):
         jupyter_backend="pythreejs",
         show_edges: bool = True,
         notebook: bool = False,
-        theme: str = "document",
+        theme: str = None,
         scalars: Union[str, ndarray] = None,
         window_size: Tuple = None,
         return_plotter: bool = False,
@@ -1876,19 +1876,24 @@ class PolyData(PolyDataBase):
         polys = self.to_pv(deepcopy=deepcopy, multiblock=False, scalars=scalars)
         if isinstance(theme, str):
             try:
-                pv.set_plot_theme(theme)
+                #pv.set_plot_theme(theme)
+                new_theme_type = pv.themes._ALLOWED_THEMES[theme].value
+                theme = new_theme_type()
             except Exception:
                 if theme == "dark":
                     theme = themes.DarkTheme()
                     theme.lighting = False
-                    theme.show_edges = True
                 elif theme == "bw":
+                    theme = themes.DefaultTheme()
                     theme.color = "black"
                     theme.lighting = True
-                    theme.show_edges = True
                     theme.edge_color = "white"
                     theme.background = "white"
+        
+        if theme is None:
             theme = pv.global_theme
+        
+        theme.show_edges = show_edges
 
         if lighting is not None:
             theme.lighting = lighting
@@ -1919,10 +1924,11 @@ class PolyData(PolyDataBase):
             params.update(block.config[config_key])
             if cmap is not None:
                 params["cmap"] = cmap
+            params["show_edges"] = show_edges
             plotter.add_mesh(poly, **params)
         if return_plotter:
             return plotter
-        show_params = dict(show_edges=show_edges)
+        show_params = dict()
         if notebook:
             show_params.update(jupyter_backend=jupyter_backend)
         else:
