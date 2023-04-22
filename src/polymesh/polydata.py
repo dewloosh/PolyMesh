@@ -38,7 +38,12 @@ from .cells import (
     W6,
     W18
 )
-from .utils.space import index_of_closest_point, index_of_furthest_point
+from .utils.space import (
+    index_of_closest_point, 
+    index_of_furthest_point,
+    frames_of_surfaces, 
+    frames_of_lines
+    )
 from .utils.topology import (
     nodal_adjacency,
     detach_mesh_data_bulk,
@@ -50,7 +55,8 @@ from .pointdata import PointData
 from .celldata import CellData
 from .base import PolyDataBase
 from .cell import PolyCell
-from .io import from_meshio, from_pyvista
+from .helpers import meshio_to_celltype, vtk_to_celltype
+from .vtkutils import PolyData_to_mesh
 from .config import __hasvtk__, __haspyvista__, __hask3d__, __hasmatplotlib__
 
 if __hasvtk__:
@@ -479,7 +485,33 @@ class PolyData(PolyDataBase):
         """
         Returns a :class:`PolyData` instance from a :class:`meshio.Mesh` instance.
         """
-        return from_meshio(mesh)
+        GlobalFrame = CartesianFrame(dim=3)
+
+        coords = mesh.points
+        polydata = PolyData(coords=coords, frame=GlobalFrame)
+
+        for cb in mesh.cells:
+            cd = None
+            cbtype = cb.type
+            celltype: PolyCell = meshio_to_celltype.get(cbtype, None)
+            if celltype:
+                topo = np.array(cb.data, dtype=int)
+                
+                NDIM = celltype.NDIM
+                if NDIM == 1:
+                    frames = frames_of_lines(coords, topo)
+                elif NDIM == 2:
+                    frames = frames_of_surfaces(coords, topo)
+                elif NDIM == 3:
+                    frames = GlobalFrame
+                
+                cd = celltype(topo=topo, frames=frames)
+                polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
+            else:
+                msg = f"Cells of type '{cbtype}' are nut supported here."
+                raise NotImplementedError(msg)
+
+        return polydata
     
     @classmethod
     def from_pv(cls, pvobj: pyVistaLike) -> "PolyData":
@@ -495,7 +527,50 @@ class PolyData(PolyDataBase):
         >>> bunny = examples.download_bunny_coarse()
         >>> mesh = PolyData.from_pv(bunny)
         """
-        return from_pyvista(pvobj, cls._cell_classes_)
+        if isinstance(pvobj, pv.PolyData):
+            coords, topo = PolyData_to_mesh(pvobj)
+            if isinstance(topo, dict):
+                cells_dict = topo
+            elif isinstance(topo, np.ndarray):
+                assert isinstance(cls._cell_classes_, dict)
+                ct = cls._cell_classes_[topo.shape[-1]]
+                cells_dict = {ct.vtkCellType: topo}
+        elif isinstance(pvobj, pv.UnstructuredGrid):
+            coords = pvobj.points.astype(float)
+            cells_dict = ugrid.cells_dict
+        elif isinstance(pvobj, pv.PointGrid):
+            ugrid = pvobj.cast_to_unstructured_grid()
+            coords = pvobj.points.astype(float)
+            cells_dict = ugrid.cells_dict
+        else:
+            try:
+                ugrid = pvobj.cast_to_unstructured_grid()
+                return PolyData.from_pv(ugrid)
+            except Exception:
+                raise TypeError("Invalid inut type!")
+
+        GlobalFrame = CartesianFrame(dim=3)
+        pd = PolyData(coords=coords, frame=GlobalFrame)  # this fails without a frame
+
+        for vtkid, vtktopo in cells_dict.items():
+            if vtkid in vtk_to_celltype:
+                celltype = vtk_to_celltype[vtkid]
+                
+                NDIM = celltype.NDIM
+                if NDIM == 1:
+                    frames = frames_of_lines(coords, topo)
+                elif NDIM == 2:
+                    frames = frames_of_surfaces(coords, topo)
+                elif NDIM == 3:
+                    frames = GlobalFrame
+                
+                cd = celltype(topo=vtktopo, frames=frames)
+                pd[vtkid] = PolyData(cd, frame=GlobalFrame)
+            else:
+                msg = "The element type with vtkId <{}> is not jet" + "supported here."
+                raise NotImplementedError(msg.format(vtkid))
+            
+        return pd
 
     def to_dataframe(
         self,
@@ -1373,7 +1448,7 @@ class PolyData(PolyDataBase):
     def areas(self, *args, **kwargs) -> ndarray:
         """Returns the areas."""
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
-        blocks2d = filter(lambda b: b.celltype.NDIM == 2, blocks)
+        blocks2d = filter(lambda b: b.celltype.NDIM < 3, blocks)
         amap = map(lambda b: b.celldata.areas(), blocks2d)
         return np.concatenate(list(amap))
 
@@ -1384,8 +1459,7 @@ class PolyData(PolyDataBase):
     def volumes(self, *args, **kwargs) -> ndarray:
         """Returns the volumes of the cells."""
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
-        blocks3d = filter(lambda b: b.celltype.NDIM == 3, blocks)
-        vmap = map(lambda b: b.celldata.volumes(), blocks3d)
+        vmap = map(lambda b: b.celldata.volumes(), blocks)
         return np.concatenate(list(vmap))
 
     def volume(self, *args, **kwargs) -> float:
