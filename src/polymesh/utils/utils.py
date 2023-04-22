@@ -38,13 +38,13 @@ def points_around(
 
     Parameters
     ----------
-    points : numpy.ndarray
+    points: numpy.ndarray
         Coordinates of several points as a 2d float numpy array.
-    r_max : float
+    r_max: float
         Maximum distance.
     n_max: int, Optional
         Maximum number of neighbours. Default is 10.
-    frmt : str
+    frmt: str
         A string specifying the output format. Valid options are
         'jagged', 'csr' and 'dict'.
         See below for the details on the returned object.
@@ -188,20 +188,20 @@ def points_of_cells(
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of shape (nP, nD) of vertex coordinates.
         nP : number of points
         nD : number of dimensions of the model space
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2D array of shape (nE, nNE) of vertex indices. The i-th row
         contains the vertex indices of the i-th element.
         nE : number of elements
         nNE : number of nodes per element
-    local_axes : numpy.ndarray
+    local_axes: numpy.ndarray
         Reference frames as a 3d array of shape (..., 3, 3). A single
         3x3 numpy array or matrices for all elements in 'topo' must be
         provided.
-    centralize : bool, Optional
+    centralize: bool, Optional
         If True, and 'local_axes' is not None, the local coordinates are
         returned with respect to the geometric center of each element.
 
@@ -258,11 +258,11 @@ def cells_coords(coords: ndarray, topo: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of shape (nP, nD) of vertex coordinates.
         nP : number of points
         nD : number of dimensions of the model space
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2D array of shape (nE, nNE) of vertex indices. The i-th
         row contains the vertex indices of the i-th element.
         nE : number of elements
@@ -295,11 +295,11 @@ def cell_coords(coords: ndarray, topo: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d array of shape (nP, nD) of vertex coordinates.
         nP : number of points
         nD : number of dimensions of the model space
-    topo : (nNE) numpy.ndarray
+    topo: (nNE) numpy.ndarray
         1D array of vertex indices.
         nNE : number of nodes per element
 
@@ -328,7 +328,7 @@ def cell_center_2d(ecoords: np.ndarray):
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         2d coordinate array of the element. The array has as many rows,
         as the number of nodes of the cell, and two columns.
 
@@ -349,7 +349,7 @@ def cell_center(coords: np.ndarray):
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         2d coordinate array of the element. The array has as many rows,
         as the number of nodes of the cell, and three columns.
 
@@ -370,9 +370,9 @@ def cell_centers_bulk(coords: ndarray, topo: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d coordinate array.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d point-based topology array.
 
     Returns
@@ -389,7 +389,7 @@ def cell_centers_bulk2(ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         3d coordinate array of element coordinates.
 
     Returns
@@ -408,9 +408,9 @@ def _nodal_distribution_factors_csr_(topo: csr_matrix, w: ndarray) -> ndarray:
 
     Parameters
     ----------
-    topo : csr_matrix
+    topo: csr_matrix
         2d integer topology array as a CSR matrix.
-    w : numpy.ndarray
+    w: numpy.ndarray
         The weights of the cells.
     """
     nE = topo.shape[0]
@@ -438,9 +438,9 @@ def _nodal_distribution_factors_dense_(topo: ndarray, w: ndarray) -> ndarray:
 
     Parameters
     ----------
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d integer topology array.
-    w : numpy.ndarray
+    w: numpy.ndarray
         The weights of the cells.
     """
     factors = np.zeros(topo.shape, dtype=w.dtype)
@@ -462,9 +462,9 @@ def nodal_distribution_factors(
 
     Parameters
     ----------
-    topo : numpy.ndarray or csr_matrix
+    topo: numpy.ndarray or csr_matrix
         2d integer topology array.
-    w : numpy.ndarray
+    w: numpy.ndarray
         The weights of the cells.
 
     Returns
@@ -474,7 +474,7 @@ def nodal_distribution_factors(
 
     See also
     --------
-    :func:`polymesh.PolyData.nodal_distribution_factors`
+    :func:`~polymesh.PolyData.nodal_distribution_factors`
     """
     if isinstance(topo, ndarray):
         return _nodal_distribution_factors_dense_(topo, weights)
@@ -498,11 +498,11 @@ def distribute_nodal_data_bulk(data: ndarray, topo: ndarray, ndf: ndarray) -> nd
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data: numpy.ndarray
         2d array of shape (nP, nX), the data defined on points.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d integer array of shape (nE, nNE), describing the topology.
-    ndf : numpy.ndarray
+    ndf: numpy.ndarray
         2d float array of shape (nE, nNE), describing the distribution
         of cells to the nodes.
 
@@ -529,13 +529,13 @@ def distribute_nodal_data_sparse(
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data: numpy.ndarray
         2d array of shape (nP, nX), the data defined on points.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d integer array of shape (nE, nNE), describing the topology.
-    cids : numpy.ndarray
+    cids: numpy.ndarray
         A 1d integer array describing the indices of the cells.
-    ndf : csr_matrix
+    ndf: csr_matrix
         2d float array of shape (nE, nNE), describing the distribution
         of cells to all nodes in the mesh.
 
@@ -564,21 +564,21 @@ def collect_nodal_data(
 
     Parameters
     ----------
-    celldata : numpy.ndarray
+    celldata: numpy.ndarray
         Data defined on nodes of cells. It can be any array with at
         least 2 dimensions with a shape (nE, nNE, ...), where nE and
         nNE are the number of cells and nodes per cell.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2d integer array describing the topology of several cells of
         the same kind.
-    cids : numpy.ndarray
+    cids: numpy.ndarray
         A 1d integer array describing the indices of the cells.
-    ndf : csr_matrix
+    ndf: csr_matrix
         Nodal distribution factors for each node of each cell in 'topo'.
         This must contain values for all cells in a mesh, not just the
         ones for which cell data and topology is provided by 'celldata'
         and 'topo'.
-    res : numpy.ndarray
+    res: numpy.ndarray
         An array for the output. It must have a proper size, at lest up
         to the maximum node index in 'topo'.
     """
@@ -602,9 +602,9 @@ def explode_mesh_bulk(coords: ndarray, topo: ndarray) -> Tuple[ndarray]:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         A 2d coordinate array.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2d integer array describing the topology of several cells of
         the same kind.
 
@@ -641,12 +641,12 @@ def explode_mesh_data_bulk(
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         A 2d coordinate array.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2d integer array describing the topology of several cells of
         the same kind.
-    data : numpy.ndarray
+    data: numpy.ndarray
         A 2d array describing data on all nodes of the cells.
 
     Returns
@@ -721,10 +721,10 @@ def jacobian_matrix_bulk(dshp: ndarray, ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    dshp : numpy.ndarray
+    dshp: numpy.ndarray
         A 3d numpy array of shape (nG, nNE, nD), where nG, nNE and nD
         are the number of integration points, nodes and spatial dimensions.
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         A 3d numpy array of shape (nE, nNE, nD), where nE, nNE and nD
         are the number of elements, nodes and spatial dimensions.
 
@@ -750,7 +750,7 @@ def jacobian_det_bulk_1d(jac: ndarray) -> ndarray:
 
     Parameters
     ----------
-    jac : numpy.ndarray
+    jac: numpy.ndarray
         4d float array of shape (nE, nG, 1, 1) for an nE number of
         elements and nG number of evaluation points.
 
@@ -804,7 +804,7 @@ def center_of_points(coords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         A 2d coordinate array.
     """
     res = np.zeros(coords.shape[1], dtype=coords.dtype)
@@ -820,7 +820,7 @@ def centralize(coords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         A 2d coordinate array.
     """
     nD = coords.shape[1]
@@ -840,9 +840,9 @@ def lengths_of_lines(coords: ndarray, topo: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         A 2d coordinate array.
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         A 2d topology array.
     """
     nE, nNE = topo.shape
@@ -860,7 +860,7 @@ def lengths_of_lines2(ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         A 3d numpy array of shape (nE, nNE, nD), where nE, nNE and nD
         are the number of elements, nodes and spatial dimensions.
     """
@@ -879,7 +879,7 @@ def distances_of_points(coords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of shape (N, ...).
 
     Returns
@@ -916,9 +916,9 @@ def pcoords_to_coords_1d(pcoords: ndarray, ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    pcoords : numpy.ndarray
+    pcoords: numpy.ndarray
         1d float array of length nP, coordinates in the range [-1 , 1].
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         3d float array of shape (nE, 2+, nD) of cell coordinates.
 
     Notes
@@ -951,7 +951,7 @@ def norms(a: ndarray) -> ndarray:
 
     Parameters
     ----------
-    a : numpy.ndarray
+    a: numpy.ndarray
         2d array of data of shape (N, ...).
 
     Returns

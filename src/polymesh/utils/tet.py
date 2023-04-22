@@ -12,7 +12,7 @@ def vol_tet(ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         A 3d float array of shape (nE, nNE, 3) of
         nodal coordinates for several elements. Here nE
         is the number of nodes and nNE is the number of
@@ -42,7 +42,7 @@ def vol_tet_bulk(ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         A 3d float array of shape (nE, nNE, 3) of
         nodal coordinates for several elements. Here nE
         is the number of nodes and nNE is the number of

@@ -31,13 +31,13 @@ def generate_mesh(
 
     Parameters
     ----------
-    geometry : :class:`sectionproperties.pre.geometry.Geometry`
+    geometry: :class:`sectionproperties.pre.geometry.Geometry`
         Describes the shape of the section, i.e. 'I', 'H', 'RHS', etc.
-    l_max : float, Optional
+    l_max: float, Optional
         Maximum element edge length. Default is None.
-    a_max : float, Optional
+    a_max: float, Optional
         Maximum element area. Default is None.
-    n_max : int, Optional
+    n_max: int, Optional
         Maximum number of elements. Default is None.
 
     Note
@@ -80,17 +80,17 @@ def get_section(
 
     Parameters
     ----------
-    shape : str
+    shape: str
         Describes the shape of the section. The currently supported section types
         are 'I', 'CHS', 'RHS', 'TFI', 'PFC', 'TFC', 'T'.
-    mesh_params : dict, Optional
+    mesh_params: dict, Optional
         A dictionary of parameters controlling mesh generation. Default is None.
         For the possible keys and values see :func:`generate_mesh`, to which
         these parameters are forwarded to. Default is None.
-    material : :class:`sectionproperties.pre.pre.Material`, Optional
+    material: :class:`~sectionproperties.pre.pre.Material`, Optional
         The material of the section. If not specified, a default material is
         used. Default is None.
-    **section_params : dict
+    **section_params: dict
         Parameters required for a given section. See the documentation of
         the `sectionproperties` library for more details. The parameters
         are only required, if the first argument is a string.
@@ -181,22 +181,22 @@ class LineSection(Wrapper):
 
     Parameters
     ----------
-    *args : tuple, Optional
+    *args: tuple, Optional
         The first parameter can be a string referring to a section type, or an
         instance of :class:`sectionproperties.analysis.section.Section`. In the
         former case, parameters of the section can be provided as keyword arguments,
         which are then forwarded to :func:`get_section`, see its documentation
         for further details.
-    **kwargs : dict, Optional
+    **kwargs: dict, Optional
         The parameters of a section as keyword arguments, only if the first
         positional argument is a string (see above).
-    mesh_params : dict, Optional
+    mesh_params: dict, Optional
         A dictionary controlling the density of the mesh of the section.
         Default is None.
-    material : :class:`sectionproperties.pre.pre.Material`, Optional
+    material: :class:`sectionproperties.pre.pre.Material`, Optional
         The material of the section. If not specified, a default material is
         used. Default is None.
-    wrap : :class:`sectionproperties.analysis.section.Section`
+    wrap: :class:`sectionproperties.analysis.section.Section`
         A section object to be wrapped. It can also be provided as the
         first positional argument.
     Notes
@@ -271,13 +271,13 @@ class LineSection(Wrapper):
         """
         Returns the mesh of the section as a collection of T3 triangles.
         Keyword arguments are forwarded to the constructor of
-        :class:`polymesh.tri.trimesh.TriMesh`.
+        :class:`~polymesh.tri.trimesh.TriMesh`.
 
         Parameters
         ----------
-        order : boolean, Optional
+        order: boolean, Optional
             Order of the tetrahedra. Order 1 means linear, order 2 quadratic. Default is 1.
-        subdivide : boolean, Optional
+        subdivide: boolean, Optional
             Controls how the T6 triangles are transformed into T3 triangles,
             if the argument 'T6' is False. If True, the T6 triangles
             are subdivided into 4 T3 triangles. If False, T3 triangles are
@@ -286,7 +286,7 @@ class LineSection(Wrapper):
 
         See Also
         --------
-        :class:`polymesh.tri.trimesh.TriMesh`
+        :class:`~polymesh.trimesh.TriMesh`
 
         Examples
         --------
@@ -311,12 +311,16 @@ class LineSection(Wrapper):
 
         Parameters
         ----------
-        length : float
+        length: float
             Length of the beam.
-        N : int
+        N: int
             Number of subdivisions along the length of the beam.
-        frame : numpy.ndarray
+        frame: numpy.ndarray
             A 3x3 matrix representing an orthonormal coordinate frame.
+            
+        Returns
+        -------
+        :class:`~polymesh.tetmesh.TetMesh`
         """
         return self.trimesh(frame=frame).extrude(h=length, N=N)
 

@@ -17,7 +17,7 @@ class Point(Vector):
 
     Parameters
     ----------
-    frame : ndarray, Optional.
+    frame: numpy.ndarray, Optional.
         A numpy array representing coordinate axes of a reference frame.
         Default is None.
 

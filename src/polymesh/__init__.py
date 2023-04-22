@@ -14,3 +14,20 @@ from .tetmesh import TetMesh
 from .triang import triangulate
 from .grid import grid, Grid
 from .tetrahedralize import tetrahedralize
+
+__all__ = [
+    "PointCloud", 
+    "CartesianFrame", 
+    "PolyData", 
+    "LineData", 
+    "PolyData1d", 
+    "PointData",
+    "KNN",
+    "TopologyArray",
+    "TriMesh",
+    "TetMesh",
+    "triangulate",
+    "grid",
+    "Grid",
+    "tetrahedralize",
+]

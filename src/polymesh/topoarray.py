@@ -22,13 +22,13 @@ class TopologyArray(JaggedArray):
 
     Parameters
     ----------
-    *topo : Iterable
+    *topo: Iterable
         One or more 2d arrays definig topologies for polygonal cells.
-    cuts : Iterable, Optional
+    cuts: Iterable, Optional
         An iterable that tells how to unflatten an 1d array into a
         2d jagged shape. Only if topology is provided as a 1d array.
         Default is None.
-    force_numpy : bool, Optional
+    force_numpy: bool, Optional
         Forces dense inputs to be NumPy arrays in the background.
         Default is True.
 

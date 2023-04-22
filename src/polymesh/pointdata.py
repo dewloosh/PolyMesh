@@ -26,7 +26,6 @@ class PointData(PointDataBase):
     If you are not a developer, you probably don't have to ever create any
     instance of this class, but since it operates in the background of every
     polygonal data structure, it is important to understand how it works.
-
     """
 
     _point_cls_ = PointCloud
@@ -188,7 +187,7 @@ class PointData(PointDataBase):
 
         Parameters
         ----------
-        key : str
+        key: str
             A field key to identify data in the databases of the attached
             CellData instances of the blocks.
 

@@ -90,7 +90,7 @@ def area_tri(ecoords: np.ndarray):
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         Element coordinates, see the example.
 
     Notes
@@ -118,7 +118,7 @@ def inscribed_radius(ecoords: ndarray):
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         2d float numpy array of element coordinates.
 
     Notes
@@ -149,7 +149,7 @@ def inscribed_radii(ecoords: ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         3d float numpy array of element coordinates for multiple cells.
 
     Notes
@@ -175,7 +175,7 @@ def areas_tri(ecoords: np.ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         3d float numpy array of element coordinates for multiple cells.
 
     Notes
@@ -211,7 +211,7 @@ def area_tri_bulk(ecoords: np.ndarray) -> ndarray:
 
     Parameters
     ----------
-    ecoords : numpy.ndarray
+    ecoords: numpy.ndarray
         3d float numpy array of element coordinates for multiple cells.
 
     Notes

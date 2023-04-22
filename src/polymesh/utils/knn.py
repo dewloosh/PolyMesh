@@ -6,8 +6,7 @@ from packaging import version
 import warnings
 
 try:
-    import sklearn
-
+    from sklearn.neighbors import KDTree
     __has_sklearn__ = True
 except Exception:
     __has_sklearn__ = False
@@ -20,14 +19,14 @@ def k_nearest_neighbours(
     X: ndarray,
     Y: ndarray = None,
     *args,
-    backend="scipy",
-    k=1,
-    workers=-1,
-    tree_kwargs=None,
-    query_kwargs=None,
-    leaf_size=30,
-    return_distance=False,
-    max_distance=None,
+    backend:str="scipy",
+    k:int=1,
+    workers:int=-1,
+    tree_kwargs:dict=None,
+    query_kwargs:dict=None,
+    leaf_size:int=30,
+    return_distance:bool=False,
+    max_distance:float=None,
     **kwargs
 ):
     """
@@ -46,37 +45,37 @@ def k_nearest_neighbours(
 
     Parameters
     ----------
-    X : numpy.ndarray
+    X: numpy.ndarray
         An array of points to build the tree.
-    Y : numpy.ndarray, Optional
+    Y: numpy.ndarray, Optional
         An array of sampling points to query the tree. If None it is the
         same as the points used to build the tree. Default is None.
-    k : int or Sequence[int], Optional
+    k: int or Sequence[int], Optional
         Either the number of nearest neighbors to return,
         or a list of the k-th nearest neighbors to return, starting from 1.
-    leaf_size : positive int, Optional
+    leaf_size: positive int, Optional
         The number of points at which the algorithm switches over to brute-force.
         Default is 10.
-    workers : int, Optional
+    workers: int, Optional
         Only if backend is 'scipy'.
         Number of workers to use for parallel processing. If -1 is given all
         CPU threads are used. Default: -1.
         New in 'scipy' version 1.6.0.
-    max_distance : float, Optional
+    max_distance: float, Optional
         Return only neighbors within this distance. It can be a single value, or
         an array of values of shape matching the input, while a None value
         translates to an infinite upper bound.
         Default is None.
-    tree_kwargs : dict, Optional
+    tree_kwargs: dict, Optional
         Extra keyword arguments passed to the KDTree creator of the selected
         backend. Default is None.
 
     Returns
     -------
-    d : float or array of floats
+    d: float or array of floats
         The distances to the nearest neighbors. Only returned if
         `return_distance==True`.
-    i : integer or array of integers
+    i: integer or array of integers
         The index of each neighbor.
 
     Raises
@@ -114,7 +113,6 @@ def k_nearest_neighbours(
     elif backend == "sklearn":
         if not __has_sklearn__:
             raise ImportError("'sklearn' must be installed for this!")
-        from sklearn.neighbors import KDTree
 
         tree = KDTree(X, leaf_size=leaf_size, **tree_kwargs)
         if max_distance is None:

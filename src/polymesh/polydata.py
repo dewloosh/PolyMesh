@@ -7,6 +7,7 @@ import warnings
 from numpy import ndarray
 import numpy as np
 import awkward as ak
+from meshio import Mesh as MeshioMesh
 
 from dewloosh.core.warning import PerformanceWarning
 from linkeddeepdict import DeepDict
@@ -25,16 +26,18 @@ from .utils.utils import (
     nodal_distribution_factors
 )
 from .utils.knn import k_nearest_neighbours as KNN
-from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk, PolyData_to_mesh
+from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
 from .cells import (
+    L2 as Line,
     T3 as Triangle,
     Q4 as Quadrilateral,
     H8 as Hexahedron,
     H27 as TriquadraticHexaHedron,
     Q9,
     TET10,
+    W6,
+    W18
 )
-from .polyhedron import Wedge
 from .utils.space import index_of_closest_point, index_of_furthest_point
 from .utils.topology import (
     nodal_adjacency,
@@ -47,7 +50,7 @@ from .pointdata import PointData
 from .celldata import CellData
 from .base import PolyDataBase
 from .cell import PolyCell
-
+from .io import from_meshio, from_pyvista
 from .config import __hasvtk__, __haspyvista__, __hask3d__, __hasmatplotlib__
 
 if __hasvtk__:
@@ -65,7 +68,7 @@ if __haspyvista__:
     import pyvista as pv
     from pyvista import themes
 
-    pyVistaLike = Union[pv.PolyData, pv.PointGrid]
+    pyVistaLike = Union[pv.PolyData, pv.PointGrid, pv.UnstructuredGrid]
 else:
     pyVistaLike = NoneType
 
@@ -93,11 +96,11 @@ class PolyData(PolyDataBase):
 
     Parameters
     ----------
-    pd : PointData or CellData, Optional
+    pd: PointData or CellData, Optional
         A PolyData or a CellData instance. Dafault is None.
-    cd : CellData, Optional
+    cd: CellData, Optional
         A CellData instance, if the first argument is provided. Dafault is None.
-    celltype : int, Optional
+    celltype: int, Optional
         An integer spcifying a valid celltype.
 
     Examples
@@ -144,18 +147,17 @@ class PolyData(PolyDataBase):
     _point_array_class_ = PointCloud
     _point_class_ = PointData
     _frame_class_ = CartesianFrame
-    _cell_class = NoneType
     _cell_classes_ = {
-        8: Hexahedron,
-        6: Wedge,
+        2: Line,
+        3: Triangle,
         4: Quadrilateral,
+        6: W6,
+        8: Hexahedron,
         9: Q9,
         10: TET10,
-        3: Triangle,
-        27: TriquadraticHexaHedron,
+        18: W18,
+        27: TriquadraticHexaHedron,        
     }
-    _passive_opacity_ = 0.3
-    _active_opacity_ = 1.0
     _pv_config_key_ = ("pv", "default")
     _k3d_config_key_ = ("k3d", "default")
 
@@ -379,7 +381,7 @@ class PolyData(PolyDataBase):
         """
         Locks the layout. If a `PolyData` instance is locked,
         missing keys are handled the same way as they would've been handled
-        if it was a ´dict´. Also, setting or deleting items in a locked
+        if it was a `dict`. Also, setting or deleting items in a locked
         dictionary and not possible and you will experience an error upon
         trying.
 
@@ -387,7 +389,7 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        create_mappers : bool, Optional
+        create_mappers: bool, Optional
             If True, some mappers are generated to speed up certain types of
             searches, like finding a block containing cells based on their
             indices.
@@ -466,15 +468,19 @@ class PolyData(PolyDataBase):
         Download a .vtk file and read it:
 
         >>> from polymesh import PolyData
-        >>> from dewloosh.core.downloads import download_stand
-        >>> vtkpath = download_stand()
+        >>> from polymesh.examples import stand_vtk
+        >>> vtkpath = stand_vtk(read=False)
         >>> mesh = PolyData.read(vtkpath)
         """
-        try:
-            return cls.from_pv(pv.read(*args, **kwargs))
-        except Exception:
-            raise ImportError("Can't import file.")
-
+        return cls.from_pv(pv.read(*args, **kwargs))
+    
+    @classmethod
+    def from_meshio(cls, mesh: MeshioMesh) -> "PolyData":
+        """
+        Returns a :class:`PolyData` instance from a :class:`meshio.Mesh` instance.
+        """
+        return from_meshio(mesh)
+    
     @classmethod
     def from_pv(cls, pvobj: pyVistaLike) -> "PolyData":
         """
@@ -489,42 +495,7 @@ class PolyData(PolyDataBase):
         >>> bunny = examples.download_bunny_coarse()
         >>> mesh = PolyData.from_pv(bunny)
         """
-        celltypes = cls._cell_classes_.values()
-        vtk_to_celltype = {v.vtkCellType: v for v in celltypes}
-
-        if isinstance(pvobj, pv.PolyData):
-            coords, topo = PolyData_to_mesh(pvobj)
-            if isinstance(topo, dict):
-                cells_dict = topo
-            elif isinstance(topo, ndarray):
-                ct = cls._cell_classes_[topo.shape[-1]]
-                cells_dict = {ct.vtkCellType: topo}
-        elif isinstance(pvobj, pv.PointGrid):
-            ugrid = pvobj.cast_to_unstructured_grid()
-            coords = pvobj.points.astype(float)
-            cells_dict = ugrid.cells_dict
-        else:
-            try:
-                ugrid = pvobj.cast_to_unstructured_grid()
-                return cls.from_pv(ugrid)
-            except Exception:
-                raise TypeError("Invalid inut type!")
-
-        A = CartesianFrame(dim=3)
-        pd = PolyData(coords=coords, frame=A)  # this fails without a frame
-
-        for vtkid, vtktopo in cells_dict.items():
-            if vtkid in vtk_to_celltype:
-                if vtkid == 5:
-                    pass  # 3-noded triangles
-                if vtkid == 10:
-                    pass  # 10-noded tetrahedrons
-                ct = vtk_to_celltype[vtkid]
-                pd[vtkid] = PolyData(topo=vtktopo, celltype=ct, frame=A)
-            else:
-                msg = "The element type with vtkId <{}> is not jet" + "supported here."
-                raise NotImplementedError(msg.format(vtkid))
-        return pd
+        return from_pyvista(pvobj, cls._cell_classes_)
 
     def to_dataframe(
         self,
@@ -538,10 +509,10 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        point_fields : Iterable[str], Optional
+        point_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             points in the mesh. Default is None.
-        cell_fields : Iterable[str], Optional
+        cell_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
 
@@ -570,14 +541,14 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        path_pd : str
+        path_pd: str
             File path for point-related data.
-        path_cd : str
+        path_cd: str
             File path for cell-related data.
-        point_fields : Iterable[str], Optional
+        point_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             points in the mesh. Default is None.
-        cell_fields : Iterable[str], Optional
+        cell_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
 
@@ -599,17 +570,17 @@ class PolyData(PolyDataBase):
         point_fields: Iterable[str] = None,
         cell_fields: Iterable[str] = None,
         **__,
-    ):
+    ) -> Tuple[ak.Array]:
         """
         Returns the data contained within the mesh as a tuple of two
         Awkward arrays.
 
         Parameters
         ----------
-        point_fields : Iterable[str], Optional
+        point_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             points in the mesh. Default is None.
-        cell_fields : Iterable[str], Optional
+        cell_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
 
@@ -626,7 +597,7 @@ class PolyData(PolyDataBase):
 
     def to_lists(
         self, *, point_fields: Iterable[str] = None, cell_fields: Iterable[str] = None
-    ) -> Tuple[list, list]:
+    ) -> Tuple[list]:
         """
         Returns data of the object as a tuple of lists. The first is a list
         of point-related, the other one is cell-related data. Unless specified
@@ -635,10 +606,10 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        point_fields : Iterable[str], Optional
+        point_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             points in the mesh. Default is None.
-        cell_fields : Iterable[str], Optional
+        cell_fields: Iterable[str], Optional
             A list of keys that might identify data in a database for the
             cells in the mesh. Default is None.
 
@@ -722,7 +693,6 @@ class PolyData(PolyDataBase):
 
         This way, you can store several different configurations for
         different scenarios.
-
         """
         return self._config
 
@@ -755,10 +725,9 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        key : str
+        key: str
             A valid key to the PointData of the mesh. If not specified
             the key is the key used for storing coorindates.
-
         """
         key = PointData._dbkey_x_ if key is None else key
         return self.pointdata is not None and key in self.pointdata.fields
@@ -772,9 +741,8 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        key : str
+        key: str
             A valid key in any of the blocks with data. Default is None.
-
         """
         key = PointData._dbkey_x_ if key is None else key
         if self.pointdata is not None:
@@ -793,13 +761,13 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        inclusive : bool, Optional
+        inclusive: bool, Optional
             Whether to include the object the call was made upon.
             Default is False.
-        blocktype : Any, Optional
+        blocktype: Any, Optional
             A required type. Default is None, which means theat all
             subclasses of the PolyData class are accepted. Default is None.
-        deep : bool, Optional
+        deep: bool, Optional
             If True, parsing goes into deep levels. If False, only the level
             of the current object is handled.
 
@@ -919,12 +887,12 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        deep : bool, Optional
+        deep: bool, Optional
             If `True`, the action propagates down. Default is True.
-        imap : numpy.ndarray, Optional
+        imap: numpy.ndarray, Optional
             Index mapper. Either provided as a numpy array, or it gets
             fetched from the database. Default is None.
-        invert : bool, Optional
+        invert: bool, Optional
             A flag to indicate wether the provided index map should be
             inverted or not. Default is False.
 
@@ -975,13 +943,13 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        inplace : bool, Optional
+        inplace: bool, Optional
             Performs the operations inplace. Default is True.
-        default_point_fields : dict, Optional
+        default_point_fields: dict, Optional
             A dictionary to define default values for missing fields
             for point related data. If not specified, the default
             is `numpy.nan`.
-        default_cell_fields : dict, Optional
+        default_cell_fields: dict, Optional
             A dictionary to define default values for missing fields
             for cell related data. If not specified, the default
             is `numpy.nan`.
@@ -1091,9 +1059,9 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        return_inds : bool, Optional
+        return_inds: bool, Optional
             Returns the indices of the points. Default is False.
-        from_cells : bool, Optional
+        from_cells: bool, Optional
             If there is no pointdata attaached to the current block, the
             points of the sublevels of the mesh can be gathered from cell
             information. Default is False.
@@ -1150,9 +1118,9 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        return_inds : bool, Optional
+        return_inds: bool, Optional
             Returns the indices of the points. Default is False.
-        jagged : bool, Optional
+        jagged: bool, Optional
             If True, returns the topology as a :class:`TopologyArray`
             instance, even if the mesh is regular. Default is False.
 
@@ -1240,7 +1208,7 @@ class PolyData(PolyDataBase):
         ----------
         v: bool, Optional
             A vector describing a translation.
-        frame : FrameLike, Optional
+        frame: FrameLike, Optional
             If `v` is only an array, this can be used to specify
             a frame in which the components should be understood.
         """
@@ -1298,9 +1266,9 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        radius : float
+        radius: float
             The influence radius of a point.
-        frmt : str, Optional
+        frmt: str, Optional
             A string specifying the type of the result. Valid
             options are 'jagged', 'csr' and 'dict'.
 
@@ -1405,7 +1373,7 @@ class PolyData(PolyDataBase):
     def areas(self, *args, **kwargs) -> ndarray:
         """Returns the areas."""
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
-        blocks2d = filter(lambda b: b.celltype.NDIM < 3, blocks)
+        blocks2d = filter(lambda b: b.celltype.NDIM == 2, blocks)
         amap = map(lambda b: b.celldata.areas(), blocks2d)
         return np.concatenate(list(amap))
 
@@ -1416,7 +1384,8 @@ class PolyData(PolyDataBase):
     def volumes(self, *args, **kwargs) -> ndarray:
         """Returns the volumes of the cells."""
         blocks = self.cellblocks(*args, inclusive=True, **kwargs)
-        vmap = map(lambda b: b.celldata.volumes(), blocks)
+        blocks3d = filter(lambda b: b.celltype.NDIM == 3, blocks)
+        vmap = map(lambda b: b.celldata.volumes(), blocks3d)
         return np.concatenate(list(vmap))
 
     def volume(self, *args, **kwargs) -> float:
@@ -1454,7 +1423,7 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        weights : Union[str, numpy.ndarray], Optional
+        weights: Union[str, numpy.ndarray], Optional
             The metric which is used to calculate the factors. Valid
             strings are 'volume' and 'uniform'. If it is an array, it
             must be an 1d array with a length matching the number of
@@ -1536,7 +1505,7 @@ class PolyData(PolyDataBase):
 
             Parameters
             ----------
-            deepcopy : bool, Optional
+            deepcopy: bool, Optional
                 Default is False.
             multiblock : bool, Optional
                 Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
@@ -1578,12 +1547,12 @@ class PolyData(PolyDataBase):
 
             Parameters
             ----------
-            deepcopy : bool, Optional
+            deepcopy: bool, Optional
                 Default is False.
-            multiblock : bool, Optional
+            multiblock: bool, Optional
                 Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
                 of `vtkUnstructuredGrid` instances. Default is False.
-            scalars : str or numpy.ndarray, Optional
+            scalars: str or numpy.ndarray, Optional
                 A string or an array describing scalar data. Default is None.
 
             Returns
@@ -1747,16 +1716,16 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        notebook : bool, Optional
+        notebook: bool, Optional
             Whether to plot in an IPython notebook enviroment. This is only
             available for PyVista at the moment. Default is False.
-        backend : str, Optional
+        backend: str, Optional
             The backend to use. Valid options are 'k3d' and 'pyvista'.
             Default is 'pyvista'.
-        config_key : str, Optional
+        config_key: str, Optional
             A configuration key if the block were configured previously.
             Default is None.
-        **kwargs : dict, Optional
+        **kwargs: dict, Optional
             Extra keyword arguments forwarded to the plotter function according
             to the selected backend.
 
@@ -1782,13 +1751,13 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        scene : object, Optional
+        scene: object, Optional
             A K3D plot widget to append to. This can also be given as the
             first positional argument. Default is None, in which case it is
             created using a call to :func:`k3d.plot`.
         menu_visibility : bool, Optional
             Whether to show the menu or not. Default is True.
-        **kwargs : dict, Optional
+        **kwargs: dict, Optional
             Extra keyword arguments forwarded to :func:`to_k3d`.
 
         See Also
@@ -1864,7 +1833,7 @@ class PolyData(PolyDataBase):
         if camera_position is not None:
             plotter.camera_position = camera_position
 
-        pvparams = dict(show_edges=show_edges)
+        pvparams = dict()
         blocks = self.cellblocks(inclusive=True, deep=True)
         if config_key is None:
             config_key = self.__class__._pv_config_key_
@@ -1879,7 +1848,7 @@ class PolyData(PolyDataBase):
             plotter.add_mesh(poly, **params)
         if return_plotter:
             return plotter
-        show_params = {}
+        show_params = dict(show_edges=show_edges)
         if notebook:
             show_params.update(jupyter_backend=jupyter_backend)
         else:
@@ -1911,21 +1880,21 @@ class PolyData(PolyDataBase):
 
 class IndexManager(object):
     """
-    This object ought to guarantee, that every cell in a
-    model has a unique ID.
+    Manages and index set by generating and recycling indices
+    of a set of points or cells.
     """
 
     def __init__(self, start=0):
         self.queue = []
         self.next = start
 
-    def generate_np(self, n=1):
+    def generate_np(self, n:int=1) -> Union[int, ndarray]:
         if n == 1:
             return self.generate(1)
         else:
             return np.array(self.generate(n))
 
-    def generate(self, n=1):
+    def generate(self, n:int=1) -> Union[int, ndarray]:
         nQ = len(self.queue)
         if nQ > 0:
             if n == 1:

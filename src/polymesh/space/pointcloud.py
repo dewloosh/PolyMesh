@@ -64,10 +64,10 @@ class PointCloud(Vector):
 
     Parameters
     ----------
-    frame : numpy.ndarray, Optional
+    frame: numpy.ndarray, Optional
         A numpy array representing coordinate axes of a reference frame.
         Default is None.
-    inds : numpy.ndarray, Optional
+    inds: numpy.ndarray, Optional
         An 1d integer array specifying point indices. Default is None.
 
     Examples
@@ -177,7 +177,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        target : FrameLike
+        target: FrameLike
             A target frame of reference.
         """
         if isinstance(target, FrameLike):
@@ -193,17 +193,17 @@ class PointCloud(Vector):
         """
         return self.inds
 
-    def x(self, target: FrameLike = None):
+    def x(self, target: FrameLike = None) -> ndarray:
         """Returns the `x` coordinates."""
         arr = self.show(target)
         return arr[:, 0] if len(self.shape) > 1 else arr[0]
 
-    def y(self, target: FrameLike = None):
+    def y(self, target: FrameLike = None) -> ndarray:
         """Returns the `y` coordinates."""
         arr = self.show(target)
         return arr[:, 1] if len(self.shape) > 1 else arr[1]
 
-    def z(self, target: FrameLike = None):
+    def z(self, target: FrameLike = None) -> ndarray:
         """Returns the `z` coordinates."""
         arr = self.show(target)
         return arr[:, 2] if len(self.shape) > 1 else arr[2]
@@ -230,7 +230,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        target : ReferenceFrame, Optional
+        target: ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Returns
@@ -251,11 +251,11 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        p : Vector or Array, Optional
+        p: Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as
             an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
-        frame : ReferenceFrame, Optional
+        frame: ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -270,17 +270,17 @@ class PointCloud(Vector):
             p = Vector(p, frame=frame)
         return index_of_closest_point(self.show(), p.show())
 
-    def index_of_furthest(self, p: VectorLike, frame: FrameLike = None):
+    def index_of_furthest(self, p: VectorLike, frame: FrameLike = None) -> int:
         """
         Returns the index of the point being furthest from `p`.
 
         Parameters
         ----------
-        p : Vector or Array, Optional
+        p: Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as
             an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
-        frame : ReferenceFrame, Optional
+        frame: ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -298,11 +298,11 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        p : Vector or Array, Optional
+        p: Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as
             an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
-        frame : ReferenceFrame, Optional
+        frame: ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -327,11 +327,11 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        p : Vector or Array, Optional
+        p: Vector or Array, Optional
             Vectors or coordinates of one or more points. If provided as
             an array, the `frame` argument can be used to specify the
             parent frame in which the coordinates are to be understood.
-        frame : ReferenceFrame, Optional
+        frame: ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -357,7 +357,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        target : ReferenceFrame, Optional
+        target: ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Notes
@@ -369,7 +369,7 @@ class PointCloud(Vector):
         
         See Also
         --------
-        :func:`polymesh.space.pointcloud.PointCloud.frame`
+        :func:`~polymesh.space.pointcloud.PointCloud.frame`
         
         Returns
         -------
@@ -394,11 +394,11 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        v : Vector or Array, Optional
+        v: Vector or Array, Optional
             An array of a vector. If provided as an array, the `frame`
             argument can be used to specify the parent frame in which the
             motion is tp be understood.
-        frame : ReferenceFrame, Optional
+        frame: ReferenceFrame, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None.
 
@@ -432,7 +432,7 @@ class PointCloud(Vector):
         self._array += dcoords(self._array, arr)
         return self
 
-    def centralize(self, target: FrameLike = None):
+    def centralize(self, target: FrameLike = None) -> "PointCloud":
         """
         Centralizes the coordinates wrt. to a specified frame,
         or the root frame if there is no target provided.
@@ -441,7 +441,7 @@ class PointCloud(Vector):
 
         Parameters
         ----------
-        target : ReferenceFrame, Optional
+        target: ReferenceFrame, Optional
             A frame of reference. Default is None.
 
         Returns
@@ -451,7 +451,7 @@ class PointCloud(Vector):
         """
         return self.move(-self.center(target), target)
 
-    def rotate(self, *args, **kwargs):
+    def rotate(self, *args, **kwargs) -> "PointCloud":
         """
         Applies a transformation to the coordinates in-place. All arguments
         are passed to `ReferenceFrame.orient_new`, see its docs to know more.

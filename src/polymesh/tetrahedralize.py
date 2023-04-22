@@ -27,7 +27,7 @@ def tetrahedralize(
     `PolyData` object- the user is redirected to `tetgen`.
 
     All extra positional and keyword arguments are forwarded to
-    :func:`tetgen.TetGen.tetrahedralize`.
+    :func:`~tetgen.TetGen.tetrahedralize`.
 
     Notes
     -----
@@ -35,7 +35,7 @@ def tetrahedralize(
 
     See Also
     --------
-    :func:`tetgen.TetGen.tetrahedralize`
+    :func:`~tetgen.TetGen.tetrahedralize`
     """
     assert (
         len(list(mesh.cellblocks(inclusive=True))) == 1

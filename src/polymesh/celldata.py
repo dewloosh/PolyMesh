@@ -29,23 +29,23 @@ class CellData(CellDataBase):
 
     Parameters
     ----------
-    activity : numpy.ndarray, Optional
+    activity: numpy.ndarray, Optional
         1d boolean array describing the activity of the elements.
-    t or thickness : numpy.ndarray, Optional
+    t or thickness: numpy.ndarray, Optional
         1d float array of thicknesses. Only for 2d cells.
         Default is None.
-    areas : numpy.ndarray, Optional
+    areas: nmpy.ndarray, Optional
         1d float array of cross sectional areas. Only for 1d cells.
         Default is None.
-    fields : dict, Optional
+    fields: dict, Optional
         Every value of this dictionary is added to the dataset.
         Default is `None`.
-    frames : numpy.ndarray, Optional
+    frames: numpy.ndarray, Optional
         Coordinate axes representing cartesian coordinate frames.
         Default is None.
-    topo : numpy.ndarray, Optional
+    topo: numpy.ndarray, Optional
         2d integer array representing node indices. Default is None.
-    **kwargs : dict, Optional
+    **kwargs: dict, Optional
         For every key and value pair where the value is a numpy array
         with a matching shape (has entries for all cells), the key
         is considered as a field and the value is added to the database.
@@ -265,10 +265,10 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        factors : numpy.ndarray
+        factors: numpy.ndarray
             A 3d float array. The length of the array must equal the number
             pf cells in the block.
-        key : str, Optional
+        key: str, Optional
             A key used to store the values in the database. This makes you able
             to use more nodal distribution strategies in one model.
             If not specified, a default key is used.
@@ -289,7 +289,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        data : str or numpy.ndarray
+        data: str or numpy.ndarray
             Either a field key to identify data in the database of the attached
             PointData, or a NumPy array.
 
@@ -335,7 +335,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             A 2d integer array.
         """
         assert isinstance(value, ndarray)
@@ -353,7 +353,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             A 3d float array.
         """
         if isinstance(value, ReferenceFrame):
@@ -404,7 +404,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             An 1d integer array.
         """
         assert isinstance(value, ndarray)
@@ -422,7 +422,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             An 1d bool array.
         """
         if isinstance(value, bool):

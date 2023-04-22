@@ -1,4 +1,4 @@
-from typing import Iterable, Union
+from typing import Iterable, Union, Any
 import numpy as np
 from numpy import ndarray
 import awkward as ak
@@ -64,7 +64,7 @@ class AkWrapper(Wrapper):
         akdb = self.to_ak(*args, fields=fields)
         return ak.to_dataframe(akdb, **kwargs)
 
-    def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs):
+    def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs) -> Any:
         """
         Saves the data contained within the database to a parquet file.
 
@@ -92,7 +92,7 @@ class AkWrapper(Wrapper):
 
         Parameters
         ----------
-        path : str
+        path: str
             Path of the file being created.
         """
         return cls(wrap=ak.from_parquet(path))
@@ -106,8 +106,6 @@ class AkWrapper(Wrapper):
         specified and the output is a record, the original database is
         returned.
 
-        .. versionchanged:: 0.0.10
-
         Parameters
         ----------
         *args: tuple, Optional
@@ -117,7 +115,6 @@ class AkWrapper(Wrapper):
         asarray : bool, Optional
             If True, the database is turned onto an Awkward Array before
             saving to file. Default is False.
-            .. versionadded:: 0.0.10
         """
         if asarray:
             return self.to_akarray(*args, fields=fields)
@@ -127,8 +124,6 @@ class AkWrapper(Wrapper):
     def to_akarray(self, *args, fields: Iterable[str] = None) -> akArray:
         """
         Returns the data contained within the mesh as an Awkward array.
-
-        .. versionadded:: 0.0.10
 
         Parameters
         ----------
@@ -144,8 +139,6 @@ class AkWrapper(Wrapper):
         """
         Returns the data contained within the mesh as an Awkward record.
 
-        .. versionadded:: 0.0.10
-
         Parameters
         ----------
         *args: tuple, Optional
@@ -160,8 +153,6 @@ class AkWrapper(Wrapper):
         """
         Returns data of the object as a dictionary. Unless fields
         are specified, all fields are returned.
-
-        .. versionadded:: 0.0.10
 
         Parameters
         ----------

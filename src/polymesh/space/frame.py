@@ -27,12 +27,12 @@ class CartesianFrame(Frame):
 
     Parameters
     ----------
-    axes : ndarray, Optional.
+    axes: numpy.ndarray, Optional.
         2d numpy array of floats specifying cartesian reference frames.
         Dafault is None.
-    dim : int, Optional
+    dim: int, Optional
         Dimension of the mesh. Deafult is 3.
-    origo : ndarray, Optional.
+    origo: numpy.ndarray, Optional.
         The origo of the mesh. Default is the zero vector.
 
     Note
@@ -83,7 +83,7 @@ class CartesianFrame(Frame):
 
         Parameters
         ----------
-        target : FrameLike, Optional
+        target: FrameLike, Optional
             A frame in which we want to get the origo of the current frame.
             A None value returns the origo of the current frame with respect
             to the root. Default is None.
@@ -142,9 +142,9 @@ class CartesianFrame(Frame):
 
         Parameters
         ----------
-        d : VectorLike
+        d: VectorLike
             :class:`Vector` or :class:`Array`, the amount of the motion.
-        frame : FrameLike, Optional
+        frame: FrameLike, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None, which assumes the root frame.
 

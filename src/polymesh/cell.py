@@ -57,10 +57,11 @@ class PolyCell(CellData):
     for all kinds of geometrical entities.
     """
 
-    NNODE = None
-    NDIM = None
-    vtkCellType = None
-    _face_cls_ = None
+    NNODE: int = None  # number of nodes per cell
+    NDIM: int = None  # number of spatial dimensions
+    vtkCellType: int = None  # vtk Id
+    meshioCellType: str = None
+    _face_cls_: "PolyCell" = None  # the class of a face
     shpfnc: Callable = None  # evaluator for shape functions
     shpmfnc: Callable = None  # evaluator for shape function matrices
     dshpfnc: Callable = None  # evaluator for shape function derivatives
@@ -119,10 +120,10 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        return_symbolic : bool, Optional
+        return_symbolic: bool, Optional
             If True, the function returns symbolic expressions of shape functions
             and their derivatives. Default is True.
-        update : bool, Optional
+        update: bool, Optional
             If True, class methods are updated with the generated versions.
             Default is True.
         """
@@ -197,7 +198,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
 
         Returns
@@ -223,7 +224,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
         N: integer, Optional
             Number of unknowns per node.
@@ -258,7 +259,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
 
         Returns
@@ -311,7 +312,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        dshp : numpy.ndarray
+        dshp: numpy.ndarray
             3d array of shape function derivatives for the master cell,
             evaluated at some points. The array must have a shape of
             (nG, nNE, nD), where nG, nNE and nD are he number of evaluation
@@ -334,7 +335,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        jac : numpy.ndarray, Optional
+        jac: numpy.ndarray, Optional
             One or more Jacobian matrices. Default is None.
         **kwargs : dict
             Forwarded to :func:`jacobian_matrix` if the jacobian
@@ -420,7 +421,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        target : CartesianFrame, Optional
+        target: CartesianFrame, Optional
             A target frame. If provided, coordinates are returned in
             this frame, otherwise they are returned in the local frames
             of the cells. Default is None.
@@ -466,9 +467,9 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        imap : MapLike
+        imap: MapLike
             Mapping from old to new node indices (global to local).
-        invert : bool, Optional
+        invert: bool, Optional
             If `True` the argument `imap` describes a local to global
             mapping and an inversion takes place. In this case,
             `imap` must be a `numpy` array. Default is False.

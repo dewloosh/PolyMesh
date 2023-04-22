@@ -31,13 +31,13 @@ def grid(
 
     Parameters
     ----------
-    size : tuple, Optional
+    size: tuple, Optional
         A 2-tuple, containg side lengths of a rectangular domain.
         Should be provided alongside `shape`.
-    shape : tuple or int, Optional
+    shape: tuple or int, Optional
         A 2-tuple, describing subdivisions along coordinate directions
         Should be provided alongside `size`.
-    eshape : str or Tuple, Optional
+    eshape: str or Tuple, Optional
         This specifies element shape.
         Supported strings are thw following:
         'Q4' : 4-noded quadrilateral
@@ -46,11 +46,11 @@ def grid(
         'H27' : 27-noded hexagon
     shift: numpy.ndarray, Optional
         1d float array, specifying a translation.
-    start : index, Optional
+    start: index, Optional
         Starting value for node numbering. Default is 0.
-    bins : numpy.ndarray, Optional
+    bins: numpy.ndarray, Optional
         Numpy array or an iterable of numy arrays.
-    centralize : bool, Optional
+    centralize: bool, Optional
         If True, the returned coordinates are centralized.
 
     Notes
@@ -568,16 +568,16 @@ def knngridL2(
 
     Parameters
     ----------
-    *args : tuple, Optional
+    *args: tuple, Optional
         Positional arguments forwarded to :func:``grid``.
-    max_distance : float, Optional
+    max_distance: float, Optional
         Maximum distance allowed. Default is None.
-    k : int, Optional
+    k: int, Optional
         Number of neighbours for a given point.
-    X : numpy.ndarray, Optional
+    X: numpy.ndarray, Optional
         Coordinates of a pointcloud. If provided, `args` and `kwargs`
         are ignored. Default is None.
-    **kwargs : dict, Optional
+    **kwargs: dict, Optional
         Keyword arguments forwarded to :func:``grid``.
 
     See also

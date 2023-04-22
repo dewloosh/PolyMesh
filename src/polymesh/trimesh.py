@@ -17,9 +17,9 @@ class TriMesh(PolyData):
 
     Parameters
     ----------
-    points : numpy.ndarray, Optional
+    points: numpy.ndarray, Optional
         2d numpy array of floats, describing a pointcloud. Default is None.
-    triangles : numpy.ndarray, Optional
+    triangles: numpy.ndarray, Optional
         2d numpy array of integers, describing the topology of a polygonal mesh.
         Default is None.
 
@@ -55,8 +55,8 @@ class TriMesh(PolyData):
 
     See Also
     --------
-    :class:`polymesh.polydata.PolyData`
-    :class:`polymesh.space.frame.CartesianFrame`
+    :class:`~polymesh.polydata.PolyData`
+    :class:`~polymesh.space.frame.CartesianFrame`
     """
 
     _cell_classes_ = {
@@ -107,26 +107,22 @@ class TriMesh(PolyData):
         """
         return is_planar(self.normals())
 
-    def extrude(self, *args, celltype=None, h=None, N=None, **kwargs) -> PolyData:
+    def extrude(self, *args, celltype=None, h:float=None, N:int=None, **kwargs) -> PolyData:
         """
         Exctrude mesh perpendicular to the plane of the triangulation.
         The target element type can be specified with the `celltype` argument.
 
         Parameters
         ----------
-        h : float
+        h: float, Optional
             Size perpendicular to the plane of the surface to be extruded.
-        N : Int
+        N: int, Optional
             Number of subdivisions along the perpendicular direction.
 
         Returns
         -------
-        TetMesh
+        :class:`~polymesh.tetmesh.TetMesh`
             A tetrahedral mesh.
-
-        See Also
-        --------
-        :class:`polymesh.tet.tetmesh.TetMesh`
         """
         from .tetmesh import TetMesh
 
@@ -143,7 +139,7 @@ class TriMesh(PolyData):
         c[:, self._newaxis] = x[:, -1]
         return TetMesh(coords=c, topo=topo, celltype=ct, frame=self.frame)
 
-    def edges(self, return_cells=False):
+    def edges(self, return_cells:bool=False):
         """
         Returns point indices of the unique edges in the model.
         If `return_cells` is `True`, it also returns the edge
@@ -151,7 +147,7 @@ class TriMesh(PolyData):
 
         Parameters
         ----------
-        return_cells : Bool, Optional
+        return_cells: bool, Optional
             If True, returns the edge indices of the triangles,
             that can be used to reconstruct the topology.
             Default is False.
@@ -164,7 +160,6 @@ class TriMesh(PolyData):
         numpy.ndarray, Optional
             Integer array of indices, that together with the edge data
             reconstructs the topology.
-
         """
         edges, IDs = unique_topo_data(edges_tri(self.topology()))
         if return_cells:
@@ -175,7 +170,7 @@ class TriMesh(PolyData):
     def to_triobj(self, *args, **kwargs):
         """
         Returns a triangulation object of a specified backend.
-        See :func:`polymesh.tri.triang.triangulate` for the details.
+        See :func:`~polymesh.tri.triang.triangulate` for the details.
 
         Note
         ----
@@ -184,9 +179,8 @@ class TriMesh(PolyData):
 
         See also
         --------
-        :class:`matplotlib.tri.Triangulation`
-        :func:`polymesh.tri.triang.triangulate`
-
+        :class:`~matplotlib.tri.Triangulation`
+        :func:`~polymesh.tri.triang.triangulate`
         """
         coords, topo = self.coords(), self.topology()
         if topo.shape[-1] == 6:
