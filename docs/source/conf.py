@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "PolyMesh"
-copyright = u"2014-%s, Bence Balogh" % date.today().year
+copyright = "2014-%s, Bence Balogh" % date.today().year
 author = "Bence Balogh"
 
 # The short X.Y version.
