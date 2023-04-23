@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 from typing import Union, Hashable, Collection, Iterable, Tuple, Any
 from collections import defaultdict
 import functools
+from functools import partial
 import warnings
 
 from numpy import ndarray
@@ -290,36 +291,33 @@ class PolyData(PolyDataBase):
         return self.__copy__(memo)
 
     def __copy__(self, memo=None):
-        cls = self.__class__
-        result = cls(frame=self.frame)
-        cfoo = copy if memo is None else deepcopy
-        if memo is not None:
-            memo[id(self)] = result
-        # self
-        pointcls = cls._point_class_
-        cellcls = self.celltype
-        framecls = self._frame_class_
-        if self.pointdata is not None:
+        cls = type(self)
+        copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
+        is_deep = memo is not None
+        frame_cls = self._frame_class_
+        
+        # initialize result
+        if self.frame is not None:    
             f = self.frame
-            ax = cfoo(f.axes)
-            if memo is not None:
+            ax = copy_function(f.axes)
+            if is_deep:
                 memo[id(f.axes)] = ax
-            frame = framecls(ax, f.parent, order=f.order)
-            db = cfoo(self.pd.db)
-            if memo is not None:
-                memo[id(self.pd.db)] = db
-            result.pointdata = pointcls(frame=frame, db=db)
+            frame = frame_cls(ax)
+        else:
+            frame = None
+        result = cls(frame=frame)
+        if is_deep:
+            memo[id(self)] = result
+            
+        # self
+        if self.pointdata is not None:
+            result.pointdata = copy_function(self.pointdata)
         if self.celldata is not None:
-            pd = self.source()
-            assert pd is not None
-            db = cfoo(self.cd.db)
-            if memo is not None:
-                memo[id(self.cd.db)] = db
-            result.celldata = cellcls(pointdata=pd, db=db)
+            result.celldata = copy_function(self.celldata)
         for k, v in self.items():
             if not isinstance(v, PolyData):
-                v_ = cfoo(v)
-                if memo is not None:
+                v_ = copy_function(v)
+                if is_deep:
                     memo[id(v)] = v_
                 result[k] = v
 
@@ -331,41 +329,34 @@ class PolyData(PolyDataBase):
             if len(addr) > l0:
                 # pointdata
                 if b.pointdata is not None:
-                    f = b.pd.frame
-                    ax = cfoo(f.axes)
-                    if memo is not None:
-                        memo[id(f.axes)] = ax
-                    frame = framecls(ax, f.parent, order=f.order)
-                    db = cfoo(b.pd.db)
-                    if memo is not None:
-                        memo[id(b.pd.db)] = db
-                    pd = pointcls(frame=frame, db=db)
+                    pd = copy_function(b.pd)
                     # block frame
                     f = b.frame
-                    ax = cfoo(f.axes)
-                    if memo is not None:
+                    ax = copy_function(f.axes)
+                    if is_deep:
                         memo[id(f.axes)] = ax
-                    bframe = framecls(ax, f.parent, order=f.order)
+                    bframe = frame_cls(ax)
                 # celldata
                 if b.celldata is not None:
-                    cellcls = b.celltype
-                    db = cfoo(b.cd.db)
-                    if memo is not None:
-                        memo[id(b.cd.db)] = db
-                    cd = cellcls(pointdata=pd, db=db)
+                    cd = copy_function(b.cd)
                 # mesh object
                 result[addr[l0:]] = PolyData(pd, cd, frame=bframe)
                 # other data
                 for k, v in b.items():
                     if not isinstance(v, PolyData):
-                        v_ = cfoo(v)
-                        if memo is not None:
+                        v_ = copy_function(v)
+                        if is_deep:
                             memo[id(v)] = v_
                         b[k] = v
-
-        result.__dict__.update(self.__dict__)
+                        
         return result
     
+    def copy(self) -> "PolyData":
+        return copy(self)
+    
+    def deepcopy(self) -> "PolyData":
+        return deepcopy(self)
+        
     def __getitem__(self, key) -> "PolyData":
         return super().__getitem__(key)
         
@@ -922,10 +913,13 @@ class PolyData(PolyDataBase):
         """Returns the frame of the underlying pointcloud."""
         if self._frame is not None:
             return self._frame
-        else:
+        elif self.pd is not None:
             if self.pd.has_x:
                 return self.pd.frame
-        return self.parent.frame
+        elif self.parent is not None:
+            return self.parent.frame
+        else:
+            raise AttributeError("This instance have no attached pointcloud.")
 
     @property
     def frames(self) -> ndarray:
@@ -1275,43 +1269,61 @@ class PolyData(PolyDataBase):
         self.pointdata.id = np.arange(len(self.pd))
         return self
 
-    def move(self, v: VectorLike, frame: FrameLike = None) -> "PolyData":
+    def move(self, v: VectorLike, frame: FrameLike = None, inplace:bool=True) -> "PolyData":
         """
-        Moves and returns the object.
+        Moves and returns the object or a deep copy of it.
 
         Parameters
         ----------
-        v: bool, Optional
+        v: VectorLike, Optional
             A vector describing a translation.
         frame: FrameLike, Optional
             If `v` is only an array, this can be used to specify
             a frame in which the components should be understood.
+        inplace: bool, Optional
+            If True, the transformation is done on the instance, otherwise
+            a deep copy is created first. Default is True.
         """
-        if self.is_root():
-            pc = self.points()
+        subject = self if inplace else self.deepcopy()
+        if subject.is_source():
+            pc = subject.points()
             pc.move(v, frame)
-            self.pointdata.x = pc.array
+            subject.pointdata.x = pc.array
         else:
-            root = self.root()
-            inds = np.unique(self.topology())
-            pc = root.points()[inds]
+            source = subject.source()
+            inds = np.unique(subject.topology())
+            pc = source.points()[inds]
             pc.move(v, frame)
-            root.pointdata.x = pc.array
-        return self
+            source.pointdata.x = pc.array
+        return subject
 
-    def rotate(self, *args, **kwargs) -> "PolyData":
-        """Rotates and returns the object."""
-        if self.is_root():
-            pc = self.points()
+    def rotate(self, *args, inplace:bool=True, **kwargs) -> "PolyData":
+        """
+        Rotates and returns the object. Positional and keyword arguments
+        not listed here are forwarded to :class:`neumann.linalg.frame.ReferenceFrame`
+        
+        Parameters
+        ----------
+        *args
+            Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
+        inplace: bool, Optional
+            If True, the transformation is done on the instance, otherwise
+            a deep copy is created first. Default is True.
+        **kwargs
+            Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
+        """
+        subject = self if inplace else self.deepcopy()
+        if subject.is_source():
+            pc = subject.points()
             pc.rotate(*args, **kwargs)
-            self.pointdata.x = pc.show(self.frame)
+            subject.pointdata.x = pc.show(subject.frame)
         else:
-            root = self.root()
-            inds = np.unique(self.topology())
-            pc = root.points()[inds]
+            source = subject.source()
+            inds = np.unique(subject.topology())
+            pc = source.points()[inds]
             pc.rotate(*args, **kwargs)
-            root.pointdata.x = pc.show(self.frame)
-        return self
+            source.pointdata.x = pc.show(subject.frame)
+        return subject
 
     def cells_at_nodes(self, *args, **kwargs) -> Iterable:
         """
@@ -1409,15 +1421,25 @@ class PolyData(PolyDataBase):
 
         return centers
 
-    def centralize(self, target: FrameLike = None) -> "PolyData":
+    def centralize(self, target: FrameLike = None, inplace:bool=True, axes: Iterable=None) -> "PolyData":
         """
         Centralizes the coordinats of the pointcloud of the mesh
         and returns the object for continuation.
+        
+        Parameters
+        ----------
+        inplace: bool, Optional
+            If True, the transformation is done on the instance, otherwise
+            a deep copy is created first. Default is True.
+        axes: Iterable, Optional
+            The axes on which centralization is to be performed. A `None` value
+            means all axes. Default is None.
         """
-        pc = self.root().points()
-        pc.centralize(target)
-        self.pd.x = pc.show(self.frame)
-        return self
+        subject = self if inplace else self.deepcopy()
+        pc = subject.source().points()
+        pc.centralize(target, axes=axes)
+        subject.pd.x = pc.show(subject.frame)
+        return subject
     
     def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None, **kwargs):
         """
@@ -1537,8 +1559,8 @@ class PolyData(PolyDataBase):
         return nodal_distribution_factors(topo, weights)
 
     def _detach_block_data_(self, data: Union[str, ndarray] = None) -> Tuple:
-        source = self.source()
-        coords = source.coords()
+        #source = self.source()
+        #coords = source.coords()
         point_data = None
         if isinstance(data, ndarray):
             assert data.shape[0] == len(
@@ -1550,6 +1572,8 @@ class PolyData(PolyDataBase):
                 assert isinstance(data, str), "Data must be a NumPy array or a string."
         blocks = self.cellblocks(inclusive=True, deep=True)
         for block in blocks:
+            source = block.source()
+            coords = source.coords()
             topo = block.topology()
             if point_data is not None:
                 c, d, t = detach_mesh_data_bulk(coords, topo, point_data)
@@ -1876,7 +1900,6 @@ class PolyData(PolyDataBase):
         polys = self.to_pv(deepcopy=deepcopy, multiblock=False, scalars=scalars)
         if isinstance(theme, str):
             try:
-                #pv.set_plot_theme(theme)
                 new_theme_type = pv.themes._ALLOWED_THEMES[theme].value
                 theme = new_theme_type()
             except Exception:

@@ -214,7 +214,7 @@ class AkWrapper(Wrapper):
     def __hasattr__(self, attr):
         if attr in self.__class__._attr_map_:
             attr = self.__class__._attr_map_[attr]
-        return any([attr in self.__dict__, attr in self._wrapped.__dict__])
+        return any([attr in self.__dict__, attr in self._wrapped.__dict__]) 
 
     def __getattr__(self, attr):
         if attr in self.__class__._attr_map_:
@@ -226,5 +226,5 @@ class AkWrapper(Wrapper):
         except Exception:
             name = self.__class__.__name__
             raise AttributeError(
-                "'{}' object has no " + "attribute called {}".format(name, attr)
+                f"'{name}' object has no attribute called '{attr}'"
             )

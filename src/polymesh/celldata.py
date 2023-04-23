@@ -1,4 +1,6 @@
 from typing import Union
+from copy import copy, deepcopy
+from functools import partial
 
 import numpy as np
 from numpy import ndarray
@@ -89,7 +91,7 @@ class CellData(CellDataBase):
 
         if db is not None:
             wrap = db
-        else:
+        elif wrap is None:
             nodes = None
             if len(args) > 0:
                 if isinstance(args[0], ndarray):
@@ -132,6 +134,30 @@ class CellData(CellDataBase):
 
             if areas is not None:
                 self.A = areas
+                
+    def __deepcopy__(self, memo):
+        return self.__copy__(memo)
+
+    def __copy__(self, memo=None):
+        cls = type(self)
+        copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
+        is_deep = memo is not None
+        
+        db = copy_function(self.db)
+        
+        pd = self.pointdata
+        pd_copy = None
+        if pd is not None:
+            if is_deep:
+                pd_copy = memo.get(id(pd), None)
+            if pd_copy is None:
+                pd_copy = copy_function(pd)
+            
+        result = cls(db=db, pointdata=pd_copy)
+        if is_deep:
+            memo[id(self)] = result
+                        
+        return result
 
     @classproperty
     def _dbkey_nodes_(cls) -> str:

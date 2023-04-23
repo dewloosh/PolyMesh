@@ -1,4 +1,6 @@
 from typing import Union
+from copy import copy, deepcopy
+from functools import partial
 
 import numpy as np
 from numpy import ndarray
@@ -52,17 +54,9 @@ class PointData(PointDataBase):
     ):
         if db is not None:
             wrap = db
-        elif wrap is not None:
-            pass
-        else:
+        elif wrap is None:
             fields = {} if fields is None else fields
             assert isinstance(fields, dict)
-
-            # coordinate frame
-            if not isinstance(frame, FrameLike):
-                if coords is not None:
-                    frame = gen_frame(coords)
-            self._frame = frame
 
             # set pointcloud
             point_cls = self.__class__._point_cls_
@@ -103,9 +97,40 @@ class PointData(PointDataBase):
                 if isinstance(v, np.ndarray):
                     if v.shape[0] == nP:
                         fields[k] = v
+                        
+        # coordinate frame
+        if not isinstance(frame, FrameLike):
+            if coords is not None:
+                frame = gen_frame(coords)
+        self._frame = frame
 
         super().__init__(*args, wrap=wrap, fields=fields, **kwargs)
         self._container = container
+        
+    def __deepcopy__(self, memo):
+        return self.__copy__(memo)
+
+    def __copy__(self, memo=None):
+        cls = type(self)
+        copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
+        is_deep = memo is not None
+        
+        db = copy_function(self.db)
+        f = self.frame
+        if f is not None:
+            axes = copy_function(f.axes)
+            if is_deep:
+                memo[id(f.axes)] = axes
+            frame_cls = type(f)
+            frame = frame_cls(axes)
+        else:
+            frame = None
+        
+        result = cls(db=db, frame=frame)
+        if is_deep:
+            memo[id(self)] = result
+                        
+        return result
 
     @classproperty
     def _dbkey_id_(cls) -> str:

@@ -102,7 +102,6 @@ class TopologyArray(JaggedArray):
                 cN += dE * topo[i].shape[1]
             data = np.zeros(cN, dtype=int)
             cuts = np.zeros(cE, dtype=int)
-            print(data.shape)
             cN, cE = 0, 0
             for i in range(len(topo)):
                 dE = topo[i].shape[0]

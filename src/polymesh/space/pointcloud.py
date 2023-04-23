@@ -1,5 +1,5 @@
 import operator
-from typing import Union
+from typing import Union, Iterable
 
 from numba import njit, prange
 from numba.core import types as nbtypes, cgutils
@@ -432,7 +432,7 @@ class PointCloud(Vector):
         self._array += dcoords(self._array, arr)
         return self
 
-    def centralize(self, target: FrameLike = None) -> "PointCloud":
+    def centralize(self, target: FrameLike = None, axes: Iterable=None) -> "PointCloud":
         """
         Centralizes the coordinates wrt. to a specified frame,
         or the root frame if there is no target provided.
@@ -443,13 +443,21 @@ class PointCloud(Vector):
         ----------
         target: ReferenceFrame, Optional
             A frame of reference. Default is None.
+        axes: Iterable, Optional
+            The axes on which centralization is to be performed. A `None` value
+            means all axes. Default is None.
 
         Returns
         -------
         ReferenceFrame
             The object the function is called on.
         """
-        return self.move(-self.center(target), target)
+        center = self.center(target)
+        d = np.zeros_like(center, dtype=float)
+        if not isinstance(axes, Iterable):
+            axes = list(range(len(center)))
+        d[axes] = center[axes]
+        return self.move(-d, target)
 
     def rotate(self, *args, **kwargs) -> "PointCloud":
         """
