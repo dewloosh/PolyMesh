@@ -134,7 +134,7 @@ class CellData(CellDataBase):
 
             if areas is not None:
                 self.A = areas
-                
+
     def __deepcopy__(self, memo):
         return self.__copy__(memo)
 
@@ -142,9 +142,9 @@ class CellData(CellDataBase):
         cls = type(self)
         copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
         is_deep = memo is not None
-        
+
         db = copy_function(self.db)
-        
+
         pd = self.pointdata
         pd_copy = None
         if pd is not None:
@@ -152,11 +152,16 @@ class CellData(CellDataBase):
                 pd_copy = memo.get(id(pd), None)
             if pd_copy is None:
                 pd_copy = copy_function(pd)
-            
+
         result = cls(db=db, pointdata=pd_copy)
         if is_deep:
             memo[id(self)] = result
-                        
+
+        result_dict = result.__dict__
+        for k, v in self.__dict__.items():
+            if not k in result_dict:
+                setattr(result, k, copy_function(v))
+
         return result
 
     @classproperty

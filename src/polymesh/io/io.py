@@ -9,6 +9,7 @@ from ..config import __haspyvista__
 
 if __haspyvista__:
     import pyvista as pv
+
     pyVistaLike = Union[pv.PolyData, pv.PointGrid, pv.UnstructuredGrid]
 else:
     pyVistaLike = Any
@@ -45,7 +46,7 @@ def input_to_mesh(*args, **kwargs) -> tuple:
         return res
 
     coords, topo = None, None
-    
+
     # read from file with meshio
     # TODO : inp2stl
     if isinstance(candidate, str):

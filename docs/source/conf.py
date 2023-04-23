@@ -18,15 +18,15 @@ import polymesh
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../../src'))
+# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath("../../src"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'PolyMesh'
-copyright = u'2014-%s, Bence Balogh' % date.today().year
-author = 'Bence Balogh'
+project = "PolyMesh"
+copyright = u"2014-%s, Bence Balogh" % date.today().year
+author = "Bence Balogh"
 
 # The short X.Y version.
 version = polymesh.__version__
@@ -38,101 +38,93 @@ release = polymesh.__version__
 
 extensions = [
     # allows to work with markdown files
-    'myst_parser',  # pip install myst-parser for this
-
+    "myst_parser",  # pip install myst-parser for this
     # to plot summary about durations of file generations
-    'sphinx.ext.duration',
-
+    "sphinx.ext.duration",
     # to test code snippets in docstrings
-    'sphinx.ext.doctest',
-
+    "sphinx.ext.doctest",
     # for automatic exploration of the source files
-    'sphinx.ext.autodoc',
-
+    "sphinx.ext.autodoc",
     # to enable cross referencing other documents on the internet
-    'sphinx.ext.intersphinx',
-
+    "sphinx.ext.intersphinx",
     # Napoleon is a extension that enables Sphinx to parse both NumPy and Google style docstrings
-    'sphinx.ext.napoleon',
-
+    "sphinx.ext.napoleon",
     # 'sphinx_gallery.gen_gallery',
     # 'sphinx_gallery.load_style',  # load CSS for gallery (needs SG >= 0.6)
-
-    'nbsphinx',  # to handle jupyter notebooks
-    'nbsphinx_link',  # for including notebook files from outside the sphinx source root
-
-    'sphinx_copybutton',  # for "copy to clipboard" buttons
-    'sphinx.ext.mathjax',  # for math equations
-    'sphinxcontrib.bibtex',  # for bibliographic references
-    'sphinxcontrib.rsvgconverter',  # for SVG->PDF conversion in LaTeX output
-
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
+    "nbsphinx",  # to handle jupyter notebooks
+    "nbsphinx_link",  # for including notebook files from outside the sphinx source root
+    "sphinx_copybutton",  # for "copy to clipboard" buttons
+    "sphinx.ext.mathjax",  # for math equations
+    "sphinxcontrib.bibtex",  # for bibliographic references
+    "sphinxcontrib.rsvgconverter",  # for SVG->PDF conversion in LaTeX output
+    "sphinx.ext.viewcode",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
+    "sphinx.ext.todo",
+    "sphinx.ext.coverage",
     "sphinx.ext.extlinks",
-
-    'sphinx.ext.mathjax',
-
+    "sphinx.ext.mathjax",
     "sphinx_design",
     "sphinx_inline_tabs",
 ]
 
 autosummary_generate = True
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 exclude_patterns = ["_build"]
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
-language = 'EN'
+language = "EN"
 
 # See warnings about bad links
 nitpicky = True
 nitpick_ignore = [
-    ('', "Pygments lexer name 'ipython' is not known"),
-    ('', "Pygments lexer name 'ipython3' is not known")
+    ("", "Pygments lexer name 'ipython' is not known"),
+    ("", "Pygments lexer name 'ipython3' is not known"),
 ]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 pygments_dark_style = "github-dark"
-highlight_language = 'python3'
+highlight_language = "python3"
 
 intersphinx_mapping = {
-    'python': (r'https://docs.python.org/{.major}'.format(sys.version_info), None),
-    'numpy': (r'https://numpy.org/doc/stable/', None),
-    'scipy': (r'http://docs.scipy.org/doc/scipy/reference', None),
-    'matplotlib': (r'https://matplotlib.org/stable', None),
-    'sphinx': (r'https://www.sphinx-doc.org/en/master', None),
-    'pandas': (r'https://pandas.pydata.org/pandas-docs/stable/', None),
-    'awkward': (r'https://awkward-array.readthedocs.io/en/latest/', None),
-    "neumann": (r'https://neumann.readthedocs.io/en/latest/', None)
+    "python": (r"https://docs.python.org/{.major}".format(sys.version_info), None),
+    "numpy": (r"https://numpy.org/doc/stable/", None),
+    "scipy": (r"http://docs.scipy.org/doc/scipy/reference", None),
+    "matplotlib": (r"https://matplotlib.org/stable", None),
+    "sphinx": (r"https://www.sphinx-doc.org/en/master", None),
+    "pandas": (r"https://pandas.pydata.org/pandas-docs/stable/", None),
+    "awkward": (r"https://awkward-array.readthedocs.io/en/latest/", None),
+    "neumann": (r"https://neumann.readthedocs.io/en/latest/", None),
 }
 
 # -- MathJax Configuration -------------------------------------------------
 
 mathjax3_config = {
-    'tex': {'tags': 'ams', 'useLabelIds': True},
+    "tex": {"tags": "ams", "useLabelIds": True},
 }
 
 # -- Image scapers configuration -------------------------------------------------
 
-image_scrapers = ('matplotlib',)
+image_scrapers = ("matplotlib",)
 
 # Remove matplotlib agg warnings from generated doc when using plt.show
-warnings.filterwarnings("ignore", category=UserWarning,
-                        message='Matplotlib is currently using agg, which is a'
-                                ' non-GUI backend, so cannot show the figure.')
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message="Matplotlib is currently using agg, which is a"
+    " non-GUI backend, so cannot show the figure.",
+)
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
-html_static_path = ['_static']
+html_theme = "furo"
+html_static_path = ["_static"]
 
 html_sidebars = {
     "**": [

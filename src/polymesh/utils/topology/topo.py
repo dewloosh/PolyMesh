@@ -49,7 +49,7 @@ nbint64 = nbtypes.int64
 nbint64A = nbint64[:]
 
 
-def rewire(topo: TopoLike, imap: MappingLike, invert:bool=False) -> Iterable:
+def rewire(topo: TopoLike, imap: MappingLike, invert: bool = False) -> Iterable:
     """
     Returns a new topology array. The argument 'imap' may be
     a dictionary or an array, that contains new indices for
@@ -903,4 +903,3 @@ def unique_topo_data(topo3d: TopoLike) -> Tuple[ndarray, ndarray]:
         return topo3d, topoIDs
     elif isinstance(topo3d, JaggedArray):
         raise NotImplementedError
-    

@@ -27,7 +27,7 @@ def delete_downloads():
     return _delete_downloads()
 
 
-def download_stand(read:bool=False) -> Union[str, PolyData]:
+def download_stand(read: bool = False) -> Union[str, PolyData]:
     """
     Downloads and optionally reads the stand example as a vtk file.
 
@@ -41,12 +41,12 @@ def download_stand(read:bool=False) -> Union[str, PolyData]:
         return PolyData.read(vtkpath)
     else:
         return vtkpath
-    
 
-def download_bunny(tetra:bool=False, read:bool=False) -> Union[str, PolyData]:
+
+def download_bunny(tetra: bool = False, read: bool = False) -> Union[str, PolyData]:
     """
     Downloads and optionally reads the stand example as a vtk file.
-    
+
     Parameters
     ----------
     tetra: bool, Optional

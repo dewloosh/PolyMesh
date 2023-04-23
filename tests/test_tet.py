@@ -31,7 +31,7 @@ class TestTet(unittest.TestCase):
             try:
                 mesh2d = circular_disk(n_angles, n_radii, min_radius, max_radius)
                 mesh3d = mesh2d.extrude(h=height, N=n_z)
-                a = np.pi * (max_radius**2 - min_radius**2) * height
+                a = np.pi * (max_radius ** 2 - min_radius ** 2) * height
                 assert np.isclose(mesh3d.volume(), a, atol=0, rtol=a / 1000)
                 return True
             except AssertionError:

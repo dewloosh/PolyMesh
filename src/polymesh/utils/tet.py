@@ -78,19 +78,19 @@ def glob_to_nat_tet(gcoord: ndarray, ecoords: ndarray) -> ndarray:
     ecoords_ = np.zeros_like(ecoords)
     ecoords_[:, :] = ecoords[:, :]
     V = vol_tet(ecoords)
-    
+
     ecoords_[0, :] = gcoord
     v1 = vol_tet(ecoords_) / V
     ecoords_[0, :] = ecoords[0, :]
-    
+
     ecoords_[1, :] = gcoord
     v2 = vol_tet(ecoords_) / V
     ecoords_[1, :] = ecoords[1, :]
-    
+
     ecoords_[2, :] = gcoord
     v3 = vol_tet(ecoords_) / V
     ecoords_[2, :] = ecoords[2, :]
-        
+
     return np.array([v1, v2, v3, 1 - v1 - v2 - v3], dtype=gcoord.dtype)
 
 

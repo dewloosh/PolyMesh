@@ -16,11 +16,11 @@ from .grid import grid, Grid
 from .tetrahedralize import tetrahedralize
 
 __all__ = [
-    "PointCloud", 
-    "CartesianFrame", 
-    "PolyData", 
-    "LineData", 
-    "PolyData1d", 
+    "PointCloud",
+    "CartesianFrame",
+    "PolyData",
+    "LineData",
+    "PolyData1d",
     "PointData",
     "KNN",
     "TopologyArray",

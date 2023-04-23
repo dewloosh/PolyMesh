@@ -366,11 +366,11 @@ class PointCloud(Vector):
         frame, but does not make any changes to the points themselves.
         If you want to change the frame of the pointcloud, reset the
         frame of the object by setting the `frame` property.
-        
+
         See Also
         --------
         :func:`~polymesh.space.pointcloud.PointCloud.frame`
-        
+
         Returns
         -------
         VectorBase
@@ -432,7 +432,9 @@ class PointCloud(Vector):
         self._array += dcoords(self._array, arr)
         return self
 
-    def centralize(self, target: FrameLike = None, axes: Iterable=None) -> "PointCloud":
+    def centralize(
+        self, target: FrameLike = None, axes: Iterable = None
+    ) -> "PointCloud":
         """
         Centralizes the coordinates wrt. to a specified frame,
         or the root frame if there is no target provided.
@@ -465,7 +467,7 @@ class PointCloud(Vector):
         are passed to `ReferenceFrame.orient_new`, see its docs to know more.
 
         Returns the object for continuation.
-        
+
         Parameters
         ----------
         *args: tuple,

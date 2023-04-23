@@ -900,7 +900,9 @@ class PolyCell3d(PolyCell):
 
     if __haspyvista__:
 
-        def to_pv(self, detach:bool=False) -> Union[pv.UnstructuredGrid, pv.PolyData]:
+        def to_pv(
+            self, detach: bool = False
+        ) -> Union[pv.UnstructuredGrid, pv.PolyData]:
             """
             Returns the block as a pyVista object.
             """
@@ -913,7 +915,7 @@ class PolyCell3d(PolyCell):
         coords = self.source_coords()
         pvs = self.to_pv(detach=False).extract_surface()
         s = pvs.triangulate().cast_to_unstructured_grid()
-        topo = s.cells_dict[5]        
+        topo = s.cells_dict[5]
         if detach:
             return s.points, topo
         else:

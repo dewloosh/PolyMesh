@@ -242,7 +242,7 @@ def ribbed_plate(
     >>> mesh = ribbed_plate(lx=5.0, ly=5.0, t=1.0,
     >>>                     wx=1.0, hx=2.0, ex=0.05,
     >>>                     wy=1.0, hy=2.0, ey=-0.05)
-    
+
     Returns
     -------
     :class:`~polymesh.polydata.PolyData`
@@ -342,7 +342,7 @@ def perforated_cube(
     """
     Returns a cube of side lengths 'lx', 'ly' and 'lz', with a circular hole
     along the 'z' axis.
-    
+
     Returns
     -------
     :class:`~polymesh.polydata.PolyData`

@@ -97,7 +97,7 @@ class PointData(PointDataBase):
                 if isinstance(v, np.ndarray):
                     if v.shape[0] == nP:
                         fields[k] = v
-                        
+
         # coordinate frame
         if not isinstance(frame, FrameLike):
             if coords is not None:
@@ -106,7 +106,7 @@ class PointData(PointDataBase):
 
         super().__init__(*args, wrap=wrap, fields=fields, **kwargs)
         self._container = container
-        
+
     def __deepcopy__(self, memo):
         return self.__copy__(memo)
 
@@ -114,7 +114,7 @@ class PointData(PointDataBase):
         cls = type(self)
         copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
         is_deep = memo is not None
-        
+
         db = copy_function(self.db)
         f = self.frame
         if f is not None:
@@ -125,11 +125,16 @@ class PointData(PointDataBase):
             frame = frame_cls(axes)
         else:
             frame = None
-        
+
         result = cls(db=db, frame=frame)
         if is_deep:
             memo[id(self)] = result
-                        
+
+        result_dict = result.__dict__
+        for k, v in self.__dict__.items():
+            if not k in result_dict:
+                setattr(result, k, copy_function(v))
+
         return result
 
     @classproperty
@@ -172,11 +177,15 @@ class PointData(PointDataBase):
         """
         Returns the frame of the underlying pointcloud.
         """
+        result = None
         if isinstance(self._frame, FrameLike):
-            return self._frame
-        else:
+            result = self._frame
+        elif self.container is not None:
+            result = self.container._frame
+        if result is None:
             dim = self.x.shape[-1]
-            return self._frame_class_(dim=dim)
+            result = self._frame_class_(dim=dim)
+        return result
 
     @property
     def activity(self) -> ndarray:

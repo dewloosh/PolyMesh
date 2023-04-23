@@ -24,7 +24,7 @@ from .utils.utils import (
     cells_around,
     cell_centers_bulk,
     explode_mesh_data_bulk,
-    nodal_distribution_factors
+    nodal_distribution_factors,
 )
 from .utils.knn import k_nearest_neighbours as KNN
 from .vtkutils import mesh_to_UnstructuredGrid as mesh_to_vtk
@@ -37,14 +37,14 @@ from .cells import (
     Q9,
     TET10,
     W6,
-    W18
+    W18,
 )
 from .utils.space import (
-    index_of_closest_point, 
+    index_of_closest_point,
     index_of_furthest_point,
-    frames_of_surfaces, 
-    frames_of_lines
-    )
+    frames_of_surfaces,
+    frames_of_lines,
+)
 from .utils.topology import (
     nodal_adjacency,
     detach_mesh_data_bulk,
@@ -163,7 +163,7 @@ class PolyData(PolyDataBase):
         9: Q9,
         10: TET10,
         18: W18,
-        27: TriquadraticHexaHedron,        
+        27: TriquadraticHexaHedron,
     }
     _pv_config_key_ = ("pv", "default")
     _k3d_config_key_ = ("k3d", "default")
@@ -295,9 +295,9 @@ class PolyData(PolyDataBase):
         copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
         is_deep = memo is not None
         frame_cls = self._frame_class_
-        
+
         # initialize result
-        if self.frame is not None:    
+        if self.frame is not None:
             f = self.frame
             ax = copy_function(f.axes)
             if is_deep:
@@ -308,7 +308,7 @@ class PolyData(PolyDataBase):
         result = cls(frame=frame)
         if is_deep:
             memo[id(self)] = result
-            
+
         # self
         if self.pointdata is not None:
             result.pointdata = copy_function(self.pointdata)
@@ -316,10 +316,11 @@ class PolyData(PolyDataBase):
             result.celldata = copy_function(self.celldata)
         for k, v in self.items():
             if not isinstance(v, PolyData):
-                v_ = copy_function(v)
-                if is_deep:
-                    memo[id(v)] = v_
-                result[k] = v
+                result[k] = copy_function(v)
+        result_dict = result.__dict__
+        for k, v in self.__dict__.items():
+            if not k in result_dict:
+                setattr(result, k, copy_function(v))
 
         # children
         l0 = len(self.address)
@@ -340,26 +341,28 @@ class PolyData(PolyDataBase):
                 if b.celldata is not None:
                     cd = copy_function(b.cd)
                 # mesh object
-                result[addr[l0:]] = PolyData(pd, cd, frame=bframe)
+                pd_result = PolyData(pd, cd, frame=bframe)
+                result[addr[l0:]] = pd_result
                 # other data
                 for k, v in b.items():
                     if not isinstance(v, PolyData):
-                        v_ = copy_function(v)
-                        if is_deep:
-                            memo[id(v)] = v_
-                        b[k] = v
-                        
+                        pd_result[k] = copy_function(v)
+                pd_result_dict = pd_result.__dict__
+                for k, v in b.__dict__.items():
+                    if not k in pd_result_dict:
+                        setattr(pd_result, k, copy_function(v))
+
         return result
-    
+
     def copy(self) -> "PolyData":
         return copy(self)
-    
+
     def deepcopy(self) -> "PolyData":
         return deepcopy(self)
-        
+
     def __getitem__(self, key) -> "PolyData":
         return super().__getitem__(key)
-        
+
     @property
     def pd(self) -> PointData:
         """
@@ -470,7 +473,7 @@ class PolyData(PolyDataBase):
         >>> mesh = PolyData.read(vtkpath)
         """
         return cls.from_pv(pv.read(*args, **kwargs))
-    
+
     @classmethod
     def from_meshio(cls, mesh: MeshioMesh) -> "PolyData":
         """
@@ -487,7 +490,7 @@ class PolyData(PolyDataBase):
             celltype: PolyCell = meshio_to_celltype.get(cbtype, None)
             if celltype:
                 topo = np.array(cb.data, dtype=int)
-                
+
                 NDIM = celltype.NDIM
                 if NDIM == 1:
                     frames = frames_of_lines(coords, topo)
@@ -495,7 +498,7 @@ class PolyData(PolyDataBase):
                     frames = frames_of_surfaces(coords, topo)
                 elif NDIM == 3:
                     frames = GlobalFrame
-                
+
                 cd = celltype(topo=topo, frames=frames)
                 polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
             else:
@@ -503,7 +506,7 @@ class PolyData(PolyDataBase):
                 raise NotImplementedError(msg)
 
         return polydata
-    
+
     @classmethod
     def from_pv(cls, pvobj: pyVistaLike) -> "PolyData":
         """
@@ -546,7 +549,7 @@ class PolyData(PolyDataBase):
         for vtkid, vtktopo in cells_dict.items():
             if vtkid in vtk_to_celltype:
                 celltype = vtk_to_celltype[vtkid]
-                
+
                 NDIM = celltype.NDIM
                 if NDIM == 1:
                     frames = frames_of_lines(coords, vtktopo)
@@ -554,13 +557,13 @@ class PolyData(PolyDataBase):
                     frames = frames_of_surfaces(coords, vtktopo)
                 elif NDIM == 3:
                     frames = GlobalFrame
-                
+
                 cd = celltype(topo=vtktopo, frames=frames)
                 pd[vtkid] = PolyData(cd, frame=GlobalFrame)
             else:
                 msg = "The element type with vtkId <{}> is not jet" + "supported here."
                 raise NotImplementedError(msg.format(vtkid))
-            
+
         return pd
 
     def to_dataframe(
@@ -911,15 +914,20 @@ class PolyData(PolyDataBase):
     @property
     def frame(self) -> FrameLike:
         """Returns the frame of the underlying pointcloud."""
+        # there is a reference in PointData to the variable `self._frame`
+        result = None
         if self._frame is not None:
-            return self._frame
+            result = self._frame
         elif self.pd is not None:
             if self.pd.has_x:
-                return self.pd.frame
-        elif self.parent is not None:
-            return self.parent.frame
-        else:
+                result = self.pd.frame
+        if result is None:
+            if self.parent is not None:
+                result = self.parent.frame
+        if result is None:
             raise AttributeError("This instance have no attached pointcloud.")
+        else:
+            return result
 
     @property
     def frames(self) -> ndarray:
@@ -1026,7 +1034,7 @@ class PolyData(PolyDataBase):
         assert self.is_root(), "This must be called on he root object!"
         if not inplace:
             return deepcopy(self).to_standard_form(inplace=True)
-        
+
         # merge points and point related data
         # + decorate the points with globally unique ids
         dpf = defaultdict(lambda: np.nan)
@@ -1055,7 +1063,7 @@ class PolyData(PolyDataBase):
         self.pointdata = pointtype(
             coords=X, frame=frame, newaxis=axis, fields=point_fields, container=self
         )
-        
+
         # merge cells and cell related data
         # + rewire the topology based on the ids set in the previous block
         dcf = defaultdict(lambda: np.nan)
@@ -1073,7 +1081,7 @@ class PolyData(PolyDataBase):
                 if f not in cb.celldata.fields:
                     cb.celldata[f] = np.full(len(cb.cd), dcf[f])
             cb.cd.pointdata = None
-            
+
         # free resources
         for pb in self.pointblocks(inclusive=False, deep=True):
             pb._reset_point_data()
@@ -1161,19 +1169,19 @@ class PolyData(PolyDataBase):
     def surface(self) -> "PolyData":
         """
         Returns the surface of the mesh as another `PolyData` instance.
-        """        
+        """
         blocks = list(self.cellblocks(inclusive=True))
         source = self.source()
         coords = source.coords()
         frame = source.frame
         triangles = []
         for block in blocks:
-            assert block.celldata.NDIM == 3, "This is only for 3d cells."    
+            assert block.celldata.NDIM == 3, "This is only for 3d cells."
             triangles.append(block.cd.extract_surface(detach=False)[-1])
         triangles = np.vstack(triangles)
         if len(blocks) > 1:
             _, indices = np.unique(triangles, axis=0, return_index=True)
-            triangles = triangles[indices] 
+            triangles = triangles[indices]
         pointtype = self.__class__._point_class_
         pd = pointtype(coords=coords, frame=frame)
         cd = Triangle(topo=triangles, pointdata=pd)
@@ -1269,7 +1277,9 @@ class PolyData(PolyDataBase):
         self.pointdata.id = np.arange(len(self.pd))
         return self
 
-    def move(self, v: VectorLike, frame: FrameLike = None, inplace:bool=True) -> "PolyData":
+    def move(
+        self, v: VectorLike, frame: FrameLike = None, inplace: bool = True
+    ) -> "PolyData":
         """
         Moves and returns the object or a deep copy of it.
 
@@ -1297,11 +1307,11 @@ class PolyData(PolyDataBase):
             source.pointdata.x = pc.array
         return subject
 
-    def rotate(self, *args, inplace:bool=True, **kwargs) -> "PolyData":
+    def rotate(self, *args, inplace: bool = True, **kwargs) -> "PolyData":
         """
         Rotates and returns the object. Positional and keyword arguments
         not listed here are forwarded to :class:`neumann.linalg.frame.ReferenceFrame`
-        
+
         Parameters
         ----------
         *args
@@ -1421,11 +1431,13 @@ class PolyData(PolyDataBase):
 
         return centers
 
-    def centralize(self, target: FrameLike = None, inplace:bool=True, axes: Iterable=None) -> "PolyData":
+    def centralize(
+        self, target: FrameLike = None, inplace: bool = True, axes: Iterable = None
+    ) -> "PolyData":
         """
         Centralizes the coordinats of the pointcloud of the mesh
         and returns the object for continuation.
-        
+
         Parameters
         ----------
         inplace: bool, Optional
@@ -1440,7 +1452,7 @@ class PolyData(PolyDataBase):
         pc.centralize(target, axes=axes)
         subject.pd.x = pc.show(subject.frame)
         return subject
-    
+
     def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None, **kwargs):
         """
         Returns the k closest neighbours of the cells of the mesh, based
@@ -1559,8 +1571,8 @@ class PolyData(PolyDataBase):
         return nodal_distribution_factors(topo, weights)
 
     def _detach_block_data_(self, data: Union[str, ndarray] = None) -> Tuple:
-        #source = self.source()
-        #coords = source.coords()
+        # source = self.source()
+        # coords = source.coords()
         point_data = None
         if isinstance(data, ndarray):
             assert data.shape[0] == len(
@@ -1801,6 +1813,189 @@ class PolyData(PolyDataBase):
                         scene += k3d.mesh(c, t, wireframe=True, color=0)
             return scene
 
+        def k3dplot(self, scene=None, *, menu_visibility: bool = True, **kwargs):
+            """
+            Plots the mesh using 'k3d' as the backend.
+
+            .. warning::
+                During this call there is a UserWarning saying 'Given trait value dtype
+                "float32" does not match required type "float32"'. Although this is weird,
+                plotting seems to be just fine.
+
+            Parameters
+            ----------
+            scene: object, Optional
+                A K3D plot widget to append to. This can also be given as the
+                first positional argument. Default is None, in which case it is
+                created using a call to :func:`k3d.plot`.
+            menu_visibility : bool, Optional
+                Whether to show the menu or not. Default is True.
+            **kwargs: dict, Optional
+                Extra keyword arguments forwarded to :func:`to_k3d`.
+
+            See Also
+            --------
+            :func:`to_k3d`
+            :func:`k3d.plot`
+            """
+            if scene is None:
+                scene = k3d.plot(menu_visibility=menu_visibility)
+            return self.to_k3d(scene=scene, **kwargs)
+
+    if __haspyvista__:
+
+        def pvplot(
+            self,
+            *,
+            deepcopy: bool = False,
+            jupyter_backend: str = "pythreejs",
+            show_edges: bool = True,
+            notebook: bool = False,
+            theme: str = None,
+            scalars: Union[str, ndarray] = None,
+            window_size: Tuple = None,
+            return_plotter: bool = False,
+            config_key: Tuple = None,
+            plotter: pv.Plotter = None,
+            cmap: Union[str, Iterable] = None,
+            camera_position: Tuple = None,
+            lighting: bool = False,
+            edge_color: str = None,
+            return_img: bool = False,
+            **kwargs,
+        ) -> Union[None, pv.Plotter, np.ndarray]:
+            """
+            Plots the mesh using PyVista. The parameters listed here only grasp
+            a fraction of what PyVista provides. The idea is to have a function
+            that narrows down the parameters as much as possible to the ones that
+            are most commonly used. If you want more control, create a plotter
+            prior to calling this function and provide it using the parameter
+            `plotter`. Then by setting `return_plotter` to `True`, the function
+            adds the cells to the plotter and returns it for further customization.
+
+            Parameters
+            ----------
+            deepcopy: bool, Optional
+                If True, a deep copy is created. Default is False.
+            jupyter_backend: str, Optional
+                The backend to use when plotting in a Jupyter enviroment.
+                Default is 'pythreejs'.
+            show_edges: bool, Optional
+                If True, the edges of the mesh are shown as a wireframe.
+                Default is True.
+            notebook: bool, Optional
+                If True and in a Jupyter enviroment, the plot is embedded
+                into the Notebook. Default is False.
+            theme: str, Optional
+                The theme to use with PyVista. Default is None.
+            scalars: Union[str, ndarray]
+                A string that refers to a field in the celldata objects
+                of the block of the mesh, or a NumPy array with values for
+                each point in the mesh.
+            window_size: tuple, Optional
+                The size of the window, only is `notebook` is `False`.
+                Default is None.
+            return_plotter: bool, Optional
+                If True, an instance of :class:`pyvista.Plotter` is returned
+                without being shown. Default is False.
+            config_key: tuple, Optional
+                A tuple of strings that refer to a configuration for PyVista.
+            plotter: pyvista.Plotter, Optional
+                A plotter to use. If not provided, a plotter is created in the
+                background. Default is None.
+            cmap: Union[str, Iterable], Optional
+                A color map for plotting. See PyVista's docs for the details.
+                Default is None.
+            camera_position: tuple, Optional
+                Camera position. See PyVista's docs for the details. Default is None.
+            lighting: bool, Optional
+                Whether to use lighting or not. Default is None.
+            edge_color: str, Optional
+                The color of the edges if `show_edges` is `True`. Default is None,
+                which equals to the default PyVista setting.
+            return_img: bool, Optional
+                If True, a screenshot is returned as an image. Default is False.
+            **kwargs
+                Extra keyword arguments passed to `pyvista.Plotter`, it the plotter
+                has to be created.
+
+            Returns
+            -------
+            Union[None, pv.Plotter, np.ndarray]
+                A PyVista plotter if `return_plotter` is `True`, a NumPy array if
+                `return_img` is `True`, or nothing.
+
+            See Also
+            --------
+            :func:`to_pv`
+            :func:`to_vtk`
+            """
+            if not __haspyvista__:
+                raise ImportError("You need to install `pyVista` for this.")
+            polys = self.to_pv(deepcopy=deepcopy, multiblock=False, scalars=scalars)
+            if isinstance(theme, str):
+                try:
+                    new_theme_type = pv.themes._ALLOWED_THEMES[theme].value
+                    theme = new_theme_type()
+                except Exception:
+                    if theme == "dark":
+                        theme = themes.DarkTheme()
+                        theme.lighting = False
+                    elif theme == "bw":
+                        theme = themes.DefaultTheme()
+                        theme.color = "black"
+                        theme.lighting = True
+                        theme.edge_color = "white"
+                        theme.background = "white"
+
+            if theme is None:
+                theme = pv.global_theme
+
+            theme.show_edges = show_edges
+
+            if lighting is not None:
+                theme.lighting = lighting
+            if edge_color is not None:
+                theme.edge_color = edge_color
+
+            if plotter is None:
+                pvparams = dict()
+                if window_size is not None:
+                    pvparams.update(window_size=window_size)
+                pvparams.update(kwargs)
+                pvparams.update(notebook=notebook)
+                pvparams.update(theme=theme)
+                plotter = pv.Plotter(**pvparams)
+
+            if camera_position is not None:
+                plotter.camera_position = camera_position
+
+            pvparams = dict()
+            blocks = self.cellblocks(inclusive=True, deep=True)
+            if config_key is None:
+                config_key = self.__class__._pv_config_key_
+            for block, poly in zip(blocks, polys):
+                params = copy(pvparams)
+                config = block.config[config_key]
+                if scalars is not None:
+                    config.pop("color", None)
+                params.update(block.config[config_key])
+                if cmap is not None:
+                    params["cmap"] = cmap
+                params["show_edges"] = show_edges
+                plotter.add_mesh(poly, **params)
+            if return_plotter:
+                return plotter
+            show_params = dict()
+            if notebook:
+                show_params.update(jupyter_backend=jupyter_backend)
+            else:
+                if return_img:
+                    plotter.show(auto_close=False)
+                    plotter.show(screenshot=True)
+                    return plotter.last_image
+            return plotter.show(**show_params)
+
     def plot(
         self,
         *,
@@ -1838,129 +2033,6 @@ class PolyData(PolyDataBase):
         elif backend == "pyvista":
             return self.pvplot(notebook=notebook, config_key=config_key, **kwargs)
 
-    def k3dplot(self, scene=None, *, menu_visibility: bool = True, **kwargs):
-        """
-        Plots the mesh using 'k3d' as the backend.
-
-        .. warning::
-            During this call there is a UserWarning saying 'Given trait value dtype
-            "float32" does not match required type "float32"'. Although this is weird,
-            plotting seems to be just fine.
-
-        Parameters
-        ----------
-        scene: object, Optional
-            A K3D plot widget to append to. This can also be given as the
-            first positional argument. Default is None, in which case it is
-            created using a call to :func:`k3d.plot`.
-        menu_visibility : bool, Optional
-            Whether to show the menu or not. Default is True.
-        **kwargs: dict, Optional
-            Extra keyword arguments forwarded to :func:`to_k3d`.
-
-        See Also
-        --------
-        :func:`to_k3d`
-        :func:`k3d.plot`
-        """
-        if scene is None:
-            scene = k3d.plot(menu_visibility=menu_visibility)
-        return self.to_k3d(scene=scene, **kwargs)
-
-    def pvplot(
-        self,
-        *,
-        deepcopy: bool = False,
-        jupyter_backend="pythreejs",
-        show_edges: bool = True,
-        notebook: bool = False,
-        theme: str = None,
-        scalars: Union[str, ndarray] = None,
-        window_size: Tuple = None,
-        return_plotter: bool = False,
-        config_key: Tuple = None,
-        plotter=None,
-        cmap: Union[str, Iterable] = None,
-        camera_position: Tuple = None,
-        lighting: bool = False,
-        edge_color: str = None,
-        return_img: bool = False,
-        **kwargs,
-    ):
-        """
-        Plots the mesh using PyVista.
-
-        See Also
-        --------
-        :func:`to_pv`
-        :func:`to_vtk`
-        """
-        if not __haspyvista__:
-            raise ImportError("You need to install `pyVista` for this.")
-        polys = self.to_pv(deepcopy=deepcopy, multiblock=False, scalars=scalars)
-        if isinstance(theme, str):
-            try:
-                new_theme_type = pv.themes._ALLOWED_THEMES[theme].value
-                theme = new_theme_type()
-            except Exception:
-                if theme == "dark":
-                    theme = themes.DarkTheme()
-                    theme.lighting = False
-                elif theme == "bw":
-                    theme = themes.DefaultTheme()
-                    theme.color = "black"
-                    theme.lighting = True
-                    theme.edge_color = "white"
-                    theme.background = "white"
-        
-        if theme is None:
-            theme = pv.global_theme
-        
-        theme.show_edges = show_edges
-
-        if lighting is not None:
-            theme.lighting = lighting
-        if edge_color is not None:
-            theme.edge_color = edge_color
-
-        if plotter is None:
-            pvparams = dict()
-            if window_size is not None:
-                pvparams.update(window_size=window_size)
-            pvparams.update(kwargs)
-            pvparams.update(notebook=notebook)
-            pvparams.update(theme=theme)
-            plotter = pv.Plotter(**pvparams)
-
-        if camera_position is not None:
-            plotter.camera_position = camera_position
-
-        pvparams = dict()
-        blocks = self.cellblocks(inclusive=True, deep=True)
-        if config_key is None:
-            config_key = self.__class__._pv_config_key_
-        for block, poly in zip(blocks, polys):
-            params = copy(pvparams)
-            config = block.config[config_key]
-            if scalars is not None:
-                config.pop("color", None)
-            params.update(block.config[config_key])
-            if cmap is not None:
-                params["cmap"] = cmap
-            params["show_edges"] = show_edges
-            plotter.add_mesh(poly, **params)
-        if return_plotter:
-            return plotter
-        show_params = dict()
-        if notebook:
-            show_params.update(jupyter_backend=jupyter_backend)
-        else:
-            if return_img:
-                plotter.show(auto_close=False)
-                plotter.show(screenshot=True)
-                return plotter.last_image
-        return plotter.show(**show_params)
-
     def __join_parent__(self, parent: DeepDict, key: Hashable = None):
         super().__join_parent__(parent, key)
         if self.celldata is not None:
@@ -1991,13 +2063,13 @@ class IndexManager(object):
         self.queue = []
         self.next = start
 
-    def generate_np(self, n:int=1) -> Union[int, ndarray]:
+    def generate_np(self, n: int = 1) -> Union[int, ndarray]:
         if n == 1:
             return self.generate(1)
         else:
             return np.array(self.generate(n))
 
-    def generate(self, n:int=1) -> Union[int, ndarray]:
+    def generate(self, n: int = 1) -> Union[int, ndarray]:
         nQ = len(self.queue)
         if nQ > 0:
             if n == 1:
@@ -2019,7 +2091,7 @@ class IndexManager(object):
             self.next += n
         return res
 
-    def recycle(self, *args, **kwargs):
+    def recycle(self, *args):
         for a in args:
             if isinstance(a, Iterable):
                 self.queue.extend(a)

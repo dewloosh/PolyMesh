@@ -107,7 +107,9 @@ class TriMesh(PolyData):
         """
         return is_planar(self.normals())
 
-    def extrude(self, *args, celltype=None, h:float=None, N:int=None, **kwargs) -> PolyData:
+    def extrude(
+        self, *args, celltype=None, h: float = None, N: int = None, **kwargs
+    ) -> PolyData:
         """
         Exctrude mesh perpendicular to the plane of the triangulation.
         The target element type can be specified with the `celltype` argument.
@@ -139,7 +141,7 @@ class TriMesh(PolyData):
         c[:, self._newaxis] = x[:, -1]
         return TetMesh(coords=c, topo=topo, celltype=ct, frame=self.frame)
 
-    def edges(self, return_cells:bool=False):
+    def edges(self, return_cells: bool = False):
         """
         Returns point indices of the unique edges in the model.
         If `return_cells` is `True`, it also returns the edge

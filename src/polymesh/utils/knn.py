@@ -7,6 +7,7 @@ import warnings
 
 try:
     from sklearn.neighbors import KDTree
+
     __has_sklearn__ = True
 except Exception:
     __has_sklearn__ = False
@@ -19,14 +20,14 @@ def k_nearest_neighbours(
     X: ndarray,
     Y: ndarray = None,
     *args,
-    backend:str="scipy",
-    k:int=1,
-    workers:int=-1,
-    tree_kwargs:dict=None,
-    query_kwargs:dict=None,
-    leaf_size:int=30,
-    return_distance:bool=False,
-    max_distance:float=None,
+    backend: str = "scipy",
+    k: int = 1,
+    workers: int = -1,
+    tree_kwargs: dict = None,
+    query_kwargs: dict = None,
+    leaf_size: int = 30,
+    return_distance: bool = False,
+    max_distance: float = None,
     **kwargs
 ):
     """
