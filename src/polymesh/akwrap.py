@@ -46,7 +46,7 @@ class AkWrapper(Wrapper):
 
     def to_dataframe(self, *args, fields: Iterable[str] = None, **kwargs):
         """
-        Returns the data contained within the database as a DataFrame.
+        Returns the data of the database as a DataFrame.
 
         Parameters
         ----------
@@ -68,7 +68,7 @@ class AkWrapper(Wrapper):
         self, path: str, *args, fields: Iterable[str] = None, **kwargs
     ) -> Any:
         """
-        Saves the data contained within the database to a parquet file.
+        Saves the data of the database to a parquet file.
 
         Parameters
         ----------
@@ -90,7 +90,7 @@ class AkWrapper(Wrapper):
     @classmethod
     def from_parquet(cls, path: str) -> "AkWrapper":
         """
-        Saves the data contained within the database to a parquet file.
+        Saves the data of the database to a parquet file.
 
         Parameters
         ----------
@@ -125,7 +125,7 @@ class AkWrapper(Wrapper):
 
     def to_akarray(self, *args, fields: Iterable[str] = None) -> akArray:
         """
-        Returns the data contained within the mesh as an Awkward array.
+        Returns the data of the mesh as an Awkward array.
 
         Parameters
         ----------
@@ -139,7 +139,7 @@ class AkWrapper(Wrapper):
 
     def to_akrecord(self, *args, fields: Iterable[str] = None) -> akRecord:
         """
-        Returns the data contained within the mesh as an Awkward record.
+        Returns the data of the mesh as an Awkward record.
 
         Parameters
         ----------

@@ -240,10 +240,10 @@ class PointCloud(Vector):
         """
         arr = self.show(target)
 
-        def foo(i):
+        def mean(i: int) -> float:
             return np.mean(arr[:, i])
 
-        return np.array(list(map(foo, range(self.shape[1]))))
+        return np.array(list(map(mean, range(self.shape[1]))))
 
     def index_of_closest(self, p: VectorLike, frame: FrameLike = None) -> int:
         """
@@ -373,15 +373,15 @@ class PointCloud(Vector):
 
         Returns
         -------
-        VectorBase
+        numpy.ndarray
             The coordinates in the desired frame.
         """
         # passing unexpected arguments is necessary here because the
         # function might ocassionally be called from super()
         x = super().show(target, *args, **kwargs)
         frame = self.frame
-        if hasattr(frame, "origo"):
-            buf = x + dcoords(x, self.frame.origo(target))
+        if isinstance(frame, CartesianFrame):
+            buf = x + dcoords(x, self.frame.relative_origo(target))
         else:
             buf = x
         return self._array_cls_(shape=buf.shape, buffer=buf, dtype=buf.dtype)
@@ -404,7 +404,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        ReferenceFrame
+        PointCloud
             The object the function is called on.
 
         Examples
@@ -451,7 +451,7 @@ class PointCloud(Vector):
 
         Returns
         -------
-        ReferenceFrame
+        PointCloud
             The object the function is called on.
         """
         center = self.center(target)
@@ -474,12 +474,21 @@ class PointCloud(Vector):
             The first positional argument can be a ReferenceFrame object.
             If it is not, all positional and keyword arguments are forwarded
             to `ReferenceFrame.orient_new`.
+            
+        Returns
+        -------
+        PointCloud
+            The object the function is called on.
 
         Examples
         --------
         To apply a 90 degree rotation about the Z axis:
 
-        >>> coords.rotate('Body', [0, 0, np.pi/2], 'XYZ')
+        >>> from polymesh.space import PointCloud
+        >>> from polymesh.triang import triangulate
+        >>> coords, *_ = triangulate(size=(800, 600), shape=(10, 10))
+        >>> points = PointCloud(coords)
+        >>> points.rotate('Body', [0, 0, np.pi/2], 'XYZ')
         """
         if isinstance(args[0], FrameLike):
             self.orient(dcm=args[0].dcm())

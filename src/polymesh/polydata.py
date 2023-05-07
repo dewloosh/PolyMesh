@@ -194,6 +194,9 @@ class PolyData(PolyDataBase):
         self._bid2b = None  # maps block indices to block addresses
         self._init_config_()
 
+        self._pointdata = None
+        self._celldata = None
+        
         self.point_index_manager = IndexManager()
         self.cell_index_manager = IndexManager()
 
@@ -364,12 +367,48 @@ class PolyData(PolyDataBase):
         return super().__getitem__(key)
 
     @property
+    def pointdata(self) -> PointData:
+        """
+        Returns the attached pointdata.
+        """
+        return self._pointdata
+    
+    @pointdata.setter
+    def pointdata(self, pd: Union[PointData, None]):
+        """
+        Returns the attached pointdata.
+        """
+        if pd is not None and not isinstance(pd, PointData):
+            raise TypeError("Value must be a PointData instance.")
+        self._pointdata = pd
+        if isinstance(pd, PointData):
+            self._pointdata.container = self
+    
+    @property
     def pd(self) -> PointData:
         """
         Returns the attached pointdata.
         """
         return self.pointdata
 
+    @property
+    def celldata(self) -> PolyCell:
+        """
+        Returns the attached celldata.
+        """
+        return self._celldata
+    
+    @celldata.setter
+    def celldata(self, cd: Union[PolyCell, None]):
+        """
+        Returns the attached celldata.
+        """
+        if cd is not None and not isinstance(cd, PolyCell):
+            raise TypeError("Value must be a PolyCell instance.")
+        self._celldata = cd
+        if isinstance(cd, PolyCell):
+            self._celldata.container = self
+    
     @property
     def cd(self) -> PolyCell:
         """
@@ -746,8 +785,8 @@ class PolyData(PolyDataBase):
 
         Example
         -------
-        >>> from polymesh.examples import stand_vtk
-        >>> mesh = stand_vtk(read=True)
+        >>> from polymesh.examples import download_stand
+        >>> mesh = download_stand(read=True)
 
         To set configuration values related to plotting with `pyVista`,
         do the following:
@@ -1191,7 +1230,7 @@ class PolyData(PolyDataBase):
         self, *args, return_inds: bool = False, jagged: bool = None, **kwargs
     ) -> Union[ndarray, TopologyArray]:
         """
-        Returns the topology as either a `NumPy` or an `Awkward` array.
+        Returns the topology.
 
         Parameters
         ----------
@@ -1293,6 +1332,15 @@ class PolyData(PolyDataBase):
         inplace: bool, Optional
             If True, the transformation is done on the instance, otherwise
             a deep copy is created first. Default is True.
+            
+        Examples
+        --------
+        Download the Stanford bunny and move it along global X:
+        
+        >>> from polymesh.examples import download_bunny
+        >>> import numpy as np
+        >>> bunny = download_bunny(tetra=False, read=True)
+        >>> bunny.move([0.2, 0, 0])
         """
         subject = self if inplace else self.deepcopy()
         if subject.is_source():
@@ -1321,18 +1369,67 @@ class PolyData(PolyDataBase):
             a deep copy is created first. Default is True.
         **kwargs
             Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
+            
+        Examples
+        --------
+        Download the Stanford bunny and rotate it about global Z with 90 degrees:
+        
+        >>> from polymesh.examples import download_bunny
+        >>> import numpy as np
+        >>> bunny = download_bunny(tetra=False, read=True)
+        >>> bunny.rotate("Space", [0, 0, np.pi/2], "xyz")
         """
         subject = self if inplace else self.deepcopy()
         if subject.is_source():
             pc = subject.points()
-            pc.rotate(*args, **kwargs)
-            subject.pointdata.x = pc.show(subject.frame)
+            source = subject
         else:
             source = subject.source()
             inds = np.unique(subject.topology())
             pc = source.points()[inds]
-            pc.rotate(*args, **kwargs)
-            source.pointdata.x = pc.show(subject.frame)
+        pc.rotate(*args, **kwargs)
+        subject._rotate_attached_cells_(*args, **kwargs)
+        source.pointdata.x = pc.show(subject.frame)
+        return subject
+    
+    def spin(self, *args, inplace: bool = True, **kwargs) -> "PolyData":
+        """
+        Like rotate, but rotation happens around centroidal axes. Positional and keyword 
+        arguments not listed here are forwarded to :class:`neumann.linalg.frame.ReferenceFrame`
+
+        Parameters
+        ----------
+        *args
+            Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
+        inplace: bool, Optional
+            If True, the transformation is done on the instance, otherwise
+            a deep copy is created first. Default is True.
+        **kwargs
+            Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
+            
+        Examples
+        --------
+        Download the Stanford bunny and spin it about global Z with 90 degrees:
+        
+        >>> from polymesh.examples import download_bunny
+        >>> import numpy as np
+        >>> bunny = download_bunny(tetra=False, read=True)
+        >>> bunny.spin("Space", [0, 0, np.pi/2], "xyz")
+        """
+        subject = self if inplace else self.deepcopy()
+        if subject.is_source():
+            pc = subject.points()
+            source = subject
+        else:
+            source = subject.source()
+            inds = np.unique(subject.topology())
+            pc = source.points()[inds]
+        center = pc.center()
+        pc.centralize()
+        pc.rotate(*args, **kwargs)
+        pc.move(center)
+        subject._rotate_attached_cells_(*args, **kwargs)
+        source.pointdata.x = pc.show(subject.frame)
         return subject
 
     def cells_at_nodes(self, *args, **kwargs) -> Iterable:
@@ -1386,6 +1483,8 @@ class PolyData(PolyDataBase):
         ----------
         All arguments are forwarded to :func:`.topo.topo.nodal_adjacency`.
         """
+        #topo = self.topology(jagged=True).to_ak()
+        #topo = ak.values_astype(topo, "int64")
         topo = self.topology().astype(np.int64)
         return nodal_adjacency(topo, *args, **kwargs)
 
@@ -1396,27 +1495,53 @@ class PolyData(PolyDataBase):
 
     def number_of_points(self) -> int:
         """Returns the number of points."""
-        return len(self.root().pointdata)
+        return len(self.source().pointdata)
 
     def cells_coords(self, *, _topo=None, **kwargs) -> ndarray:
         """Returns the coordiantes of the cells in explicit format."""
         _topo = self.topology() if _topo is None else _topo
-        return cells_coords(self.root().coords(), _topo)
+        return cells_coords(self.source().coords(), _topo)
 
     def center(self, target: FrameLike = None) -> ndarray:
-        """Returns the center of the pointcloud of the mesh."""
-        if self.is_root():
+        """
+        Returns the center of the pointcloud of the mesh.
+        
+        Parameters
+        ----------
+        target: FrameLike, Optional
+            The target frame in which the returned coordinates are to be understood.
+            A `None` value means the frame the mesh is embedded in. Default is None.
+        
+        Returns
+        -------
+        numpy.ndarray
+            A one dimensional float array.
+        """
+        if self.is_source():
             return self.points().center(target)
         else:
-            root = self.root()
+            source = self.source()
             inds = np.unique(self.topology())
-            pc = root.points()[inds]
+            pc = source.points()[inds]
             return pc.center(target)
 
     def centers(self, target: FrameLike = None) -> ndarray:
-        """Returns the centers of the cells."""
-        root = self.root()
-        coords = root.coords()
+        """
+        Returns the centers of the cells.
+        
+        Parameters
+        ----------
+        target: FrameLike, Optional
+            The target frame in which the returned coordinates are to be understood.
+            A `None` value means the frame the mesh is embedded in. Default is None.
+        
+        Returns
+        -------
+        numpy.ndarray
+            A 2 dimensional float array.
+        """
+        source = self.source()
+        coords = source.coords()
         blocks = self.cellblocks(inclusive=True)
 
         def foo(b: PolyData):
@@ -1426,7 +1551,7 @@ class PolyData(PolyDataBase):
         centers = np.vstack(list(map(foo, blocks)))
 
         if target:
-            pc = PointCloud(centers, frame=root.frame)
+            pc = PointCloud(centers, frame=source.frame)
             centers = pc.show(target)
 
         return centers
@@ -1435,22 +1560,33 @@ class PolyData(PolyDataBase):
         self, target: FrameLike = None, inplace: bool = True, axes: Iterable = None
     ) -> "PolyData":
         """
-        Centralizes the coordinats of the pointcloud of the mesh
-        and returns the object for continuation.
+        Moves all the meshes that belong to the same source such that the current object's
+        center will be at the origin of its embedding frame.
 
         Parameters
         ----------
+        target: FrameLike, Optional
+            The target frame the mesh should be central to. A `None` value
+            means the frame the mesh is embedded in. Default is True.
         inplace: bool, Optional
             If True, the transformation is done on the instance, otherwise
             a deep copy is created first. Default is True.
         axes: Iterable, Optional
             The axes on which centralization is to be performed. A `None` value
             means all axes. Default is None.
+            
+        Notes
+        -----
+        This operation changes the coordinates of all blocks that belong to the same
+        pointcloud as the object the function is called on.
         """
         subject = self if inplace else self.deepcopy()
-        pc = subject.source().points()
-        pc.centralize(target, axes=axes)
-        subject.pd.x = pc.show(subject.frame)
+        source = subject.source()
+        target = source.frame if target is None else target
+        center = self.center(target)
+        for block in source.pointblocks(inclusive=True):
+            block_points = block.pd.x
+            block.pd.x = block_points - center
         return subject
 
     def k_nearest_cell_neighbours(self, k, *args, knn_options: dict = None, **kwargs):
@@ -1569,24 +1705,39 @@ class PolyData(PolyDataBase):
             + "values as cells in the block."
         )
         return nodal_distribution_factors(topo, weights)
+    
+    def _rotate_attached_cells_(self, *args, **kwargs):
+        for block in self.cellblocks(inclusive=True):
+            block.cd._rotate_(*args, **kwargs)
+    
+    def _in_all_pointdata_(self, key:str) -> bool:
+        blocks = self.pointblocks(inclusive=True)
+        return all(list(map(lambda b: key in b.db.fields, blocks)))
+    
+    def _in_all_celldata_(self, key:str) -> bool:
+        blocks = self.cellblocks(inclusive=True)
+        return all(list(map(lambda b: key in b.db.fields, blocks)))
 
     def _detach_block_data_(self, data: Union[str, ndarray] = None) -> Tuple:
-        # source = self.source()
-        # coords = source.coords()
-        point_data = None
-        if isinstance(data, ndarray):
-            assert data.shape[0] == len(
-                source.pd
-            ), "The length of scalars must match the number of points."
-            point_data = data
-        else:
-            if data is not None:
-                assert isinstance(data, str), "Data must be a NumPy array or a string."
         blocks = self.cellblocks(inclusive=True, deep=True)
         for block in blocks:
             source = block.source()
             coords = source.coords()
             topo = block.topology()
+            
+            point_data = None
+            if isinstance(data, ndarray):
+                if not data.shape[0] == len(source.pd):
+                    raise ValueError("The length of scalars must match the number of points.")
+                point_data = data
+            elif isinstance(data, str):
+                if data in source.pd.fields:
+                    point_data = source.pd.db[data].to_numpy()
+            else:
+                if data is not None:
+                    if not isinstance(data, str):
+                        raise TypeError("Data must be a NumPy array or a string.")
+            
             if point_data is not None:
                 c, d, t = detach_mesh_data_bulk(coords, topo, point_data)
                 yield block, c, t, d
@@ -1604,6 +1755,15 @@ class PolyData(PolyDataBase):
                     yield block, c, t, d
                 else:
                     yield block, c, t, None
+                    
+    def _get_config_(self, key:str) -> dict:
+        if key in self.config:
+            return self.config[key]
+        else:
+            if self.parent is not None:
+                return self.parent._get_config_(key)
+            else:
+                return {}
 
     if __hasvtk__:
 
@@ -1756,7 +1916,8 @@ class PolyData(PolyDataBase):
 
             for b in self.cellblocks(inclusive=True, deep=deep):
                 params = copy(k3dparams)
-                params.update(b.config[config_key])
+                config = b._get_config_(config_key) 
+                params.update(config)
                 if "color" in params:
                     if isinstance(params["color"], str):
                         hexstr = mpl.colors.to_hex(params["color"])
@@ -1862,6 +2023,7 @@ class PolyData(PolyDataBase):
             lighting: bool = False,
             edge_color: str = None,
             return_img: bool = False,
+            show_scalar_bar: Union[bool, None] = None,
             **kwargs,
         ) -> Union[None, pv.Plotter, np.ndarray]:
             """
@@ -1915,6 +2077,10 @@ class PolyData(PolyDataBase):
                 which equals to the default PyVista setting.
             return_img: bool, Optional
                 If True, a screenshot is returned as an image. Default is False.
+            show_scalar_bar: Union[bool, None], Optional
+                Whether to show the scalar bar or not. A `None` value means that the option
+                is governed by the configurations of the blocks. If a boolean is provided here,
+                it overrides the configurations of the blocks. Default is None.
             **kwargs
                 Extra keyword arguments passed to `pyvista.Plotter`, it the plotter
                 has to be created.
@@ -1947,6 +2113,8 @@ class PolyData(PolyDataBase):
                         theme.lighting = True
                         theme.edge_color = "white"
                         theme.background = "white"
+                    elif theme == "document":
+                        theme = themes.DocumentTheme()
 
             if theme is None:
                 theme = pv.global_theme
@@ -1965,6 +2133,8 @@ class PolyData(PolyDataBase):
                 pvparams.update(kwargs)
                 pvparams.update(notebook=notebook)
                 pvparams.update(theme=theme)
+                if "title" not in pvparams:
+                    pvparams["title"] = "PolyMesh"
                 plotter = pv.Plotter(**pvparams)
 
             if camera_position is not None:
@@ -1976,13 +2146,15 @@ class PolyData(PolyDataBase):
                 config_key = self.__class__._pv_config_key_
             for block, poly in zip(blocks, polys):
                 params = copy(pvparams)
-                config = block.config[config_key]
+                config = block._get_config_(config_key)   
                 if scalars is not None:
                     config.pop("color", None)
-                params.update(block.config[config_key])
+                params.update(config)
                 if cmap is not None:
                     params["cmap"] = cmap
                 params["show_edges"] = show_edges
+                if isinstance(show_scalar_bar, bool):
+                    params["show_scalar_bar"] = show_scalar_bar
                 plotter.add_mesh(poly, **params)
             if return_plotter:
                 return plotter

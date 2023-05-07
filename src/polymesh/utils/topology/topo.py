@@ -14,7 +14,6 @@ from neumann.arraysetops import unique2d
 from neumann import count_cols
 
 from ...space import PointCloud
-from ..utils import explode_mesh_bulk
 from ...topoarray import TopologyArray
 from ...config import __hasnx__
 
@@ -134,6 +133,8 @@ def is_regular(topo: TopoLike) -> bool:
     elif isinstance(topo, csr_matrix):
         t = topo.data.astype(np.int32)
         return t.min() == 0 and len(np.unique(t)) == t.max() + 1
+    elif isinstance(topo, csr_scipy):
+        return np.min(t) == 0 and len(np.unique(t)) == np.max(t) + 1
     else:
         raise NotImplementedError
 
@@ -204,14 +205,13 @@ def _count_cells_at_nodes_np_(topo: ndarray, nodeIDs: ndarray) -> Dict[int, int]
 
 
 @njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
-def _count_cells_at_nodes_reg_ak_(topo: akarray) -> ndarray:
+def _count_cells_at_nodes_reg_ak_(topo: akarray, nN:int) -> ndarray:
     """
     Assumes a regular topology. Returns an array.
     """
     ncols = count_cols(topo)
     nE = len(ncols)
-    nN = np.max(topo) + 1
-    count = np.zeros((nN), dtype=topo.dtype)
+    count = np.zeros((nN), dtype=np.int64)
     for iE in prange(nE):
         for jNE in prange(ncols[iE]):
             count[topo[iE, jNE]] += 1
@@ -316,7 +316,8 @@ def count_cells_at_nodes(topo: TopoLike, regular: bool = False) -> Union[ndarray
         if isinstance(topo, ndarray):
             return _count_cells_at_nodes_reg_np_(topo)
         elif isinstance(topo, akarray):
-            return _count_cells_at_nodes_reg_ak_(topo)
+            nN = np.max(topo) + 1
+            return _count_cells_at_nodes_reg_ak_(topo, nN)
         elif isinstance(topo, csr_matrix):
             return _count_cells_at_nodes_reg_csr_(topo)
         else:
@@ -342,12 +343,11 @@ def _cells_at_nodes_reg_np_(topo: ndarray):
 
 
 @njit(nogil=True, cache=__cache)
-def _cells_at_nodes_reg_ak_(topo: akarray):
+def _cells_at_nodes_reg_ak_(topo: akarray, nN:int):
     """Assumes a regular topology."""
     ncols = count_cols(topo)
     nE = len(ncols)
-    count = _count_cells_at_nodes_reg_ak_(topo)
-    nN = np.max(topo) + 1
+    count = _count_cells_at_nodes_reg_ak_(topo, nN)
     cmax = count.max()
     ereg = np.zeros((nN, cmax), dtype=topo.dtype)
     nreg = np.zeros((nN, cmax), dtype=topo.dtype)
@@ -364,7 +364,7 @@ def _cells_at_nodes_reg_ak_(topo: akarray):
 def _cells_at_nodes_reg_csr_(topo: csr_matrix):
     """Assumes a regular topology."""
     indptr = topo.indptr
-    data = topo.data.astype(np.int32)
+    data = topo.data.astype(np.int64)
     nE = len(indptr) - 1
     count = _count_cells_at_nodes_reg_csr_(topo)
     nN = np.max(data) + 1
@@ -520,7 +520,8 @@ def cells_at_nodes(
     if isinstance(topo, ndarray):
         counts, ereg, nreg = _cells_at_nodes_reg_np_(topo)
     elif isinstance(topo, akarray):
-        counts, ereg, nreg = _cells_at_nodes_reg_ak_(topo)
+        nN = np.max(topo) + 1
+        counts, ereg, nreg = _cells_at_nodes_reg_ak_(topo, nN)
     elif isinstance(topo, csr_matrix):
         counts, ereg, nreg = _cells_at_nodes_reg_csr_(topo)
     else:
@@ -825,7 +826,7 @@ def nodal_adjacency(
         dol = _nodal_adjacency_as_dol_np_(topo, ereg)
     elif isinstance(topo, akarray):
         cuts, topo1d = JaggedArray(topo).flatten(return_cuts=True)
-        dol = _nodal_adjacency_as_dol_ak_(topo1d.to_numpy(), cuts, ereg)
+        dol = _nodal_adjacency_as_dol_ak_(topo1d, cuts, ereg)
     if not __hasnx__ and frmt != "jagged":
         errorstr = "`networkx` must be installed for format '{}'."
         raise ImportError(errorstr.format(frmt))

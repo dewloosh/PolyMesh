@@ -8,7 +8,7 @@ from neumann import atleast1d, atleast2d, ascont
 from neumann.utils import to_range_1d
 from neumann.linalg import ReferenceFrame as FrameLike
 
-from polymesh.space import PointCloud
+from polymesh.space import PointCloud, CartesianFrame
 from .celldata import CellData
 from .utils.utils import (
     jacobian_matrix_bulk,
@@ -276,6 +276,14 @@ class PolyCell(CellData):
                 pcoords = atleast2d(pcoords, front=True)
                 return cls.dshpfnc(pcoords).astype(float)
         return cls.dshpfnc(pcoords).astype(float)
+
+    def flip(self) -> "PolyCell":
+        """
+        Reverse the order of nodes of the topology.
+        """
+        topo = self.topology().to_numpy()
+        self.nodes = np.flip(topo, axis=1)
+        return self
 
     def measures(self, *args, **kwargs) -> ndarray:
         """Ought to return measures for each cell in the database."""
@@ -631,6 +639,22 @@ class PolyCell(CellData):
     def points_involved(self) -> PointCloud:
         """Returns the points involved in the cells of the block."""
         return self.source_points()[self.unique_indices()]
+    
+    def detach_points_cells(self) -> Tuple[ndarray]:
+        coords = self.container.source().coords()
+        topo = self.topology().to_numpy()
+        return detach_mesh_bulk(coords, topo)
+    
+    def _rotate_(self, *args, **kwargs):
+        # this is triggered upon transformations performed on the hosting pointcloud
+        if self.has_frames:
+            source_frame = self.container.source().frame
+            new_frames = (
+                CartesianFrame(self.frames, assume_cartesian=True)
+                .rotate(*args, **kwargs)
+                .show(source_frame)
+            )
+            self.frames = new_frames
 
 
 class PolyCell1d(PolyCell):
@@ -773,7 +797,7 @@ class PolyCell2d(PolyCell):
         Returns the areas of the cells.
         """
         nE = len(self)
-        coords = self.container.source().coords()
+        coords = self.source_coords()
         topo = self.topology().to_numpy()
         frames = self.frames
         ec = points_of_cells(coords, topo, local_axes=frames)
@@ -897,7 +921,7 @@ class PolyCell3d(PolyCell):
         else:
             ugrid = mesh_to_vtk(coords, topo, vtkid)
         return ugrid
-
+    
     if __haspyvista__:
 
         def to_pv(
@@ -934,7 +958,7 @@ class PolyCell3d(PolyCell):
         """
         Returns the volumes of the block as an 1d float array.
         """
-        coords = self.container.root().coords()
+        coords = self.source_coords()
         topo = self.topology().to_numpy()
         topo_tet = self.to_tetrahedra()
         volumes = vol_tet_bulk(cells_coords(coords, topo_tet))

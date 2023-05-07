@@ -19,7 +19,7 @@ __cache = True
 def k_nearest_neighbours(
     X: ndarray,
     Y: ndarray = None,
-    *args,
+    *,
     backend: str = "scipy",
     k: int = 1,
     workers: int = -1,
@@ -28,7 +28,6 @@ def k_nearest_neighbours(
     leaf_size: int = 30,
     return_distance: bool = False,
     max_distance: float = None,
-    **kwargs
 ):
     """
     Returns the k nearest neighbours (KNN) of a KDTree for a pointcloud using `scipy`

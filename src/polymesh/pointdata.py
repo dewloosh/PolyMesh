@@ -1,9 +1,10 @@
-from typing import Union
+from typing import Union, Iterable
 from copy import copy, deepcopy
 from functools import partial
 
 import numpy as np
 from numpy import ndarray
+from awkward import Record as akRecord
 
 from dewloosh.core import classproperty
 from neumann.linalg import ReferenceFrame as FrameLike
@@ -15,7 +16,10 @@ from .base import PointDataBase, PolyDataBase as PolyData
 from .utils import collect_nodal_data
 
 
-def gen_frame(coords):
+__all__ = ["PointData"]
+
+
+def gen_frame(coords: ndarray) -> CartesianFrame:
     return CartesianFrame(dim=coords.shape[1])
 
 
@@ -41,14 +45,14 @@ class PointData(PointDataBase):
     def __init__(
         self,
         *args,
-        points=None,
-        coords=None,
-        wrap=None,
-        fields=None,
+        points: ndarray = None,
+        coords: ndarray = None,
+        wrap: akRecord = None,
+        fields: Iterable = None,
         frame: FrameLike = None,
         newaxis: int = 2,
-        activity=None,
-        db=None,
+        activity: ndarray = None,
+        db: akRecord = None,
         container: PolyData = None,
         **kwargs
     ):
@@ -224,12 +228,16 @@ class PointData(PointDataBase):
         key: str
             A field key to identify data in the databases of the attached
             CellData instances of the blocks.
+        ndf: Union[ndarray, csr_matrix], Optional
+            The nodal distribution factors to use. If not provided, the
+            default factors are used. Default is None.
 
         See Also
         --------
+        :func:`nodal_distribution_factors`
         :func:`~polymesh.utils.utils.collect_nodal_data`
         """
-        source = self.container
+        source: PolyData = self.container.source()
         if ndf is None:
             ndf = source.nodal_distribution_factors()
         if isinstance(ndf, ndarray):
