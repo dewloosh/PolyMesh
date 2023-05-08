@@ -1,11 +1,10 @@
-from typing import Union, Iterable, Tuple, List
+from typing import Tuple, List
 
 from sympy import symbols
 import numpy as np
 from numpy import ndarray
 
 from neumann.numint import gauss_points as gp
-from neumann import atleast2d
 
 from ..polyhedron import HexaHedron
 from ..utils.utils import cells_coords
@@ -15,11 +14,8 @@ from ..utils.cells.h8 import (
     volumes_H8,
     shape_function_matrix_H8_multi,
     monoms_H8,
-    _pip_H8_bulk_,
-    _pip_H8_bulk_knn_,
 )
 from ..utils.cells.gauss import Gauss_Legendre_Hex_Grid
-from ..utils.knn import k_nearest_neighbours
 
 
 class H8(HexaHedron):

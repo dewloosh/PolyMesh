@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 from os.path import exists
+from typing import Union, Any
 
-import numpy as np
 import meshio
 
-from polymesh import PolyData
-from polymesh.space import StandardFrame
-from polymesh.cells import T3, T6, TET4, TET10
-from polymesh.utils.space import frames_of_surfaces
-
 from ..vtkutils import PolyData_to_mesh
+from ..config import __haspyvista__
+
+if __haspyvista__:
+    import pyvista as pv
+
+    pyVistaLike = Union[pv.PolyData, pv.PointGrid, pv.UnstructuredGrid]
+else:
+    pyVistaLike = Any
 
 
 # TODO : read from image file with vtk
@@ -49,57 +52,21 @@ def input_to_mesh(*args, **kwargs) -> tuple:
     if isinstance(candidate, str):
         file_exists = exists(candidate)
         assert file_exists, "The file does not exist on this file system."
-        try:
-            import meshio
-
-            mesh = meshio.read(
-                candidate,  # string, os.PathLike, or a buffer/open file
-                # file_format="stl",  # optional if filename is a path; inferred from extension
-                # see meshio-convert -h for all possible formats
-            )
-            coords, topo = mesh.points, mesh.cells_dict
-        except ImportError:
-            raise ImportError("The package `meshio` is mandatory to read from files.")
+        mesh = meshio.read(
+            candidate,  # string, os.PathLike, or a buffer/open file
+            # file_format="stl",  # optional if filename is a path; inferred from extension
+            # see meshio-convert -h for all possible formats
+        )
+        coords, topo = mesh.points, mesh.cells_dict
 
     # PyVista
-    if coords is None:
-        try:
-            import pyvista as pv
-
-            if isinstance(candidate, pv.PolyData):
-                coords, topo = PolyData_to_mesh(candidate)
-            elif isinstance(candidate, pv.UnstructuredGrid):
-                coords, topo = candidate.points, candidate.cells_dict
-        except ImportError:
-            pass
+    if coords is None and __haspyvista__:
+        if isinstance(candidate, pv.PolyData):
+            coords, topo = PolyData_to_mesh(candidate)
+        elif isinstance(candidate, pv.UnstructuredGrid):
+            coords, topo = candidate.points, candidate.cells_dict
 
     assert (
         coords is not None
     ), "Failed to read from this input, check the documentation!"
     return coords, topo
-
-
-def from_meshio(mesh: meshio.Mesh) -> PolyData:
-    GlobalFrame = StandardFrame(dim=3)
-
-    coords = mesh.points
-    polydata = PolyData(coords=coords, frame=GlobalFrame)
-
-    for cb in mesh.cells:
-        cd = None
-        cbtype = cb.type
-        topo = np.array(cb.data, dtype=int)
-        if cbtype == "tetra":
-            cd = TET4(topo=topo, frames=GlobalFrame)
-        elif cbtype == "tetra10":
-            cd = TET10(topo=topo, frames=GlobalFrame)
-        elif cbtype == "triangle":
-            frames = frames_of_surfaces(coords, topo)
-            cd = T3(topo=topo, frames=frames)
-        elif cbtype == "triangle6":
-            frames = frames_of_surfaces(coords, topo)
-            cd = T6(topo=topo, frames=frames)
-        if cd:
-            polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
-
-    return polydata

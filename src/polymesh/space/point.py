@@ -1,7 +1,7 @@
+from typing import Union, Iterable
 import numpy as np
 
-from neumann.linalg import Vector
-from .frame import CartesianFrame
+from neumann.linalg import Vector, FrameLike, CartesianFrame, ReferenceFrame
 
 
 class Point(Vector):
@@ -10,15 +10,15 @@ class Point(Vector):
 
     It inherits :class:`Vector <neumann.linalg.vector.Vector>`,
     and extends its behaviour with default frame management for domain
-    specific applications through a ``_frame_cls_`` class property.
+    specific applications.
 
     If data is provided on object creation, the class can infer an appropriate
     default frame, hence the specification of such can be omitted.
 
     Parameters
     ----------
-    frame : ndarray, Optional.
-        A numpy array representing coordinate axes of a reference frame.
+    frame: Union[ReferenceFrame, np.ndarray, Iterable], Optional
+        A suitable reference frame, or an iterable representing coordinate axes of one.
         Default is None.
 
     Note
@@ -30,7 +30,7 @@ class Point(Vector):
     >>> from polymesh.space import Point
     >>> p = Point([1., 1., 1.])
     >>> type(p.frame)
-    polymesh.space.frame.CartesianFrame
+    neumann.linalg.frame.CartesianFrame
 
     If we want to handle more than one points:
 
@@ -41,12 +41,18 @@ class Point(Vector):
     >>> p.show(B)
     array([[ 0.0, -1.0,  0.0],
            [ 1.0,  0.0,  0.0]])
-
     """
 
     _frame_cls_ = CartesianFrame
 
-    def __init__(self, *args, frame=None, id=None, gid=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        frame: Union[ReferenceFrame, np.ndarray, Iterable] = None,
+        id: int = None,
+        gid: int = None,
+        **kwargs
+    ):
         if frame is None:
             if len(args) > 0:
                 if isinstance(args[0], np.ndarray):
@@ -57,6 +63,18 @@ class Point(Vector):
                         frame = self._frame_cls_(dim=arg.shape[-1])
                     except Exception:
                         frame = None
+        else:
+            if not isinstance(frame, self._frame_cls_):
+                if isinstance(frame, FrameLike):
+                    frame = self._frame_cls_(frame.axes)
+                elif isinstance(frame, np.ndarray):
+                    frame = self._frame_cls_(frame)
+                elif isinstance(frame, Iterable):
+                    frame = self._frame_cls_(np.array(frame, dtype=float))
+
+        if not isinstance(frame, self._frame_cls_):
+            raise ValueError("Invalid frame!")
+
         super().__init__(*args, frame=frame, **kwargs)
         self._id = id
         self._gid = id if gid is None else gid

@@ -43,13 +43,13 @@ def circular_disk(
 
     Parameters
     ----------
-    nangles : int
+    nangles: int
         Number of subdivisions in radial direction.
-    nradii : int
+    nradii: int
         Number of subdivisions in circumferential direction.
-    rmin : float
+    rmin: float
         Inner radius. Can be zero.
-    rmax : float
+    rmax: float
         Outer radius.
 
     Returns
@@ -98,9 +98,9 @@ def cylinder(
 
     Parameters
     ----------
-    shape : tuple or int, Optional
+    shape: tuple or int, Optional
         A 2-tuple or a float, describing the shape of the cylinder.
-    size : Union[tuple, float, int], Optional
+    size: Union[tuple, float, int], Optional
         Parameter controlling the density of the mesh. Default is None.
 
         If `voxelize` is ``False``, ``size`` must be a tuple of three
@@ -113,12 +113,12 @@ def cylinder(
         If `voxelize` is ``True`` and ``size`` is an ``int``,
         the parameter controls the size of the individual voxels
         according to :math:`edge \, length = (r_{ext} - r_{int})/shape`.
-    regular : bool, Optional
+    regular: bool, Optional
         If ``True`` and ``voxelize`` is False, the mesh us a result of an extrusion
         applied to a trianglarion, and as a consequence it returns a more or
         less regular mesh. Otherwise the cylinder is created from a surface
         trangulation using the ``tetgen`` package. Default is ``True``.
-    voxelize : bool, Optional.
+    voxelize: bool, Optional.
         If ``True``, the cylinder gets voxelized to a collection of H8 cells.
         In this case the size of a voxel can be controlled by specifying a
         flaot or an integer as the second parameter ``size``.
@@ -128,7 +128,7 @@ def cylinder(
 
     Returns
     -------
-    polymesh.polydata.PolyData
+    :class:`~polymesh.polydata.PolyData`
     """
     if celltype is None:
         celltype = H8 if voxelize else TET4
@@ -205,35 +205,35 @@ def ribbed_plate(
 
     Parameters
     ----------
-    lx : float
+    lx: float
         The length of the plate along the X axis.
-    ly : float
+    ly: float
         The length of the plate along the Y axis.
-    t : float
+    t: float
         The thickness of a plate.
-    wx : float, Optional
+    wx: float, Optional
         The width of the ribs running in X direction. Must be defined
         alongside `hx`. Default is None.
-    hx : float, Optional
+    hx: float, Optional
         The height of the ribs running in X direction. Must be defined
         alongside `wx`. Default is None.
-    ex : float, Optional
+    ex: float, Optional
         The eccentricity of the ribs running in X direction.
-    wy : float, Optional
+    wy: float, Optional
         The width of the ribs running in Y direction. Must be defined
         alongside `hy`. Default is None.
-    hy : float, Optional
+    hy: float, Optional
         The height of the ribs running in Y direction. Must be defined
         alongside `wy`. Default is None.
-    ey : float, Optional
+    ey: float, Optional
         The eccentricity of the ribs running in Y direction.
-    lmax : float, Optional
+    lmax: float, Optional
         Maximum edge length of the cells in the resulting mesh. Default is None.
-    order : int, Optional
+    order: int, Optional
         Determines the order of the cells used. Allowed values are 1 and 2. If order is
         1, either H8 hexahedra or TET4 tetrahedra are returned. If order is 2, H27
         hexahedra or TET10 tetrahedra are returned.
-    tetrahedralize : bool, Optional
+    tetrahedralize: bool, Optional
         If True, a mesh of 4-noded tetrahedra is returned. Default is False.
 
     Example
@@ -242,6 +242,10 @@ def ribbed_plate(
     >>> mesh = ribbed_plate(lx=5.0, ly=5.0, t=1.0,
     >>>                     wx=1.0, hx=2.0, ex=0.05,
     >>>                     wy=1.0, hy=2.0, ey=-0.05)
+
+    Returns
+    -------
+    :class:`~polymesh.polydata.PolyData`
     """
 
     def subdivide(bins, lmax):
@@ -338,6 +342,10 @@ def perforated_cube(
     """
     Returns a cube of side lengths 'lx', 'ly' and 'lz', with a circular hole
     along the 'z' axis.
+
+    Returns
+    -------
+    :class:`~polymesh.polydata.PolyData`
     """
     size = (lx, ly)
     if lmax is not None:

@@ -1,4 +1,4 @@
-from typing import Iterable, Union
+from typing import Iterable, Union, Any
 import numpy as np
 from numpy import ndarray
 import awkward as ak
@@ -46,7 +46,7 @@ class AkWrapper(Wrapper):
 
     def to_dataframe(self, *args, fields: Iterable[str] = None, **kwargs):
         """
-        Returns the data contained within the database as a DataFrame.
+        Returns the data of the database as a DataFrame.
 
         Parameters
         ----------
@@ -64,9 +64,11 @@ class AkWrapper(Wrapper):
         akdb = self.to_ak(*args, fields=fields)
         return ak.to_dataframe(akdb, **kwargs)
 
-    def to_parquet(self, path: str, *args, fields: Iterable[str] = None, **kwargs):
+    def to_parquet(
+        self, path: str, *args, fields: Iterable[str] = None, **kwargs
+    ) -> Any:
         """
-        Saves the data contained within the database to a parquet file.
+        Saves the data of the database to a parquet file.
 
         Parameters
         ----------
@@ -88,11 +90,11 @@ class AkWrapper(Wrapper):
     @classmethod
     def from_parquet(cls, path: str) -> "AkWrapper":
         """
-        Saves the data contained within the database to a parquet file.
+        Saves the data of the database to a parquet file.
 
         Parameters
         ----------
-        path : str
+        path: str
             Path of the file being created.
         """
         return cls(wrap=ak.from_parquet(path))
@@ -106,8 +108,6 @@ class AkWrapper(Wrapper):
         specified and the output is a record, the original database is
         returned.
 
-        .. versionchanged:: 0.0.10
-
         Parameters
         ----------
         *args: tuple, Optional
@@ -117,7 +117,6 @@ class AkWrapper(Wrapper):
         asarray : bool, Optional
             If True, the database is turned onto an Awkward Array before
             saving to file. Default is False.
-            .. versionadded:: 0.0.10
         """
         if asarray:
             return self.to_akarray(*args, fields=fields)
@@ -126,9 +125,7 @@ class AkWrapper(Wrapper):
 
     def to_akarray(self, *args, fields: Iterable[str] = None) -> akArray:
         """
-        Returns the data contained within the mesh as an Awkward array.
-
-        .. versionadded:: 0.0.10
+        Returns the data of the mesh as an Awkward array.
 
         Parameters
         ----------
@@ -142,9 +139,7 @@ class AkWrapper(Wrapper):
 
     def to_akrecord(self, *args, fields: Iterable[str] = None) -> akRecord:
         """
-        Returns the data contained within the mesh as an Awkward record.
-
-        .. versionadded:: 0.0.10
+        Returns the data of the mesh as an Awkward record.
 
         Parameters
         ----------
@@ -160,8 +155,6 @@ class AkWrapper(Wrapper):
         """
         Returns data of the object as a dictionary. Unless fields
         are specified, all fields are returned.
-
-        .. versionadded:: 0.0.10
 
         Parameters
         ----------
@@ -234,6 +227,4 @@ class AkWrapper(Wrapper):
             return getattr(self._wrapped, attr)
         except Exception:
             name = self.__class__.__name__
-            raise AttributeError(
-                "'{}' object has no " + "attribute called {}".format(name, attr)
-            )
+            raise AttributeError(f"'{name}' object has no attribute called '{attr}'")

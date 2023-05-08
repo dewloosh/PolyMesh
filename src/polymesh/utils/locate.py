@@ -12,22 +12,18 @@ from .cells.utils import (
     _find_first_hits_knn_,
     _ntri_to_loc_bulk_,
 )
-from .tri import (
-    _glob_to_nat_tri_bulk_knn_,
-    __pip_tri_bulk__,
-    _glob_to_nat_tri_bulk_
-)
+from .tri import _glob_to_nat_tri_bulk_knn_, __pip_tri_bulk__, _glob_to_nat_tri_bulk_
 from ..utils.utils import points_of_cells
 
 
 def locate_tri_2d(
-    x:ndarray, 
-    coords:ndarray, 
-    triangles:ndarray, 
-    trimap:ndarray=None, 
-    lazy:bool=True, 
-    k:int=4, 
-    tol:float=1e-12
+    x: ndarray,
+    coords: ndarray,
+    triangles: ndarray,
+    trimap: ndarray = None,
+    lazy: bool = True,
+    k: int = 4,
+    tol: float = 1e-12,
 ) -> Tuple[ndarray]:
     x = atleast2d(x, front=True)
 
@@ -35,7 +31,7 @@ def locate_tri_2d(
         trimap = np.array([[0, 1, 2]], dtype=int)
     lcoords = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
     ecoords_tri = points_of_cells(coords, triangles, centralize=False)
-    
+
     # perform point-in-polygon test for triangles
     if lazy:
         centers_tri = cell_centers_bulk(coords, triangles)

@@ -1,4 +1,6 @@
 from typing import Union
+from copy import copy, deepcopy
+from functools import partial
 
 import numpy as np
 from numpy import ndarray
@@ -29,23 +31,23 @@ class CellData(CellDataBase):
 
     Parameters
     ----------
-    activity : numpy.ndarray, Optional
+    activity: numpy.ndarray, Optional
         1d boolean array describing the activity of the elements.
-    t or thickness : numpy.ndarray, Optional
+    t or thickness: numpy.ndarray, Optional
         1d float array of thicknesses. Only for 2d cells.
         Default is None.
-    areas : numpy.ndarray, Optional
+    areas: nmpy.ndarray, Optional
         1d float array of cross sectional areas. Only for 1d cells.
         Default is None.
-    fields : dict, Optional
+    fields: dict, Optional
         Every value of this dictionary is added to the dataset.
         Default is `None`.
-    frames : numpy.ndarray, Optional
+    frames: numpy.ndarray, Optional
         Coordinate axes representing cartesian coordinate frames.
         Default is None.
-    topo : numpy.ndarray, Optional
+    topo: numpy.ndarray, Optional
         2d integer array representing node indices. Default is None.
-    **kwargs : dict, Optional
+    **kwargs: dict, Optional
         For every key and value pair where the value is a numpy array
         with a matching shape (has entries for all cells), the key
         is considered as a field and the value is added to the database.
@@ -89,7 +91,7 @@ class CellData(CellDataBase):
 
         if db is not None:
             wrap = db
-        else:
+        elif wrap is None:
             nodes = None
             if len(args) > 0:
                 if isinstance(args[0], ndarray):
@@ -132,6 +134,35 @@ class CellData(CellDataBase):
 
             if areas is not None:
                 self.A = areas
+
+    def __deepcopy__(self, memo):
+        return self.__copy__(memo)
+
+    def __copy__(self, memo=None):
+        cls = type(self)
+        copy_function = copy if (memo is None) else partial(deepcopy, memo=memo)
+        is_deep = memo is not None
+
+        db = copy_function(self.db)
+
+        pd = self.pointdata
+        pd_copy = None
+        if pd is not None:
+            if is_deep:
+                pd_copy = memo.get(id(pd), None)
+            if pd_copy is None:
+                pd_copy = copy_function(pd)
+
+        result = cls(db=db, pointdata=pd_copy)
+        if is_deep:
+            memo[id(self)] = result
+
+        result_dict = result.__dict__
+        for k, v in self.__dict__.items():
+            if not k in result_dict:
+                setattr(result, k, copy_function(v))
+
+        return result
 
     @classproperty
     def _dbkey_nodes_(cls) -> str:
@@ -265,10 +296,10 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        factors : numpy.ndarray
+        factors: numpy.ndarray
             A 3d float array. The length of the array must equal the number
             pf cells in the block.
-        key : str, Optional
+        key: str, Optional
             A key used to store the values in the database. This makes you able
             to use more nodal distribution strategies in one model.
             If not specified, a default key is used.
@@ -289,7 +320,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        data : str or numpy.ndarray
+        data: str or numpy.ndarray
             Either a field key to identify data in the database of the attached
             PointData, or a NumPy array.
 
@@ -335,7 +366,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             A 2d integer array.
         """
         assert isinstance(value, ndarray)
@@ -353,7 +384,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             A 3d float array.
         """
         if isinstance(value, ReferenceFrame):
@@ -404,7 +435,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             An 1d integer array.
         """
         assert isinstance(value, ndarray)
@@ -422,7 +453,7 @@ class CellData(CellDataBase):
 
         Parameters
         ----------
-        value : numpy.ndarray
+        value: numpy.ndarray
             An 1d bool array.
         """
         if isinstance(value, bool):

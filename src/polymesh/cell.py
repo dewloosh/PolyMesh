@@ -8,7 +8,7 @@ from neumann import atleast1d, atleast2d, ascont
 from neumann.utils import to_range_1d
 from neumann.linalg import ReferenceFrame as FrameLike
 
-from polymesh.space import PointCloud
+from polymesh.space import PointCloud, CartesianFrame
 from .celldata import CellData
 from .utils.utils import (
     jacobian_matrix_bulk,
@@ -57,10 +57,11 @@ class PolyCell(CellData):
     for all kinds of geometrical entities.
     """
 
-    NNODE = None
-    NDIM = None
-    vtkCellType = None
-    _face_cls_ = None
+    NNODE: int = None  # number of nodes per cell
+    NDIM: int = None  # number of spatial dimensions
+    vtkCellType: int = None  # vtk Id
+    meshioCellType: str = None
+    _face_cls_: "PolyCell" = None  # the class of a face
     shpfnc: Callable = None  # evaluator for shape functions
     shpmfnc: Callable = None  # evaluator for shape function matrices
     dshpfnc: Callable = None  # evaluator for shape function derivatives
@@ -119,10 +120,10 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        return_symbolic : bool, Optional
+        return_symbolic: bool, Optional
             If True, the function returns symbolic expressions of shape functions
             and their derivatives. Default is True.
-        update : bool, Optional
+        update: bool, Optional
             If True, class methods are updated with the generated versions.
             Default is True.
         """
@@ -197,7 +198,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
 
         Returns
@@ -223,7 +224,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
         N: integer, Optional
             Number of unknowns per node.
@@ -258,7 +259,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        pcoords : numpy.ndarray
+        pcoords: numpy.ndarray
             Locations of the evaluation points.
 
         Returns
@@ -275,6 +276,14 @@ class PolyCell(CellData):
                 pcoords = atleast2d(pcoords, front=True)
                 return cls.dshpfnc(pcoords).astype(float)
         return cls.dshpfnc(pcoords).astype(float)
+
+    def flip(self) -> "PolyCell":
+        """
+        Reverse the order of nodes of the topology.
+        """
+        topo = self.topology().to_numpy()
+        self.nodes = np.flip(topo, axis=1)
+        return self
 
     def measures(self, *args, **kwargs) -> ndarray:
         """Ought to return measures for each cell in the database."""
@@ -311,7 +320,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        dshp : numpy.ndarray
+        dshp: numpy.ndarray
             3d array of shape function derivatives for the master cell,
             evaluated at some points. The array must have a shape of
             (nG, nNE, nD), where nG, nNE and nD are he number of evaluation
@@ -334,7 +343,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        jac : numpy.ndarray, Optional
+        jac: numpy.ndarray, Optional
             One or more Jacobian matrices. Default is None.
         **kwargs : dict
             Forwarded to :func:`jacobian_matrix` if the jacobian
@@ -420,7 +429,7 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        target : CartesianFrame, Optional
+        target: CartesianFrame, Optional
             A target frame. If provided, coordinates are returned in
             this frame, otherwise they are returned in the local frames
             of the cells. Default is None.
@@ -466,9 +475,9 @@ class PolyCell(CellData):
 
         Parameters
         ----------
-        imap : MapLike
+        imap: MapLike
             Mapping from old to new node indices (global to local).
-        invert : bool, Optional
+        invert: bool, Optional
             If `True` the argument `imap` describes a local to global
             mapping and an inversion takes place. In this case,
             `imap` must be a `numpy` array. Default is False.
@@ -631,6 +640,22 @@ class PolyCell(CellData):
         """Returns the points involved in the cells of the block."""
         return self.source_points()[self.unique_indices()]
 
+    def detach_points_cells(self) -> Tuple[ndarray]:
+        coords = self.container.source().coords()
+        topo = self.topology().to_numpy()
+        return detach_mesh_bulk(coords, topo)
+
+    def _rotate_(self, *args, **kwargs):
+        # this is triggered upon transformations performed on the hosting pointcloud
+        if self.has_frames:
+            source_frame = self.container.source().frame
+            new_frames = (
+                CartesianFrame(self.frames, assume_cartesian=True)
+                .rotate(*args, **kwargs)
+                .show(source_frame)
+            )
+            self.frames = new_frames
+
 
 class PolyCell1d(PolyCell):
     """Base class for 1d cells"""
@@ -772,7 +797,7 @@ class PolyCell2d(PolyCell):
         Returns the areas of the cells.
         """
         nE = len(self)
-        coords = self.container.source().coords()
+        coords = self.source_coords()
         topo = self.topology().to_numpy()
         frames = self.frames
         ec = points_of_cells(coords, topo, local_axes=frames)
@@ -899,7 +924,9 @@ class PolyCell3d(PolyCell):
 
     if __haspyvista__:
 
-        def to_pv(self, detach:bool=False) -> Union[pv.UnstructuredGrid, pv.PolyData]:
+        def to_pv(
+            self, detach: bool = False
+        ) -> Union[pv.UnstructuredGrid, pv.PolyData]:
             """
             Returns the block as a pyVista object.
             """
@@ -912,7 +939,7 @@ class PolyCell3d(PolyCell):
         coords = self.source_coords()
         pvs = self.to_pv(detach=False).extract_surface()
         s = pvs.triangulate().cast_to_unstructured_grid()
-        topo = s.cells_dict[5]        
+        topo = s.cells_dict[5]
         if detach:
             return s.points, topo
         else:
@@ -931,7 +958,7 @@ class PolyCell3d(PolyCell):
         """
         Returns the volumes of the block as an 1d float array.
         """
-        coords = self.container.root().coords()
+        coords = self.source_coords()
         topo = self.topology().to_numpy()
         topo_tet = self.to_tetrahedra()
         volumes = vol_tet_bulk(cells_coords(coords, topo_tet))

@@ -22,7 +22,7 @@ def frame_of_plane(coords: ndarray):
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d coordinate array
 
     Returns
@@ -47,9 +47,9 @@ def frames_of_surfaces(coords: ndarray, topo: ndarray):
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d coordinate array
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d point-based topology array
 
     Returns
@@ -78,9 +78,9 @@ def tr_cell_glob_to_loc_bulk(coords: np.ndarray, topo: np.ndarray):
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d coordinate array
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d point-based topology array
 
     Returns
@@ -149,11 +149,11 @@ def frames_of_lines(coords: ndarray, topo: ndarray, refZ: ndarray = None) -> nda
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d coordinate array
-    topo : numpy.ndarray
+    topo: numpy.ndarray
         2d point-based topology array
-    refZ : numpy.ndarray, Optional
+    refZ: numpy.ndarray, Optional
         1d or 2d float array of reference points. If it is 2d, it must
         contain values for all lines defined by `topo`.
         Default is None.
@@ -183,9 +183,9 @@ def is_planar_surface(normals: ndarray, tol: float = 1e-8) -> bool:
 
     Parameters
     ----------
-    normals : numpy.ndarray
+    normals: numpy.ndarray
         2d float array of surface normals
-    tol : float
+    tol: float
         Floating point tolerance as maximum deviation.
 
     Returns
@@ -229,9 +229,9 @@ def index_of_closest_point(coords: ndarray, target: ndarray) -> int:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of vertex coordinates.
-    target : numpy.ndarray
+    target: numpy.ndarray
         1d or 2d coordinate array of the target point(s).
 
     Returns
@@ -256,9 +256,9 @@ def index_of_furthest_point(coords: ndarray, target: ndarray) -> int:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of vertex coordinates.
-    target : numpy.ndarray
+    target: numpy.ndarray
         1d or 2d coordinate array of the target point(s).
 
     Returns
@@ -295,9 +295,9 @@ def is_line(coords: ndarray, tol=1e-8) -> bool:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of point coordinates
-    tol : float
+    tol: float
         Floating point tolerance as maximum deviation.
 
     Returns
@@ -322,9 +322,9 @@ def is_planar(coords: ndarray, tol: float = 1e-8) -> bool:
 
     Parameters
     ----------
-    coords : numpy.ndarray
+    coords: numpy.ndarray
         2d float array of point coordinates
-    tol : float
+    tol: float
         Floating point tolerance as maximum deviation.
 
     Returns

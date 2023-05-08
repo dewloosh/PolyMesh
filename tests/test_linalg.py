@@ -60,8 +60,8 @@ class TestLinalg(unittest.TestCase):
         coords.center()
         frameA = CartesianFrame(axes=np.eye(3), origo=np.array([-500.0, 0.0, 0.0]))
         frameB = CartesianFrame(axes=np.eye(3), origo=np.array([+500.0, 0.0, 0.0]))
-        frameA.origo()
-        frameB.origo()
+        frameA.origo
+        frameB.origo
         coords.center()
         coords.center(frameA)
         coords.center(frameB)

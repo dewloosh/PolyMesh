@@ -1,11 +1,12 @@
 import numpy as np
-from typing import Union
-from numpy import ndarray
+from typing import Union, Iterable
 from copy import deepcopy as dcopy
+
+import numpy as np
+from numpy import ndarray
 
 from neumann.linalg import CartesianFrame as Frame, FrameLike, Vector
 from neumann.linalg.vector import Vector
-
 
 __all__ = ["CartesianFrame"]
 
@@ -27,12 +28,12 @@ class CartesianFrame(Frame):
 
     Parameters
     ----------
-    axes : ndarray, Optional.
+    axes: numpy.ndarray, Optional.
         2d numpy array of floats specifying cartesian reference frames.
         Dafault is None.
-    dim : int, Optional
+    dim: int, Optional
         Dimension of the mesh. Deafult is 3.
-    origo : ndarray, Optional.
+    origo: numpy.ndarray, Optional.
         The origo of the mesh. Default is the zero vector.
 
     Note
@@ -46,14 +47,17 @@ class CartesianFrame(Frame):
     Define a standard Cartesian frame and rotate it around axis 'Z'
     with an amount of 180 degrees:
 
+    >>> from polymesh.space import CartesianFrame
+    >>> import numpy as np
+
     >>> A = CartesianFrame(dim=3)
-    >>> B = A.orient_new('Body', [0, 0, np.pi], 'XYZ')
+    >>> B = A.orient_new('Space', [0, 0, np.pi], 'XYZ')
 
     To create a third frame that rotates from B the way B rotates from A, we
     can do
 
     >>> A = CartesianFrame(dim=3)
-    >>> C = A.orient_new('Body', [0, 0, 2*np.pi], 'XYZ')
+    >>> C = A.orient_new('Space', [0, 0, 2*np.pi], 'XYZ')
 
     or we can define it relative to B (this literally makes C to looke
     in B like B looks in A)
@@ -76,54 +80,75 @@ class CartesianFrame(Frame):
         super().__init__(axes, *args, **kwargs)
         self._origo = origo
 
-    def origo(self, target: FrameLike = None) -> Vector:
+    @property
+    def origo(self):
+        if not isinstance(self._origo, ndarray):
+            self._origo = np.zeros(len(self.axes))
+        return self._origo
+
+    @origo.setter
+    def origo(self, value: Iterable):
+        value = np.array(value).astype(float)
+        if not isinstance(self._origo, ndarray):
+            self._origo = np.zeros(len(self.axes))
+        if value.shape == self._array.shape:
+            if self._weakrefs and len(self._weakrefs) > 0:
+                for v in self._weakrefs.values():
+                    v.array -= value
+            self._array = value
+        else:
+            raise ValueError("Mismatch in data dimensinons!")
+
+    def relative_origo(self, target: FrameLike = None) -> ndarray:
         """
         Returns the origo of the current frame in ambient space
         or with respect to another frame.
 
         Parameters
         ----------
-        target : FrameLike, Optional
+        target: FrameLike, Optional
             A frame in which we want to get the origo of the current frame.
             A None value returns the origo of the current frame with respect
             to the root. Default is None.
 
         Returns
         -------
-        Vector
-            A vector defined in ambient space, the parent frame,
-            or the specified frame.
+        numpy.ndarray
+            A vector defined in ambient space, or the specified frame.
 
         Examples
         --------
         Define a standard Cartesian frame and rotate it around axis 'Z'
         with an amount of 180 degrees:
 
+        >>> from polymesh.space import CartesianFrame
+        >>> import numpy as np
+
         >>> A = CartesianFrame()
-        >>> B = A.orient_new('Body', [0, 0, 45*np.pi/180],  'XYZ')
+        >>> B = A.orient_new('Space', [0, 0, 45*np.pi/180],  'XYZ')
 
         To get the origin of frame B:
 
-        >>> B.origo()
+        >>> B.relative_origo()
         [0., 0., 0.]
 
         Move frame B (the motion is defined locally) and print the
         new point of origin with respect to A:
 
         >>> B.move(Vector([1, 0, 0], frame=B))
-        >>> B.origo(A)
+        >>> B.relative_origo(A)
         [0.7071, 0.7071, 0.]
 
         Of course, the point of origin of a frame with respect to itself
         must be a zero vector:
 
-        >>> B.origo(B)
+        >>> B.relative_origo(B)
         [0., 0., 0.]
 
         Providing with no arguments returns the distance of origin with
         respect to the root frame:
 
-        >>> B.origo()  # same as B.origo(B.root())
+        >>> B.relative_origo()  # same as B.relative_origo(B.root())
         [0.7071, 0.7071, 0.]
         """
         if not isinstance(self._origo, ndarray):
@@ -132,8 +157,11 @@ class CartesianFrame(Frame):
         if target is None:
             return Vector(self._origo).show()
         else:
-            t = target.origo()
-            s = self.origo()
+            s = self.relative_origo()
+            if isinstance(target, CartesianFrame):
+                t = target.relative_origo()
+            else:
+                t = np.zeros_like(s)
             return Vector(s - t).show(target)
 
     def move(self, d: VectorLike, frame: FrameLike = None) -> "CartesianFrame":
@@ -142,9 +170,9 @@ class CartesianFrame(Frame):
 
         Parameters
         ----------
-        d : VectorLike
+        d: VectorLike
             :class:`Vector` or :class:`Array`, the amount of the motion.
-        frame : FrameLike, Optional
+        frame: FrameLike, Optional
             A frame in which the input is defined if it is not a Vector.
             Default is None, which assumes the root frame.
 
@@ -155,9 +183,12 @@ class CartesianFrame(Frame):
 
         Examples
         --------
+        >>> from polymesh.space import CartesianFrame
+        >>> import numpy as np
+
         >>> A = CartesianFrame()
         >>> v = Vector([1., 0., 0.], frame=A)
-        >>> B = A.fork('Body', [0, 0, 45*np.pi/180], 'XYZ').move(v)
+        >>> B = A.fork('Space', [0, 0, 45*np.pi/180], 'XYZ').move(v)
 
         Move the frame locally with the same amount
 
@@ -180,10 +211,26 @@ class CartesianFrame(Frame):
         """
         Returns a shallow or deep copy of this object, depending of the
         argument `deepcopy` (default is False).
+
+        Parameters
+        ----------
+        deep: bool, Optional
+            If True, a deep copy is returned. Default is False.
+        name: str, Optional
+            The name of the copy. Default is None.
         """
         if deep:
-            return self.__class__(
-                dcopy(self.axes), origo=dcopy(self.origo()), name=name
-            )
+            return self.__class__(dcopy(self.axes), origo=dcopy(self.origo), name=name)
         else:
-            return self.__class__(self.axes, origo=self.origo(), name=name)
+            return self.__class__(self.axes, origo=self.origo, name=name)
+
+    def deepcopy(self, name: str = None) -> "CartesianFrame":
+        """
+        Returns a deep copy of the instance.
+
+        Parameters
+        ----------
+        name: str, Optional
+            The name of the copy. Default is None.
+        """
+        return self.copy(deep=True, name=name)

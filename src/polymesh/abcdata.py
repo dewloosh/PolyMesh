@@ -1,12 +1,18 @@
 from dewloosh.core.meta import ABCMeta_Weak
 
+from meshio._vtk_common import vtk_to_meshio_type
+
+from .helpers import vtk_to_celltype, meshio_to_celltype
+
+
+__all__ = ["ABCMeta_MeshData", "ABC_MeshData"]
+
 
 class ABCMeta_MeshData(ABCMeta_Weak):
     """
     Meta class for PointData and CellData classes.
 
     It merges attribute maps with those of the parent classes.
-
     """
 
     def __init__(self, name, bases, namespace, *args, **kwargs):
@@ -21,16 +27,17 @@ class ABCMeta_MeshData(ABCMeta_Weak):
             _attr_map_.update(base.__dict__.get("_attr_map_", {}))
         cls._attr_map_ = _attr_map_
 
-        # generate shape functions
-        shpfnc = namespace.get("shpfnc", None)
-        if shpfnc is None:
-            # shape functions should be generated here
-            pass
+        # add class to helpers
+        vtkCellType = getattr(cls, "vtkCellType", None)
+        if isinstance(vtkCellType, int):
+            vtk_to_celltype[vtkCellType] = cls
+            meshio_to_celltype[vtk_to_meshio_type[vtkCellType]] = cls
         return cls
 
 
 class ABC_MeshData(metaclass=ABCMeta_MeshData):
-    """Helper class that provides a standard way to create an ABC using
+    """
+    Helper class that provides a standard way to create an ABC using
     inheritance.
     """
 

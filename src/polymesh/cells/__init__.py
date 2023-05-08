@@ -18,3 +18,26 @@ from .tet10 import TET10
 from .w6 import W6
 from .w6 import W6 as Wedge
 from .w18 import W18
+
+
+__all__ = [
+    "L2",
+    "Line",
+    "L3",
+    "QuadraticLine",
+    "T3",
+    "Tri",
+    "Q4",
+    "Quad",
+    "Q9",
+    "T6",
+    "H8",
+    "Hex",
+    "H27",
+    "TET4",
+    "Tetra",
+    "TET10",
+    "W6",
+    "Wedge",
+    "W18",
+]

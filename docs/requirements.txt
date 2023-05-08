@@ -1,13 +1,15 @@
+ipython
 myst_parser
 nbsphinx
 sphinx-gallery
 sphinx_copybutton
-sphinxcontrib-bibtex==1.0.0
+#sphinxcontrib-bibtex
 nbsphinx-link
 sphinxcontrib-svg2pdfconverter
+sphinx_design
+sphinx-inline-tabs
 furo
-sphinx-rtd-theme
-memory_profiler
+
 pyvista
 pandas
 tetgen
@@ -16,3 +18,4 @@ plotly
 ipython
 k3d
 dewloosh.mpl
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability

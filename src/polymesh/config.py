@@ -1,5 +1,6 @@
-import configparser
-
+import toml
+import os
+from os.path import dirname, abspath
 
 try:
     import vtk
@@ -53,23 +54,11 @@ except Exception:
     __has_tetgen__ = False
 
 
-def set_config_file(filepath):
-    try:
-        import vtk
-
-        __hasvtk__ = True
-    except Exception:
-        __hasvtk__ = False
-    try:
-        import pyvista as pv
-
-        __haspyvista__ = True
-    except Exception:
-        __haspyvista__ = False
-
-    config = configparser.ConfigParser()
-    config["mesh"] = {}
-    config["mesh"]["vtk"] = __hasvtk__
-    config["mesh"]["vista"] = __haspyvista__
-    with open("config.ini", "w") as configfile:
-        config.write(configfile)
+def load_pyproject_config():
+    config_path = os.path.join(
+        dirname(dirname(dirname(abspath(__file__)))), "pyproject.toml"
+    )
+    with open(config_path, "r") as f:
+        config_toml = toml.load(f)
+    config = config_toml.get("polymesh", {})
+    return config

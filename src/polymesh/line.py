@@ -24,7 +24,7 @@ class Line(PolyCell1d):
 
         Parameters
         ----------
-        dshp : numpy.ndarray
+        dshp: numpy.ndarray
             Array of shape function derivatives.
         """
         assert dshp is not None
@@ -37,7 +37,7 @@ class Line(PolyCell1d):
 
         Parameters
         ----------
-        jac : numpy.ndarray
+        jac: numpy.ndarray
             Array of jacobian matrices derivatives.
 
         See Also

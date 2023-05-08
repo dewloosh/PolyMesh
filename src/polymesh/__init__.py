@@ -1,4 +1,4 @@
-__version__ = "0.0.19"
+__version__ = "0.0.20"
 __description__ = "A Python package to build, manipulate and analyze polygonal meshes."
 
 from .space import PointCloud
@@ -14,3 +14,23 @@ from .tetmesh import TetMesh
 from .triang import triangulate
 from .grid import grid, Grid
 from .tetrahedralize import tetrahedralize
+from .config import load_pyproject_config
+
+__all__ = [
+    "PointCloud",
+    "CartesianFrame",
+    "PolyData",
+    "LineData",
+    "PolyData1d",
+    "PointData",
+    "KNN",
+    "TopologyArray",
+    "TriMesh",
+    "TetMesh",
+    "triangulate",
+    "grid",
+    "Grid",
+    "tetrahedralize",
+]
+
+#_config = load_pyproject_config()
