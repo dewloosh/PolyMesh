@@ -33,4 +33,4 @@ __all__ = [
     "tetrahedralize",
 ]
 
-_config = load_pyproject_config()
+#_config = load_pyproject_config()
