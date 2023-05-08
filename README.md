@@ -20,6 +20,8 @@ Here and there we also use [NetworkX](https://networkx.org/documentation/stable/
 
 ### Mesh assembly
 
+One of the strongest sides of the library is mesh management. This example assembles a mesh of four separate bunnies using all kinds of transformations, each with their own separate pointcloud.
+
 ```python
 from polymesh import PolyData
 from polymesh.examples import download_bunny_coarse
@@ -45,12 +47,19 @@ mesh["bunny_4"] = (
     )
 ```
 
+The following call centralizes the pointcloudes and revires the topologies.
+
+```python
+mesh.to_standard_form()
+```
+
 ![ ](docs/source/_static/readme_1.png)
 
 ### Handling of jagged topologies
 
+PolyMesh is able to handle the topologies of mixed meshes and return them as Awkward or NumPy arrays. In the previous example, one of the bunnies is a tetrahedral mesh, the others are surface triangulations.
+
 ```python
-mesh.to_standard_form()
 mesh.topology()
 ```
 
@@ -80,6 +89,16 @@ type: 6769 * var * int32
 ```
 
 ```python
+type(mesh.topology())
+```
+
+```console
+polymesh.topoarray.TopologyArray
+```
+
+Similarly to NumPy arrays, a `TopologyArray` instance has a shape property which generalizes for jagged topologies nad coincides with NumPy for regular ones.
+
+```python
 mesh.topology().shape
 ```
 
@@ -87,7 +106,15 @@ mesh.topology().shape
 (6769, array([3, 3, 3, ..., 4, 4, 4], dtype=int64))
 ```
 
+Calling `to_array` on a `TopologyArray` either returns an Awkward or a NumPy array.
+
+```python
+mesh.topology().to_array()
+```
+
 ### Visualization
+
+PolyMesh provides a mechanism to easily configure the blocks of a mesh to be plotted using PyVista:
 
 ```python
 mesh["bunny_1"].config["plot"] = dict(color="red", opacity=0.9)
@@ -108,6 +135,8 @@ plotter.show(jupyter_backend="static")
 ```
 
 ![ ](docs/source/_static/readme_2.png)
+
+Values can be assigned to the cells
 
 ```python
 for cb in mesh.cellblocks():
@@ -134,6 +163,8 @@ plotter.show(jupyter_backend="static")
 
 ![ ](docs/source/_static/readme_3.png)
 
+and to the points
+
 ```python
 n = len(mesh.coords())
 scalars = np.random.rand(n)
@@ -157,6 +188,8 @@ plotter.show(jupyter_backend="static")
 
 ### Passing data between points and cells
 
+Values defined on the cells can also be aggregated to the nodes, creating a smoothing mechanism:
+
 ```python
 plotter = mesh.plot(
     notebook=True, 
@@ -176,7 +209,7 @@ plotter.show(jupyter_backend="static")
 
 ### Import and export
 
-The default smoothing mechanism uses the volumes of the cells to determine nodal distribution factors.
+The heart of the database of a mesh is the combination of nested dictionaries equipped with Awkward records. Thanks to that, the data of a mesh can be easily converted to and from various data formats.
 
 ```python
 from polymesh import PointData
@@ -195,6 +228,12 @@ PolyMesh can be installed from PyPI using `pip` on Python >= 3.7:
 
 ```console
 >>> pip install polymesh
+```
+
+## **Testing**
+
+```console
+>>> python -m unittest
 ```
 
 ## **License**

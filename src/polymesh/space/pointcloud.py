@@ -474,7 +474,7 @@ class PointCloud(Vector):
             The first positional argument can be a ReferenceFrame object.
             If it is not, all positional and keyword arguments are forwarded
             to `ReferenceFrame.orient_new`.
-            
+
         Returns
         -------
         PointCloud

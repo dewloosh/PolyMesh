@@ -14,6 +14,7 @@ from .tetmesh import TetMesh
 from .triang import triangulate
 from .grid import grid, Grid
 from .tetrahedralize import tetrahedralize
+from .config import load_pyproject_config
 
 __all__ = [
     "PointCloud",
@@ -31,3 +32,5 @@ __all__ = [
     "Grid",
     "tetrahedralize",
 ]
+
+_config = load_pyproject_config()

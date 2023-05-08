@@ -1,4 +1,5 @@
 packaging
+toml
 linkeddeepdict>=1.1.0
 dewloosh.core>=1.0.20
 neumann>=1.0.6

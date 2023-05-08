@@ -639,12 +639,12 @@ class PolyCell(CellData):
     def points_involved(self) -> PointCloud:
         """Returns the points involved in the cells of the block."""
         return self.source_points()[self.unique_indices()]
-    
+
     def detach_points_cells(self) -> Tuple[ndarray]:
         coords = self.container.source().coords()
         topo = self.topology().to_numpy()
         return detach_mesh_bulk(coords, topo)
-    
+
     def _rotate_(self, *args, **kwargs):
         # this is triggered upon transformations performed on the hosting pointcloud
         if self.has_frames:
@@ -921,7 +921,7 @@ class PolyCell3d(PolyCell):
         else:
             ugrid = mesh_to_vtk(coords, topo, vtkid)
         return ugrid
-    
+
     if __haspyvista__:
 
         def to_pv(

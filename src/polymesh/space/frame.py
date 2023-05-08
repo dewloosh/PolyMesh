@@ -46,10 +46,10 @@ class CartesianFrame(Frame):
     -------
     Define a standard Cartesian frame and rotate it around axis 'Z'
     with an amount of 180 degrees:
-    
+
     >>> from polymesh.space import CartesianFrame
     >>> import numpy as np
-    
+
     >>> A = CartesianFrame(dim=3)
     >>> B = A.orient_new('Space', [0, 0, np.pi], 'XYZ')
 
@@ -79,13 +79,13 @@ class CartesianFrame(Frame):
         axes = np.eye(dim) if axes is None else axes
         super().__init__(axes, *args, **kwargs)
         self._origo = origo
-    
+
     @property
     def origo(self):
         if not isinstance(self._origo, ndarray):
             self._origo = np.zeros(len(self.axes))
         return self._origo
-    
+
     @origo.setter
     def origo(self, value: Iterable):
         value = np.array(value).astype(float)
@@ -98,7 +98,7 @@ class CartesianFrame(Frame):
             self._array = value
         else:
             raise ValueError("Mismatch in data dimensinons!")
-    
+
     def relative_origo(self, target: FrameLike = None) -> ndarray:
         """
         Returns the origo of the current frame in ambient space
@@ -120,7 +120,7 @@ class CartesianFrame(Frame):
         --------
         Define a standard Cartesian frame and rotate it around axis 'Z'
         with an amount of 180 degrees:
-        
+
         >>> from polymesh.space import CartesianFrame
         >>> import numpy as np
 
@@ -185,7 +185,7 @@ class CartesianFrame(Frame):
         --------
         >>> from polymesh.space import CartesianFrame
         >>> import numpy as np
-        
+
         >>> A = CartesianFrame()
         >>> v = Vector([1., 0., 0.], frame=A)
         >>> B = A.fork('Space', [0, 0, 45*np.pi/180], 'XYZ').move(v)
@@ -211,7 +211,7 @@ class CartesianFrame(Frame):
         """
         Returns a shallow or deep copy of this object, depending of the
         argument `deepcopy` (default is False).
-        
+
         Parameters
         ----------
         deep: bool, Optional
@@ -220,16 +220,14 @@ class CartesianFrame(Frame):
             The name of the copy. Default is None.
         """
         if deep:
-            return self.__class__(
-                dcopy(self.axes), origo=dcopy(self.origo), name=name
-            )
+            return self.__class__(dcopy(self.axes), origo=dcopy(self.origo), name=name)
         else:
             return self.__class__(self.axes, origo=self.origo, name=name)
-        
+
     def deepcopy(self, name: str = None) -> "CartesianFrame":
         """
         Returns a deep copy of the instance.
-        
+
         Parameters
         ----------
         name: str, Optional

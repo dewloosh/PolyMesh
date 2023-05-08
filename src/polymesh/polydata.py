@@ -196,7 +196,7 @@ class PolyData(PolyDataBase):
 
         self._pointdata = None
         self._celldata = None
-        
+
         self.point_index_manager = IndexManager()
         self.cell_index_manager = IndexManager()
 
@@ -372,7 +372,7 @@ class PolyData(PolyDataBase):
         Returns the attached pointdata.
         """
         return self._pointdata
-    
+
     @pointdata.setter
     def pointdata(self, pd: Union[PointData, None]):
         """
@@ -383,7 +383,7 @@ class PolyData(PolyDataBase):
         self._pointdata = pd
         if isinstance(pd, PointData):
             self._pointdata.container = self
-    
+
     @property
     def pd(self) -> PointData:
         """
@@ -397,7 +397,7 @@ class PolyData(PolyDataBase):
         Returns the attached celldata.
         """
         return self._celldata
-    
+
     @celldata.setter
     def celldata(self, cd: Union[PolyCell, None]):
         """
@@ -408,7 +408,7 @@ class PolyData(PolyDataBase):
         self._celldata = cd
         if isinstance(cd, PolyCell):
             self._celldata.container = self
-    
+
     @property
     def cd(self) -> PolyCell:
         """
@@ -1332,11 +1332,11 @@ class PolyData(PolyDataBase):
         inplace: bool, Optional
             If True, the transformation is done on the instance, otherwise
             a deep copy is created first. Default is True.
-            
+
         Examples
         --------
         Download the Stanford bunny and move it along global X:
-        
+
         >>> from polymesh.examples import download_bunny
         >>> import numpy as np
         >>> bunny = download_bunny(tetra=False, read=True)
@@ -1369,11 +1369,11 @@ class PolyData(PolyDataBase):
             a deep copy is created first. Default is True.
         **kwargs
             Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
-            
+
         Examples
         --------
         Download the Stanford bunny and rotate it about global Z with 90 degrees:
-        
+
         >>> from polymesh.examples import download_bunny
         >>> import numpy as np
         >>> bunny = download_bunny(tetra=False, read=True)
@@ -1391,10 +1391,10 @@ class PolyData(PolyDataBase):
         subject._rotate_attached_cells_(*args, **kwargs)
         source.pointdata.x = pc.show(subject.frame)
         return subject
-    
+
     def spin(self, *args, inplace: bool = True, **kwargs) -> "PolyData":
         """
-        Like rotate, but rotation happens around centroidal axes. Positional and keyword 
+        Like rotate, but rotation happens around centroidal axes. Positional and keyword
         arguments not listed here are forwarded to :class:`neumann.linalg.frame.ReferenceFrame`
 
         Parameters
@@ -1406,11 +1406,11 @@ class PolyData(PolyDataBase):
             a deep copy is created first. Default is True.
         **kwargs
             Forwarded to :class:`neumann.linalg.frame.ReferenceFrame`.
-            
+
         Examples
         --------
         Download the Stanford bunny and spin it about global Z with 90 degrees:
-        
+
         >>> from polymesh.examples import download_bunny
         >>> import numpy as np
         >>> bunny = download_bunny(tetra=False, read=True)
@@ -1483,8 +1483,8 @@ class PolyData(PolyDataBase):
         ----------
         All arguments are forwarded to :func:`.topo.topo.nodal_adjacency`.
         """
-        #topo = self.topology(jagged=True).to_ak()
-        #topo = ak.values_astype(topo, "int64")
+        # topo = self.topology(jagged=True).to_ak()
+        # topo = ak.values_astype(topo, "int64")
         topo = self.topology().astype(np.int64)
         return nodal_adjacency(topo, *args, **kwargs)
 
@@ -1505,13 +1505,13 @@ class PolyData(PolyDataBase):
     def center(self, target: FrameLike = None) -> ndarray:
         """
         Returns the center of the pointcloud of the mesh.
-        
+
         Parameters
         ----------
         target: FrameLike, Optional
             The target frame in which the returned coordinates are to be understood.
             A `None` value means the frame the mesh is embedded in. Default is None.
-        
+
         Returns
         -------
         numpy.ndarray
@@ -1528,13 +1528,13 @@ class PolyData(PolyDataBase):
     def centers(self, target: FrameLike = None) -> ndarray:
         """
         Returns the centers of the cells.
-        
+
         Parameters
         ----------
         target: FrameLike, Optional
             The target frame in which the returned coordinates are to be understood.
             A `None` value means the frame the mesh is embedded in. Default is None.
-        
+
         Returns
         -------
         numpy.ndarray
@@ -1574,7 +1574,7 @@ class PolyData(PolyDataBase):
         axes: Iterable, Optional
             The axes on which centralization is to be performed. A `None` value
             means all axes. Default is None.
-            
+
         Notes
         -----
         This operation changes the coordinates of all blocks that belong to the same
@@ -1705,16 +1705,16 @@ class PolyData(PolyDataBase):
             + "values as cells in the block."
         )
         return nodal_distribution_factors(topo, weights)
-    
+
     def _rotate_attached_cells_(self, *args, **kwargs):
         for block in self.cellblocks(inclusive=True):
             block.cd._rotate_(*args, **kwargs)
-    
-    def _in_all_pointdata_(self, key:str) -> bool:
+
+    def _in_all_pointdata_(self, key: str) -> bool:
         blocks = self.pointblocks(inclusive=True)
         return all(list(map(lambda b: key in b.db.fields, blocks)))
-    
-    def _in_all_celldata_(self, key:str) -> bool:
+
+    def _in_all_celldata_(self, key: str) -> bool:
         blocks = self.cellblocks(inclusive=True)
         return all(list(map(lambda b: key in b.db.fields, blocks)))
 
@@ -1724,11 +1724,13 @@ class PolyData(PolyDataBase):
             source = block.source()
             coords = source.coords()
             topo = block.topology()
-            
+
             point_data = None
             if isinstance(data, ndarray):
                 if not data.shape[0] == len(source.pd):
-                    raise ValueError("The length of scalars must match the number of points.")
+                    raise ValueError(
+                        "The length of scalars must match the number of points."
+                    )
                 point_data = data
             elif isinstance(data, str):
                 if data in source.pd.fields:
@@ -1737,7 +1739,7 @@ class PolyData(PolyDataBase):
                 if data is not None:
                     if not isinstance(data, str):
                         raise TypeError("Data must be a NumPy array or a string.")
-            
+
             if point_data is not None:
                 c, d, t = detach_mesh_data_bulk(coords, topo, point_data)
                 yield block, c, t, d
@@ -1755,8 +1757,8 @@ class PolyData(PolyDataBase):
                     yield block, c, t, d
                 else:
                     yield block, c, t, None
-                    
-    def _get_config_(self, key:str) -> dict:
+
+    def _get_config_(self, key: str) -> dict:
         if key in self.config:
             return self.config[key]
         else:
@@ -1916,7 +1918,7 @@ class PolyData(PolyDataBase):
 
             for b in self.cellblocks(inclusive=True, deep=deep):
                 params = copy(k3dparams)
-                config = b._get_config_(config_key) 
+                config = b._get_config_(config_key)
                 params.update(config)
                 if "color" in params:
                     if isinstance(params["color"], str):
@@ -2146,7 +2148,7 @@ class PolyData(PolyDataBase):
                 config_key = self.__class__._pv_config_key_
             for block, poly in zip(blocks, polys):
                 params = copy(pvparams)
-                config = block._get_config_(config_key)   
+                config = block._get_config_(config_key)
                 if scalars is not None:
                     config.pop("color", None)
                 params.update(config)

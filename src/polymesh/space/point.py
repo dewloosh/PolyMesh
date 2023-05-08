@@ -46,11 +46,11 @@ class Point(Vector):
     _frame_cls_ = CartesianFrame
 
     def __init__(
-        self, 
-        *args, 
-        frame:Union[ReferenceFrame, np.ndarray, Iterable]=None, 
-        id:int=None, 
-        gid:int=None, 
+        self,
+        *args,
+        frame: Union[ReferenceFrame, np.ndarray, Iterable] = None,
+        id: int = None,
+        gid: int = None,
         **kwargs
     ):
         if frame is None:
@@ -71,10 +71,10 @@ class Point(Vector):
                     frame = self._frame_cls_(frame)
                 elif isinstance(frame, Iterable):
                     frame = self._frame_cls_(np.array(frame, dtype=float))
-                    
+
         if not isinstance(frame, self._frame_cls_):
             raise ValueError("Invalid frame!")
-        
+
         super().__init__(*args, frame=frame, **kwargs)
         self._id = id
         self._gid = id if gid is None else gid

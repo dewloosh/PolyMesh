@@ -205,7 +205,7 @@ def _count_cells_at_nodes_np_(topo: ndarray, nodeIDs: ndarray) -> Dict[int, int]
 
 
 @njit(nogil=True, parallel=False, fastmath=True, cache=__cache)
-def _count_cells_at_nodes_reg_ak_(topo: akarray, nN:int) -> ndarray:
+def _count_cells_at_nodes_reg_ak_(topo: akarray, nN: int) -> ndarray:
     """
     Assumes a regular topology. Returns an array.
     """
@@ -343,7 +343,7 @@ def _cells_at_nodes_reg_np_(topo: ndarray):
 
 
 @njit(nogil=True, cache=__cache)
-def _cells_at_nodes_reg_ak_(topo: akarray, nN:int):
+def _cells_at_nodes_reg_ak_(topo: akarray, nN: int):
     """Assumes a regular topology."""
     ncols = count_cols(topo)
     nE = len(ncols)
