@@ -69,7 +69,7 @@ jobs:
           path: ~/project/htmlcov
 
 workflows:
-  build_test_publish:
+  main:
     jobs:
       - test310
       - test_pypi_publish:
@@ -80,12 +80,13 @@ workflows:
           filters:
             branches:
               only:
-                - nightly
+                - main
       - pypi_publish:
           context:
             - pypi deploy
           requires:
             - test310
+            - test_pypi_publish
           filters:
             branches:
               only:
