@@ -58,7 +58,7 @@ jobs:
           pkg-manager: pip
           pip-dependency-file: test-requirements.txt
       - run:
-          command: python setup.py install
+          command: pip install .
       - run:
           name: Run tests and generate artifact
           command: |
