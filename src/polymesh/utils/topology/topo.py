@@ -1,4 +1,4 @@
-from typing import MutableMapping, Union, Dict, List, Tuple, Iterable
+from typing import MutableMapping, Union, Dict, List, Tuple, Iterable, Any
 
 import numpy as np
 from numpy import ndarray
@@ -214,7 +214,7 @@ def _count_cells_at_nodes_reg_ak_(topo: akarray, nN: int) -> ndarray:
     count = np.zeros((nN), dtype=np.int64)
     for iE in prange(nE):
         for jNE in prange(ncols[iE]):
-            count[topo[iE, jNE]] += 1
+            count[topo[iE][jNE]] += 1
     return count
 
 
@@ -349,14 +349,14 @@ def _cells_at_nodes_reg_ak_(topo: akarray, nN: int):
     nE = len(ncols)
     count = _count_cells_at_nodes_reg_ak_(topo, nN)
     cmax = count.max()
-    ereg = np.zeros((nN, cmax), dtype=topo.dtype)
-    nreg = np.zeros((nN, cmax), dtype=topo.dtype)
+    ereg = np.zeros((nN, cmax), dtype=np.int64)
+    nreg = np.zeros((nN, cmax), dtype=np.int64)
     count[:] = 0
     for iE in range(nE):
         for jNE in range(ncols[iE]):
-            ereg[topo[iE, jNE], count[topo[iE, jNE]]] = iE
-            nreg[topo[iE, jNE], count[topo[iE, jNE]]] = jNE
-            count[topo[iE, jNE]] += 1
+            ereg[topo[iE][jNE], count[topo[iE][jNE]]] = iE
+            nreg[topo[iE][jNE], count[topo[iE][jNE]]] = jNE
+            count[topo[iE][jNE]] += 1
     return count, ereg, nreg
 
 
@@ -416,32 +416,32 @@ def _nodal_cell_data_to_spdata_(
 
 def cells_at_nodes(
     topo: TopoLike,
-    *args,
+    *_,
     frmt: str = None,
     assume_regular: bool = False,
     cellIDs: Iterable = None,
     return_counts: bool = False,
-    **kwargs,
-):
+    **__,
+) -> Any:
     """
     Returns data about element connectivity at the nodes of a mesh.
 
     Parameters
     ----------
-    topo : numpy.ndarray array or JaggedArray
+    topo: numpy.ndarray array or JaggedArray
         A 2d array (either jagged or not) representing topological data of a mesh.
-    frmt : str
+    frmt: str
         A string specifying the output format. Valid options are
         'jagged', 'csr', 'scipy-csr' and 'dicts'.
         See below for the details on the returned object.
-    return_counts : bool
+    return_counts: bool
         Wether to return the numbers of connecting elements at the nodes
         as a numpy array. If format is 'raw', the
         counts are always returned irrelevant to this option.
-    assume_regular : bool
+    assume_regular: bool
         If the topology is regular, you can gain some speed with providing
         it as `True`. Default is `False`.
-    cellIDs : numpy.ndarray
+    cellIDs: numpy.ndarray
         Indices of the cells in `topo`. If nor `None`, format must be 'dicts'.
         Default is `None`.
 
@@ -577,7 +577,7 @@ def _subtopo_1d_(
 ) -> ndarray:
     nN = np.sum(cuts[inds])
     nE = len(inds)
-    subindptr = np.zeros(nN + 1, dtype=cuts.dtype)
+    subindptr = np.zeros(nE + 1, dtype=cuts.dtype)
     subindptr[1:] = np.cumsum(cuts[inds])
     subtopo1d = np.zeros(nN, dtype=topo1d.dtype)
     for iE in prange(nE):
@@ -784,8 +784,8 @@ def inds_to_invmap_as_array(inds: np.ndarray):
 
 
 def nodal_adjacency(
-    topo: TopoLike, *args, frmt: str = None, assume_regular: bool = False, **kwargs
-):
+    topo: TopoLike, *_, frmt: str = None, assume_regular: bool = False, **__
+) -> Any:
     """
     Returns nodal adjacency information of a mesh.
 
@@ -795,7 +795,7 @@ def nodal_adjacency(
         A 2d array (either jagged or not) representing topological data of a mesh.
     frmt : str
         A string specifying the output format. Valid options are
-        'jagged', 'csr' and 'scipy-csr'. See below for the details on the
+        'jagged', 'csr', 'nx' and 'scipy-csr'. See below for the details on the
         returned object.
     assume_regular : bool
         If the topology is regular, you can gain some speed with providing

@@ -20,9 +20,10 @@ class TestMeshAnalysis(unittest.TestCase):
             z_resolution=40,
         )
         pd = PolyData.from_pv(cyl)
-        pd.nodal_adjacency_matrix(frmt="scipy-csr")
-        pd.nodal_adjacency_matrix(frmt="nx")
-        pd.nodal_adjacency_matrix(frmt="jagged")
+        pd.nodal_adjacency(frmt="scipy-csr")
+        pd.nodal_adjacency(frmt="nx")
+        pd.nodal_adjacency(frmt="jagged")
+        pd.nodal_adjacency_matrix()
 
     def test_knn(self):
         size = 80, 60, 20

@@ -1,4 +1,4 @@
-__version__ = "0.0.20"
+__version__ = "0.0.21"
 __description__ = "A Python package to build, manipulate and analyze polygonal meshes."
 
 from .space import PointCloud
@@ -33,4 +33,4 @@ __all__ = [
     "tetrahedralize",
 ]
 
-#_config = load_pyproject_config()
+# _config = load_pyproject_config()

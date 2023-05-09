@@ -20,6 +20,10 @@ def edges_Q4(quads: np.ndarray):
     return edges
 
 
+def edgeIds_T3():
+    return np.array([[0, 1], [1, 2], [2, 0]], dtype=int)
+
+
 def edgeIds_TET4():
     return np.array([[0, 1], [1, 2], [2, 0], [0, 3], [1, 3], [2, 3]], dtype=int)
 
