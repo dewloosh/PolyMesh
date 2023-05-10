@@ -7,6 +7,7 @@ import warnings
 
 from numpy import ndarray
 import numpy as np
+from scipy.sparse import spmatrix
 import awkward as ak
 from meshio import Mesh as MeshioMesh
 
@@ -840,7 +841,7 @@ class PolyData(PolyDataBase):
         key = PointData._dbkey_x_ if key is None else key
         return self.pointdata is not None and key in self.pointdata.fields
 
-    def source(self, key: str = None) -> "PolyData":
+    def source(self, key: str = None) -> Union["PolyData", None]:
         """
         Returns the closest (going upwards in the hierarchy) block that holds
         on to data with a certain field name. If called without arguments,
@@ -852,14 +853,13 @@ class PolyData(PolyDataBase):
         key: str
             A valid key in any of the blocks with data. Default is None.
         """
-        key = PointData._dbkey_x_ if key is None else key
-        if self.pointdata is not None:
-            if key in self.pointdata.fields:
-                return self
-        if not self.is_root():
-            return self.parent.source(key=key)
+        if self.is_source(key):
+            return self
         else:
-            raise KeyError("No data found with key '{}'".format(key))
+            if self.is_root():
+                return None
+            else:
+                return self.parent.source(key=key)
 
     def blocks(
         self, *, inclusive: bool = False, blocktype: Any = None, deep: bool = True, **kw
@@ -1473,20 +1473,39 @@ class PolyData(PolyDataBase):
         """
         return cells_around(self.centers(), radius, frmt=frmt)
 
-    def nodal_adjacency_matrix(self, *args, **kwargs):
+    def nodal_adjacency(self, *args, **kwargs) -> Any:
         """
         Returns the nodal adjecency matrix. The arguments are
         forwarded to the corresponding utility function (see below)
         alongside the topology of the mesh as the first argument.
 
-        Parameters
-        ----------
-        All arguments are forwarded to :func:`.topo.topo.nodal_adjacency`.
+        See also
+        --------
+        :func:`~polymesh.utils.topology.topo.nodal_adjacency`
         """
-        # topo = self.topology(jagged=True).to_ak()
-        # topo = ak.values_astype(topo, "int64")
-        topo = self.topology().astype(np.int64)
+        topo = self.topology(jagged=True).to_array()
+        if isinstance(topo, ak.Array):
+            topo = ak.values_astype(topo, "int64")
+        else:
+            assert isinstance(topo, ndarray)
+            topo = topo.astype(np.int64)
         return nodal_adjacency(topo, *args, **kwargs)
+
+    def nodal_adjacency_matrix(self) -> spmatrix:
+        """
+        Returns the nodal adjecency matrix. The arguments are
+        forwarded to the corresponding utility function (see below)
+        alongside the topology of the mesh as the first argument.
+
+        See also
+        --------
+        :func:`~polymesh.utils.topology.topo.nodal_adjacency`
+
+        Returns
+        -------
+        scipy.sparse.spmatrix
+        """
+        return self.nodal_adjacency(frmt="scipy-csr")
 
     def number_of_cells(self) -> int:
         """Returns the number of cells."""
@@ -1746,17 +1765,42 @@ class PolyData(PolyDataBase):
             else:
                 c, t = detach_mesh_bulk(coords, topo)
                 if data is not None:
-                    assert (
-                        data in block.cd.fields
-                    ), f"Unable to find data with key '{data}'."
-                    d = block.cd.db[data].to_numpy()
-                    if len(d.shape) == 2:
-                        c, t, d = explode_mesh_data_bulk(c, t, d)
+                    if data in block.cd.fields:
+                        d = block.cd.db[data].to_numpy()
+                        if len(d.shape) == 2:
+                            c, t, d = explode_mesh_data_bulk(c, t, d)
+                        else:
+                            assert len(d.shape) == 1, "Cell data must be 1d or 2d."
+                        yield block, c, t, d
                     else:
-                        assert len(d.shape) == 1, "Cell data must be 1d or 2d."
-                    yield block, c, t, d
+                        yield block, c, t, None
                 else:
                     yield block, c, t, None
+
+    def _has_plot_scalars_(self, scalars: Union[str, ndarray]):
+        """
+        Returns a boolean value for every cell block in the mesh. A value
+        for a block is True, if data is provided for plotting. If 'scalars'
+        is a NumPy array, it is assumed that the mesh is centralized an therefore
+        all values are True. Otherwise the data key must be a sting and if data is found
+        in a blocks database or in the database of the related source, the value is True.
+        """
+        res = []
+        for block in self.cellblocks(inclusive=True, deep=True):
+            if isinstance(scalars, ndarray):
+                res.append(True)
+            elif isinstance(scalars, str):
+                if block.source(scalars) is not None:
+                    res.append(True)
+                elif scalars in block.cd.fields:
+                    res.append(True)
+                else:
+                    res.append(False)
+            elif scalars is None:
+                res.append(False)
+            else:
+                raise ValueError("'scalars' must be a string or a NumPy array")
+        return res
 
     def _get_config_(self, key: str) -> dict:
         if key in self.config:
@@ -1779,7 +1823,7 @@ class PolyData(PolyDataBase):
             ----------
             deepcopy: bool, Optional
                 Default is False.
-            multiblock : bool, Optional
+            multiblock: bool, Optional
                 Wether to return the blocks as a `vtkMultiBlockDataSet` or a list
                 of `vtkUnstructuredGrid` instances. Default is False.
 
@@ -1991,7 +2035,7 @@ class PolyData(PolyDataBase):
                 A K3D plot widget to append to. This can also be given as the
                 first positional argument. Default is None, in which case it is
                 created using a call to :func:`k3d.plot`.
-            menu_visibility : bool, Optional
+            menu_visibility: bool, Optional
                 Whether to show the menu or not. Default is True.
             **kwargs: dict, Optional
                 Extra keyword arguments forwarded to :func:`to_k3d`.
@@ -2144,12 +2188,16 @@ class PolyData(PolyDataBase):
 
             pvparams = dict()
             blocks = self.cellblocks(inclusive=True, deep=True)
+
+            blocks_have_data = self._has_plot_scalars_(scalars)
+
             if config_key is None:
                 config_key = self.__class__._pv_config_key_
-            for block, poly in zip(blocks, polys):
+
+            for block, poly, has_data in zip(blocks, polys, blocks_have_data):
                 params = copy(pvparams)
                 config = block._get_config_(config_key)
-                if scalars is not None:
+                if has_data:
                     config.pop("color", None)
                 params.update(config)
                 if cmap is not None:

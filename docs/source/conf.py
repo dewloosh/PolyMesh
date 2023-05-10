@@ -55,7 +55,7 @@ extensions = [
     "nbsphinx_link",  # for including notebook files from outside the sphinx source root
     "sphinx_copybutton",  # for "copy to clipboard" buttons
     "sphinx.ext.mathjax",  # for math equations
-    #"sphinxcontrib.bibtex",  # for bibliographic references
+    # "sphinxcontrib.bibtex",  # for bibliographic references
     "sphinxcontrib.rsvgconverter",  # for SVG->PDF conversion in LaTeX output
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",

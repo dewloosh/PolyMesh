@@ -47,7 +47,6 @@ class LineData(PolyData):
         Plots collections of lines and data provided on the nodes using `plotly`.
 
         Returns the figure object.
-
         """
         coords = self.coords()
         topo = self.topology()
@@ -60,13 +59,13 @@ class LineData(PolyData):
 
         Parameters
         ----------
-        scalars : numpy.ndarray, Optional
+        scalars: numpy.ndarray, Optional
             Stacked nodal information as an 1d or 2d NumPy array. Default is None.
-        backend : str, Optional
+        backend: str, Optional
             The backend to use. Possible options are `plotly` and `vtk`
             (`vtk` is being managed through `PyVista`) at the moment.
             Default is 'plotly'.
-        scalar_labels : Iterable, Optional
+        scalar_labels: Iterable, Optional
             Labels for the datasets provided with 'scalars'. Default is None.
         """
         if backend == "vtk":

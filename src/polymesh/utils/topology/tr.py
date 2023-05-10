@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from ..tri import edges_tri
 from ..utils import cells_coords
 from ..topodata import (
+    edgeIds_T3,
     edgeIds_TET4,
     edgeIds_H8,
     edges_Q4,
@@ -33,6 +34,7 @@ __all__ = [
     "compose_trmap",
     "L2_to_L3",
     "T3_to_T6",
+    "T3_to_L2",
     "T6_to_T3",
     "Q4_to_Q8",
     "Q4_to_Q9",
@@ -389,6 +391,32 @@ def H8_to_Q4(
         return coords, +transform_topology(topo, path, *args, **kwargs)
     else:
         return (coords,) + transform_topology(topo, path, data, *args, **kwargs)
+
+
+def T3_to_L2(
+    coords: ndarray,
+    topo: ndarray,
+    data: DataLike = None,
+    *args,
+    path: ndarray = None,
+    **kwargs
+) -> Tuple[ndarray]:
+    if isinstance(path, ndarray):
+        assert path.shape[0] == 3, "Invalid shape!"
+        assert path.shape[1] == 2, "Invalid shape!"
+    else:
+        if path is None:
+            path = edgeIds_T3()
+        else:
+            raise NotImplementedError("Invalid path!")
+    if data is None:
+        nE = len(topo)
+        nSub, nSubN = path.shape
+        topo = np.reshape(transform_topology(topo, path), (nE, nSub, nSubN))
+        edges, _ = unique_topo_data(topo)
+        return coords, edges
+    else:
+        raise NotImplementedError("Data conversion is not available here!")
 
 
 def TET4_to_L2(
