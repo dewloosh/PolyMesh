@@ -3,12 +3,12 @@ myst_parser
 nbsphinx
 sphinx-gallery
 sphinx_copybutton
-#sphinxcontrib-bibtex
+sphinxcontrib-bibtex
 nbsphinx-link
 sphinxcontrib-svg2pdfconverter
 sphinx_design
 sphinx-inline-tabs
-furo
+pydata-sphinx-theme
 
 pyvista
 pandas

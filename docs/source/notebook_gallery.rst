@@ -13,4 +13,8 @@ Gallery
     gallery/disc.ipynb
     gallery/grids2d.ipynb
     gallery/grids3d.ipynb
+    gallery/import_file.ipynb
+    gallery/import_gmsh.ipynb
+    gallery/import_pyvista.ipynb
+    gallery/lighting.ipynb
     gallery/trigridQ4.ipynb

@@ -517,7 +517,7 @@ class PolyData(PolyDataBase):
     @classmethod
     def from_meshio(cls, mesh: MeshioMesh) -> "PolyData":
         """
-        Returns a :class:`PolyData` instance from a :class:`meshio.Mesh` instance.
+        Returns a :class:`~polymesh.polydata.PolyData` instance from a :class:`meshio.Mesh` instance.
         """
         GlobalFrame = CartesianFrame(dim=3)
 
@@ -542,15 +542,17 @@ class PolyData(PolyDataBase):
                 cd = celltype(topo=topo, frames=frames)
                 polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
             else:
-                msg = f"Cells of type '{cbtype}' are not supported here."
-                raise NotImplementedError(msg)
+                pass
+                # FIXME needs warning and logging
+                #msg = f"Cells of type '{cbtype}' are not supported here."
+                #raise NotImplementedError(msg)
 
         return polydata
 
     @classmethod
     def from_pv(cls, pvobj: pyVistaLike) -> "PolyData":
         """
-        Returns a :class:`PolyData` instance from
+        Returns a :class:`~polymesh.polydata.PolyData` instance from
         a :class:`pyvista.PolyData` or a :class:`pyvista.UnstructuredGrid`
         instance.
 
@@ -601,7 +603,7 @@ class PolyData(PolyDataBase):
                 cd = celltype(topo=vtktopo, frames=frames)
                 pd[vtkid] = PolyData(cd, frame=GlobalFrame)
             else:
-                msg = "The element type with vtkId <{}> is not jet" + "supported here."
+                msg = "The element type with vtkId <{}> is not jet " + "supported here."
                 raise NotImplementedError(msg.format(vtkid))
 
         return pd
@@ -923,7 +925,7 @@ class PolyData(PolyDataBase):
         return filter(lambda i: i.cd is not None, self.blocks(*args, **kwargs))
 
     @property
-    def point_fields(self):
+    def point_fields(self) -> Iterable[str]:
         """
         Returns the fields of all the pointdata of the object.
 
@@ -937,7 +939,7 @@ class PolyData(PolyDataBase):
         return np.unique(np.array(list(m)).flatten())
 
     @property
-    def cell_fields(self):
+    def cell_fields(self) -> Iterable[str]:
         """
         Returns the fields of all the celldata of the object.
 
@@ -1019,7 +1021,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        PolyData
+        :class:`~polymesh.polydata.PolyData`
             Returnes the object instance for continuitation.
         """
         if not deep:
@@ -1130,7 +1132,7 @@ class PolyData(PolyDataBase):
         self, *, return_inds: bool = False, from_cells: bool = False
     ) -> PointCloud:
         """
-        Returns the points as a :class:`..mesh.space.PointCloud` instance.
+        Returns the points as a :class:`~polymesh.space.pointcloud.PointCloud` instance.
 
         Notes
         -----
@@ -1139,7 +1141,7 @@ class PolyData(PolyDataBase):
 
         See Also
         --------
-        :class:`~polymesh.space.PointCloud`
+        :class:`~polymesh.space.pointcloud.PointCloud`
         :func:`coords`
         """
         target = self.frame
@@ -1198,8 +1200,8 @@ class PolyData(PolyDataBase):
 
         Example
         -------
-        >>> from polymesh.examples import stand_vtk
-        >>> pd = stand_vtk(read=True)
+        >>> from polymesh.examples import download_stand
+        >>> pd = download_stand(read=True)
         >>> pd.bounds()
         """
         c = self.coords(*args, **kwargs)
@@ -2206,8 +2208,10 @@ class PolyData(PolyDataBase):
                 if isinstance(show_scalar_bar, bool):
                     params["show_scalar_bar"] = show_scalar_bar
                 plotter.add_mesh(poly, **params)
+                
             if return_plotter:
                 return plotter
+            
             show_params = dict()
             if notebook:
                 show_params.update(jupyter_backend=jupyter_backend)
@@ -2216,6 +2220,7 @@ class PolyData(PolyDataBase):
                     plotter.show(auto_close=False)
                     plotter.show(screenshot=True)
                     return plotter.last_image
+                
             return plotter.show(**show_params)
 
     def plot(

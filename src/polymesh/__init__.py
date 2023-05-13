@@ -1,5 +1,6 @@
 __version__ = "0.0.22"
 __description__ = "A Python package to build, manipulate and analyze polygonal meshes."
+__project_name__ = "PolyMesh"
 
 from .space import PointCloud
 from .space import CartesianFrame

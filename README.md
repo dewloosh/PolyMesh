@@ -20,7 +20,7 @@ Here and there we also use [NetworkX](https://networkx.org/documentation/stable/
 
 ## Documentation
 
-The [documentation](https://PolyMesh.readthedocs.io/en/latest/) is hosted on ReadTheDocs, where you can find more examples.
+The [documentation](https://PolyMesh.readthedocs.io/en/latest/) is hosted on [ReadTheDocs](https://readthedocs.org/), where you can find more examples.
 
 ## Installation
 
@@ -38,4 +38,4 @@ PolyMesh can be installed from PyPI using `pip` on Python >= 3.7:
 
 ## License
 
-This package is licensed under the MIT license.
+This package is licensed under the [MIT license](https://opensource.org/license/mit/).
