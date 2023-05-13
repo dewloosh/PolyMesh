@@ -14,8 +14,8 @@ __all__ = ["grid", "gridQ4", "gridQ9", "gridH8", "gridH27", "knngridL2", "Grid"]
 
 
 def grid(
-    size: Tuple[float],
-    shape: Union[int, Tuple[int]],
+    size: Tuple[float] = None, 
+    shape: Union[int, Tuple[int]] = None,
     eshape: Union[str, Tuple[int]] = None,
     shift: Iterable = None,
     start: int = 0,
@@ -31,12 +31,12 @@ def grid(
 
     Parameters
     ----------
-    size: Tuple[float]
+    size: Tuple[float], Optional
         A 2-tuple, containg side lengths of a rectangular domain.
-        Should be provided alongside `shape`.
-    shape: Union[int, Tuple[int]]
+        Should be provided alongside `shape`. Default is None.
+    shape: Union[int, Tuple[int]], Optional
         An integer or a tuple of integers, describing number of cells along 
-        coordinate directions.
+        coordinate directions. Should be provided alongside `size`. Default is None.
     eshape: str or Tuple, Optional
         This specifies element shape.
         Supported strings are thw following:
