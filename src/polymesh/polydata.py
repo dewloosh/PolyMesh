@@ -542,7 +542,7 @@ class PolyData(PolyDataBase):
                 cd = celltype(topo=topo, frames=frames)
                 polydata[cbtype] = PolyData(cd, frame=GlobalFrame)
             else:
-                msg = f"Cells of type '{cbtype}' are nut supported here."
+                msg = f"Cells of type '{cbtype}' are not supported here."
                 raise NotImplementedError(msg)
 
         return polydata
