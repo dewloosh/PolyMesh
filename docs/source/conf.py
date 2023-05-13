@@ -180,13 +180,13 @@ html_theme_options = {
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = r"""
-{% set docname = 'doc/source/' + env.doc2path(env.docname, base=None) %}
+{% set docname = 'docs/source/' + env.doc2path(env.docname, base=None) %}
 
 .. raw:: html
 
     <div class="admonition note">
       This page was generated from
-      <a class="reference external" href="https://github.com/dewloosh/polymesh/blob/{{ env.config.release|e }}/{{ docname|e }}">{{ docname|e }}</a>.
+      <a class="reference external" href="https://github.com/dewloosh/PolyMesh/blob/{{ env.config.release|e }}/{{ docname|e }}">{{ docname|e }}</a>.
     </div>
 
 .. raw:: latex
@@ -198,7 +198,7 @@ nbsphinx_prolog = r"""
 
 # This is processed by Jinja2 and inserted after each notebook
 nbsphinx_epilog = r"""
-{% set docname = 'doc/source/' + env.doc2path(env.docname, base=None) %}
+{% set docname = 'docs/source/' + env.doc2path(env.docname, base=None) %}
 .. raw:: latex
 
     \nbsphinxstopnotebook{\scriptsize\noindent\strut
