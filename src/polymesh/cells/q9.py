@@ -19,7 +19,7 @@ class Q9(BiQuadraticQuadrilateral):
 
     See Also
     --------
-    :class:`BiQuadraticQuadrilateral`
+    :class:`~polymesh.polygon.BiQuadraticQuadrilateral`
     """
 
     shpfnc = shp_Q9_multi

@@ -18,7 +18,7 @@ class TET10(QuadraticTetraHedron):
 
     See Also
     --------
-    :class:`QuadraticTetraHedron`
+    :class:`~polymesh.polyhedron.QuadraticTetraHedron`
     """
 
     monomsfnc = monoms_TET10

@@ -14,14 +14,14 @@ __all__ = ["grid", "gridQ4", "gridQ9", "gridH8", "gridH27", "knngridL2", "Grid"]
 
 
 def grid(
-    *args,
-    size: Tuple[float] = None,
-    shape: Union[int, Tuple[int]] = None,
+    size: Tuple[float],
+    shape: Union[int, Tuple[int]],
     eshape: Union[str, Tuple[int]] = None,
     shift: Iterable = None,
     start: int = 0,
     bins: Iterable = None,
     centralize: bool = False,
+    path: Iterable = None,
     **kwargs
 ) -> Tuple[ndarray, ndarray]:
     """
@@ -31,33 +31,37 @@ def grid(
 
     Parameters
     ----------
-    size: tuple, Optional
+    size: Tuple[float]
         A 2-tuple, containg side lengths of a rectangular domain.
         Should be provided alongside `shape`.
-    shape: tuple or int, Optional
-        A 2-tuple, describing subdivisions along coordinate directions
-        Should be provided alongside `size`.
+    shape: Union[int, Tuple[int]]
+        An integer or a tuple of integers, describing number of cells along 
+        coordinate directions.
     eshape: str or Tuple, Optional
         This specifies element shape.
         Supported strings are thw following:
-        'Q4' : 4-noded quadrilateral
-        'Q9' : 9-noded quadrilateral
-        'H8' : 8-noded hexagon
-        'H27' : 27-noded hexagon
+          - 'Q4' : 4-noded quadrilateral
+          - 'Q9' : 9-noded quadrilateral
+          - 'H8' : 8-noded hexagon
+          - 'H27' : 27-noded hexagon
     shift: numpy.ndarray, Optional
         1d float array, specifying a translation.
-    start: index, Optional
+    start: int, Optional
         Starting value for node numbering. Default is 0.
     bins: numpy.ndarray, Optional
         Numpy array or an iterable of numy arrays.
     centralize: bool, Optional
         If True, the returned coordinates are centralized.
+    path: Iterable, Optional
+        A 1d iterable used to rewire the nodes of the resulting grid. If provided, the
+        j-th node of the i-th cell becomes ``topo[i, path[j]]``. Default is None.
 
     Notes
     -----
     1) The returned topology may not be compliant with vtk. If you want to use
-    the results of this call to build a vtk model, you have to account for this.
-    Optinally, you can use the dedicated grid generation routines of this module.
+    the results of this call to build a vtk model, you have to account for this
+    (for instance through the 'path' parameter). Optionally, you can use the dedicated 
+    grid generation routines of this module.
     2) If you'd rather get the result as a `PolyData`, use the `Grid` class.
 
     Returns
@@ -69,7 +73,7 @@ def grid(
 
     Examples
     --------
-    Create a simple hexagonal mesh
+    Create a simple hexagonal mesh of 8 x 6 x 2 cells
 
     >>> from polymesh import grid
     >>> size = 80, 60, 20
@@ -82,7 +86,6 @@ def grid(
     >>>     'size' : (1200, 600),
     >>>     'shape' : (30, 15),
     >>>     'eshape' : (2, 2),
-    >>>     'origo' : (0, 0),
     >>>     'start' : 0
     >>> }
     >>> coordsQ4, topoQ4 = grid(**gridparams)
@@ -95,6 +98,10 @@ def grid(
     See also
     --------
     :class:`~polymesh.grid.Grid`
+    :class:`~polymesh.grid.gridQ4`
+    :class:`~polymesh.grid.gridQ9`
+    :class:`~polymesh.grid.gridH8`
+    :class:`~polymesh.grid.gridH27`
     """
     if size is not None:
         nDime = len(size)
@@ -111,7 +118,6 @@ def grid(
     elif isinstance(eshape, str):
         if eshape == "Q4":
             return gridQ4(
-                *args,
                 size=size,
                 shape=shape,
                 shift=shift,
@@ -122,7 +128,6 @@ def grid(
             )
         elif eshape == "Q9":
             return gridQ9(
-                *args,
                 size=size,
                 shape=shape,
                 shift=shift,
@@ -133,7 +138,6 @@ def grid(
             )
         elif eshape == "H8":
             return gridH8(
-                *args,
                 size=size,
                 shape=shape,
                 shift=shift,
@@ -144,7 +148,6 @@ def grid(
             )
         elif eshape == "H27":
             return gridH27(
-                *args,
                 size=size,
                 shape=shape,
                 shift=shift,
@@ -175,6 +178,12 @@ def grid(
         coords[:, 1] -= center[1]
         if center.shape[0] > 2:
             coords[:, 2] -= center[2]
+            
+    if path is not None:
+        if not isinstance(path, Iterable):
+            raise TypeError("Argument 'path' must be an Iterable!")
+        path = np.array(path, dtype=int)
+        topo = transform_topology(topo, path)
 
     return coords, topo
 
@@ -597,7 +606,7 @@ def knngridL2(
 class Grid(PolyData):
     """
     A class to generate meshes based on grid-like data. All input
-    arguments are forwarded to :func:``grid``. The difference is that
+    arguments are forwarded to :func:`~polymesh.grid.grid`. The difference is that
     a :class:`~polymesh.polydata.PolyData` instance is returned, insted of
     raw mesh data.
 

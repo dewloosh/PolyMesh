@@ -20,7 +20,7 @@ class T3(Triangle):
 
     See Also
     --------
-    :class:`Triangle`
+    :class:`~polymesh.polygon.Triangle`
     """
 
     shpfnc = shp_T3_multi

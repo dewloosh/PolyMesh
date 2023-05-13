@@ -23,7 +23,7 @@ class L2(Line):
 
     See Also
     --------
-    :class:`~polymesh.polygon.Line`
+    :class:`~polymesh.line.Line`
     """
 
     shpfnc = shp_L2_multi

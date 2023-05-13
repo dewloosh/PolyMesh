@@ -18,8 +18,12 @@ import polymesh
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath("../../src"))
+
+from doc_utils import generate_notebook_gallery_rst
+
+generate_notebook_gallery_rst(reversed=True)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -31,7 +35,7 @@ author = "Bence Balogh"
 # The short X.Y version.
 version = polymesh.__version__
 # The full version, including alpha/beta/rc tags.
-release = polymesh.__version__
+release = "v" + polymesh.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -49,10 +53,10 @@ extensions = [
     "sphinx.ext.intersphinx",
     # Napoleon is a extension that enables Sphinx to parse both NumPy and Google style docstrings
     "sphinx.ext.napoleon",
-    # 'sphinx_gallery.gen_gallery',
-    # 'sphinx_gallery.load_style',  # load CSS for gallery (needs SG >= 0.6)
+    #'sphinx_gallery.gen_gallery',
+    #'sphinx_gallery.load_style',  # load CSS for gallery (needs SG >= 0.6)
     "nbsphinx",  # to handle jupyter notebooks
-    "nbsphinx_link",  # for including notebook files from outside the sphinx source root
+    # "nbsphinx_link",  # for including notebook files from outside the sphinx source root
     "sphinx_copybutton",  # for "copy to clipboard" buttons
     "sphinx.ext.mathjax",  # for math equations
     # "sphinxcontrib.bibtex",  # for bibliographic references
@@ -73,6 +77,12 @@ autosummary_generate = True
 templates_path = ["_templates"]
 
 exclude_patterns = ["_build"]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
+}
 
 # The master toctree document.
 master_doc = "index"
@@ -100,6 +110,7 @@ intersphinx_mapping = {
     "pandas": (r"https://pandas.pydata.org/pandas-docs/stable/", None),
     "awkward": (r"https://awkward-array.readthedocs.io/en/latest/", None),
     "neumann": (r"https://neumann.readthedocs.io/en/latest/", None),
+    "linkeddeepdict": (r"https://linkeddeepdict.readthedocs.io/en/latest/", None),
 }
 
 # -- MathJax Configuration -------------------------------------------------
@@ -165,3 +176,32 @@ html_theme_options = {
     "source_branch": "main",
     "source_directory": "docs/",
 }
+
+
+# This is processed by Jinja2 and inserted before each notebook
+nbsphinx_prolog = r"""
+{% set docname = 'doc/' + env.doc2path(env.docname, base=None) %}
+
+.. raw:: html
+
+    <div class="admonition note">
+      This page was generated from
+      <a class="reference external" href="https://github.com/dewloosh/polymesh/blob/{{ env.config.release|e }}/{{ docname|e }}">{{ docname|e }}</a>.
+    </div>
+
+.. raw:: latex
+
+    \nbsphinxstartnotebook{\scriptsize\noindent\strut
+    \textcolor{gray}{The following section was generated from
+    \sphinxcode{\sphinxupquote{\strut {{ docname | escape_latex }}}} \dotfill}}
+"""
+
+# This is processed by Jinja2 and inserted after each notebook
+nbsphinx_epilog = r"""
+{% set docname = 'doc/' + env.doc2path(env.docname, base=None) %}
+.. raw:: latex
+
+    \nbsphinxstopnotebook{\scriptsize\noindent\strut
+    \textcolor{gray}{\dotfill\ \sphinxcode{\sphinxupquote{\strut
+    {{ docname | escape_latex }}}} ends here.}}
+"""

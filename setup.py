@@ -35,19 +35,22 @@ with open("README.md", "r") as fh:
 with open("requirements.txt") as f:
     required = f.read().splitlines()
 
+testing_requires = ["pytest", "pandas", "pyarrow", "networkx", "pyvista", "tetgen"]
+all_requires = ["pyvista", "k3d", "vtk", "networkx", "pyarrow", "tetgen"]
 
 _init_path = "src/polymesh/__init__.py"
 _version = get_version(_init_path)
 _description = get_description(_init_path)
 _url = "https://github.com/dewloosh/PolyMesh"
-_download_url = _url + "/archive/refs/tags/{}.zip".format(_version)
-
+_download_url = _url + "/archive/refs/tags/v{}.zip".format(_version)
 
 setup(
     name="polymesh",
     version=_version,
     author="Bence Balogh",
+    maintainer="Bence Balogh",
     author_email="dewloosh@gmail.com",
+    maintainer_email="dewloosh@gmail.com",
     description=_description,
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -60,6 +63,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3 :: Only",
         "Operating System :: OS Independent",
         "Topic :: Scientific/Engineering",
@@ -69,7 +73,7 @@ setup(
     install_requires=required,
     zip_safe=False,
     extras_require={
-        "all": ["pyvista", "k3d", "vtk", "networkx", "pyarrow", "tetgen"],
-        "testing": ["pytest", "pandas", "pyarrow", "networkx", "pyvista", "tetgen"],
+        "all": all_requires,
+        "testing": testing_requires,
     },
 )

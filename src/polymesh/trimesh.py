@@ -182,7 +182,7 @@ class TriMesh(PolyData):
         See also
         --------
         :class:`~matplotlib.tri.Triangulation`
-        :func:`~polymesh.tri.triang.triangulate`
+        :func:`~polymesh.triang.triangulate`
         """
         coords, topo = self.coords(), self.topology()
         if topo.shape[-1] == 6:

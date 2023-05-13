@@ -19,6 +19,10 @@ from .abcdata import ABC_MeshData
 
 
 class PointDataBase(AkWrapper, ABC_MeshData):
+    """
+    Base class for PointData objects.
+    """
+    
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the points."""
@@ -36,6 +40,10 @@ class PointDataBase(AkWrapper, ABC_MeshData):
 
 
 class CellDataBase(AkWrapper, ABC_MeshData):
+    """
+    Base class for CellData objects.
+    """
+
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the cells."""
@@ -71,6 +79,10 @@ class CellDataBase(AkWrapper, ABC_MeshData):
 
 
 class PolyDataBase(LinkedDeepDict):
+    """
+    Base class for PolyData objects.
+    """
+    
     @abstractmethod
     def source(self, *args, **kwargs) -> "PolyDataBase":
         """Ought to return the object that holds onto point data."""

@@ -226,7 +226,7 @@ class PolyCell(CellData):
         ----------
         pcoords: numpy.ndarray
             Locations of the evaluation points.
-        N: integer, Optional
+        N: int, Optional
             Number of unknowns per node.
 
         Returns

@@ -36,7 +36,7 @@ class CellData(CellDataBase):
     t or thickness: numpy.ndarray, Optional
         1d float array of thicknesses. Only for 2d cells.
         Default is None.
-    areas: nmpy.ndarray, Optional
+    areas: numpy.ndarray, Optional
         1d float array of cross sectional areas. Only for 1d cells.
         Default is None.
     fields: dict, Optional
