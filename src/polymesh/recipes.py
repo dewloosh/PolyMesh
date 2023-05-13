@@ -118,7 +118,7 @@ def cylinder(
         applied to a trianglarion, and as a consequence it returns a more or
         less regular mesh. Otherwise the cylinder is created from a surface
         trangulation using the ``tetgen`` package. Default is ``True``.
-    voxelize: bool, Optional.
+    voxelize: bool, Optional
         If ``True``, the cylinder gets voxelized to a collection of H8 cells.
         In this case the size of a voxel can be controlled by specifying a
         flaot or an integer as the second parameter ``size``.

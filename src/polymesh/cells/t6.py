@@ -22,7 +22,7 @@ class T6(Triangle):
 
     See Also
     --------
-    :class:`Triangle`
+    :class:`~polymesh.polygon.Triangle`
     """
 
     shpfnc = shp_T6_multi

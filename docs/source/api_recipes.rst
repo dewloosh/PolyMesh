@@ -5,7 +5,8 @@ Mesh Generation
 Grid Generation
 ===============
 
-.. autofunction:: polymesh.grid.grid
+.. automodule:: polymesh.grid
+    :members:
 
 Recipes
 =======

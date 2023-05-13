@@ -20,7 +20,7 @@ class TET4(TetraHedron):
 
     See Also
     --------
-    :class:`~polymesh.tetrahedron.TetraHedron`
+    :class:`~polymesh.polyhedron.TetraHedron`
     """
 
     shpfnc = shp_TET4_multi

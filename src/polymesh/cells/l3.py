@@ -18,7 +18,7 @@ class L3(QuadraticLine):
 
     See Also
     --------
-    :class:`~polymesh.polygon.QuadraticLine`
+    :class:`~polymesh.line.QuadraticLine`
     """
 
     monomsfnc = monoms_L3

@@ -929,7 +929,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        numpy.ndaray
+        numpy.ndarray
             NumPy array of data keys.
         """
         pointblocks = list(self.pointblocks())
@@ -943,7 +943,7 @@ class PolyData(PolyDataBase):
 
         Returns
         -------
-        numpy.ndaray
+        numpy.ndarray
             NumPy array of data keys.
         """
         cellblocks = list(self.cellblocks())
@@ -1237,12 +1237,12 @@ class PolyData(PolyDataBase):
         return_inds: bool, Optional
             Returns the indices of the points. Default is False.
         jagged: bool, Optional
-            If True, returns the topology as a :class:`TopologyArray`
+            If True, returns the topology as a :class:`~polymesh.topoarray.TopologyArray`
             instance, even if the mesh is regular. Default is False.
 
         Returns
         -------
-        Union[numpy.ndarray, TopologyArray]
+        Union[numpy.ndarray, :class:`~polymesh.topoarray.TopologyArray`]
             The topology as a 2d integer array.
         """
         blocks = list(self.cellblocks(*args, inclusive=True, **kwargs))
@@ -1326,7 +1326,7 @@ class PolyData(PolyDataBase):
         ----------
         v: VectorLike, Optional
             A vector describing a translation.
-        frame: FrameLike, Optional
+        frame: :class:`~neumann.linalg.FrameLike`, Optional
             If `v` is only an array, this can be used to specify
             a frame in which the components should be understood.
         inplace: bool, Optional
@@ -1527,7 +1527,7 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        target: FrameLike, Optional
+        target: :class:`~neumann.linalg.FrameLike`, Optional
             The target frame in which the returned coordinates are to be understood.
             A `None` value means the frame the mesh is embedded in. Default is None.
 
@@ -1550,7 +1550,7 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        target: FrameLike, Optional
+        target: :class:`~neumann.linalg.FrameLike`, Optional
             The target frame in which the returned coordinates are to be understood.
             A `None` value means the frame the mesh is embedded in. Default is None.
 
@@ -1584,7 +1584,7 @@ class PolyData(PolyDataBase):
 
         Parameters
         ----------
-        target: FrameLike, Optional
+        target: :class:`~neumann.linalg.FrameLike`, Optional
             The target frame the mesh should be central to. A `None` value
             means the frame the mesh is embedded in. Default is True.
         inplace: bool, Optional
@@ -2133,7 +2133,7 @@ class PolyData(PolyDataBase):
 
             Returns
             -------
-            Union[None, pv.Plotter, np.ndarray]
+            Union[None, pv.Plotter, numpy.ndarray]
                 A PyVista plotter if `return_plotter` is `True`, a NumPy array if
                 `return_img` is `True`, or nothing.
 

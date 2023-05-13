@@ -1,4 +1,4 @@
-__version__ = "0.0.21"
+__version__ = "0.0.22"
 __description__ = "A Python package to build, manipulate and analyze polygonal meshes."
 
 from .space import PointCloud
