@@ -180,7 +180,7 @@ html_theme_options = {
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = r"""
-{% set docname = 'doc/' + env.doc2path(env.docname, base=None) %}
+{% set docname = 'doc/source' + env.doc2path(env.docname, base=None) %}
 
 .. raw:: html
 
@@ -198,7 +198,7 @@ nbsphinx_prolog = r"""
 
 # This is processed by Jinja2 and inserted after each notebook
 nbsphinx_epilog = r"""
-{% set docname = 'doc/' + env.doc2path(env.docname, base=None) %}
+{% set docname = 'doc/source' + env.doc2path(env.docname, base=None) %}
 .. raw:: latex
 
     \nbsphinxstopnotebook{\scriptsize\noindent\strut
