@@ -7,12 +7,12 @@ Contents
 .. toctree::
     :maxdepth: 2
 
-    notebooks
+    user_guide
 
 .. toctree::
     :maxdepth: 2
    
-    notebook_gallery
+    examples_gallery
 
 .. toctree::
     :maxdepth: 2
