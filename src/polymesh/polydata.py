@@ -1075,7 +1075,7 @@ class PolyData(PolyDataBase):
         assert self.is_root(), "This must be called on he root object!"
         if not inplace:
             return deepcopy(self).to_standard_form(inplace=True)
-
+        
         # merge points and point related data
         # + decorate the points with globally unique ids
         dpf = defaultdict(lambda: np.nan)
@@ -1092,7 +1092,7 @@ class PolyData(PolyDataBase):
         for pb in pointblocks:
             id = pim.generate_np(len(pb.pointdata))
             pb.pointdata.id = id
-            pb.pd.x = Vector(pb.pd.x, frame=pb.frame).show(frame)
+            pb.pd.x = PointCloud(pb.pd.x, frame=pb.frame).show(frame)
             for f in fields:
                 if f in pb.pd.fields:
                     data[f].append(pb.pointdata[f].to_numpy())
@@ -1117,7 +1117,7 @@ class PolyData(PolyDataBase):
         for cb in cellblocks:
             id = cb.source().pd.id
             cb.rewire(deep=False, imap=id)
-            cb.cd.id = cim.generate_np(len(cb.celldata))
+            cb.cd.id = atleast1d(cim.generate_np(len(cb.celldata)))
             for f in fields:
                 if f not in cb.celldata.fields:
                     cb.celldata[f] = np.full(len(cb.cd), dcf[f])
@@ -2264,7 +2264,7 @@ class PolyData(PolyDataBase):
         super().__join_parent__(parent, key)
         if self.celldata is not None:
             GIDs = self.root().cim.generate_np(len(self.celldata))
-            self.celldata.id = GIDs
+            self.celldata.id = atleast1d(GIDs)
             if self.celldata.pd is None:
                 self.celldata.pd = self.source().pd
             self.celldata.container = self

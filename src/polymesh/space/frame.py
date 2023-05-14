@@ -78,6 +78,16 @@ class CartesianFrame(Frame):
     ):
         axes = np.eye(dim) if axes is None else axes
         super().__init__(axes, *args, **kwargs)
+        if origo is not None:
+            if not isinstance(origo, ndarray) and isinstance(origo, Iterable):
+                origo = np.array(origo, dtype=float)
+                            
+            if isinstance(origo, ndarray):
+                if not len(origo.shape) == 1:
+                    raise ValueError("'origo' must be a 1d iterable!")
+            else:
+                raise TypeError("'origo' must be a NumPy array or an iterable!")
+            
         self._origo = origo
 
     @property
@@ -164,6 +174,9 @@ class CartesianFrame(Frame):
                 t = np.zeros_like(s)
             return Vector(s - t).show(target)
 
+    def rotate(self, *args, **kwargs) -> "CartesianFrame":
+        return super().rotate(*args, **kwargs)
+    
     def move(self, d: VectorLike, frame: FrameLike = None) -> "CartesianFrame":
         """
         Moves the frame by shifting its origo.
@@ -195,6 +208,8 @@ class CartesianFrame(Frame):
         >>> B.move(v.array, frame=B)
         """
         if not isinstance(d, Vector):
+            if not isinstance(d, ndarray):
+                d = np.array(d)
             d = Vector(d, frame=frame)
         if self._origo is None:
             self._origo = np.zeros(len(self.axes))

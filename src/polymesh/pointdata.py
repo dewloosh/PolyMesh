@@ -37,9 +37,9 @@ class PointData(PointDataBase):
     _point_cls_ = PointCloud
     _frame_class_ = CartesianFrame
     _attr_map_ = {
-        "x": "x",  # coordinates
-        "activity": "activity",  # activity of the points
-        "id": "id",  # global indices of the points
+        "x": "_x",  # coordinates
+        "activity": "_activity",  # activity of the points
+        "id": "_id",  # global indices of the points
     }
 
     def __init__(

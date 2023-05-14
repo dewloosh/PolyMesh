@@ -1,4 +1,5 @@
 import numpy as np
+from contextlib import suppress
 
 from .polydata import PolyData
 from .cells import L2, L3
@@ -6,10 +7,9 @@ from .cells import L2, L3
 from .config import __hasplotly__
 
 if __hasplotly__:
-    try:
+    with suppress(ImportError):
         from dewloosh.plotly import plot_lines_3d
-    except Exception:
-        pass
+
 
 __all__ = ["LineData"]
 
