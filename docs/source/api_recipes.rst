@@ -2,7 +2,7 @@
 Mesh Generation
 ===============
 
-Grid Generation
+Grid generation
 ===============
 
 .. automodule:: polymesh.grid
@@ -12,4 +12,10 @@ Recipes
 =======
 
 .. automodule:: polymesh.recipes
+    :members:
+
+Downloadable examples
+=====================
+
+.. automodule:: polymesh.examples
     :members:

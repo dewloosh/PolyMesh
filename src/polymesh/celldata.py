@@ -59,13 +59,13 @@ class CellData(CellDataBase):
     """
 
     _attr_map_ = {
-        "nodes": "_nodes_",  # node indices
-        "frames": "_frames_",  # coordinate frames
-        "ndf": "_ndf_",  # nodal distribution factors
-        "id": "_id_",  # global indices of the cells
-        "areas": "_areas_",  # areas of 1d cells
-        "t": "_t_",  # thicknesses for 2d cells
-        "activity": "_activity_",  # activity of the cells
+        "nodes": "_nodes",  # node indices
+        "frames": "_frames",  # coordinate frames
+        "ndf": "_ndf",  # nodal distribution factors
+        "id": "_id",  # global indices of the cells
+        "areas": "_areas",  # areas of 1d cells
+        "t": "_t",  # thicknesses for 2d cells
+        "activity": "_activity",  # activity of the cells
     }
 
     def __init__(

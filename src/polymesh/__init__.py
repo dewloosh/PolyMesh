@@ -1,6 +1,3 @@
-__version__ = "0.0.22"
-__description__ = "A Python package to build, manipulate and analyze polygonal meshes."
-
 from .space import PointCloud
 from .space import CartesianFrame
 from .polydata import PolyData
@@ -34,3 +31,7 @@ __all__ = [
 ]
 
 # _config = load_pyproject_config()
+
+__version__ = "0.0.23"
+__description__ = "A Python package to build, manipulate and analyze polygonal meshes."
+__project_name__ = "PolyMesh"  # for Sphinx

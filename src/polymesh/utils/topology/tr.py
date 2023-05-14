@@ -75,17 +75,19 @@ def transform_topology(
     Parameters
     ----------
     topo: numpy.ndarray
+        The input topology.
     path: numpy.ndarray
+        The transformation path.
     data: numpy.ndarray, Optional
-        Default is None.
+        Data attached to the points or the cells. Default is None.
     MT: bool, Optional
-        Default is True
+        If True, transformation is carried out using multiple threads. Default is True.
     max_workers: int, Optional
-        Only relevant if MT is True. Default is 4.
+        The maximum number of worker threads. Only relevant if MT is True. Default is 4.
 
     Returns
     -------
-    Union[ndarray, Tuple[ndarray]]
+    Union[numpy.ndarray, Tuple[numpy.ndarray]]
         Topology, and optionally data as NumPy arrays.
 
     Example
@@ -118,7 +120,7 @@ def transform_topology(
     >>> nE1 * 4 == nE2
     True
 
-    Both time, the original triangulation is splitted to 4 subtriangles per
+    In both cases, the original triangulation is splitted to 4 subtriangles per
     each cell. Hence, `transform_topology` is more general, since you have more
     control over how you want to split the cells that make up the original mesh.
     """
@@ -133,7 +135,8 @@ def transform_topology(
             try:
                 data = data.to_numpy()
             except Exception:
-                raise TypeError("Invalid data type '{}'".format(data.__class__))
+                raise TypeError(
+                    "Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
             data = transform_topology_data(topo, data, path)
             return _transform_topology_(topo, path), data
@@ -292,7 +295,8 @@ def Q9_to_Q4(
 
 def Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray = None):
     if path is None:
-        path = np.array([[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
+        path = np.array(
+            [[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
     return _Q9_to_T6(coords, topo, path)
 
 
@@ -321,7 +325,8 @@ def H8_to_TET4(
     else:
         if path is None:
             path = np.array(
-                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0],
+                    [6, 5, 7, 2], [0, 2, 7, 5]],
                 dtype=topo.dtype,
             )
         elif isinstance(path, str):
