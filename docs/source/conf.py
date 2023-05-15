@@ -15,7 +15,7 @@ import os
 from datetime import date
 import warnings
 
-import polymesh
+import polymesh as library
 
 from sphinx.config import Config
 
@@ -25,14 +25,19 @@ from sphinx.config import Config
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath("../../src"))
 
-from doc_utils import generate_notebook_gallery_rst
+from doc_utils import generate_examples_gallery_rst
 
-generate_notebook_gallery_rst(reversed=True)
+generate_examples_gallery_rst(
+    title="Examples",
+    filename="examples_gallery",
+    foldername="examples",
+    reversed=True
+)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = polymesh.__project_name__
+project = library.__project_name__
 copyright = "2014-%s, Bence Balogh" % date.today().year
 author = "Bence Balogh"
 
@@ -42,9 +47,9 @@ def setup(app: Config):
 
 
 # The short X.Y version.
-version = polymesh.__version__
+version = library.__version__
 # The full version, including alpha/beta/rc tags.
-release = "v" + polymesh.__version__
+release = "v" + library.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -125,7 +130,7 @@ intersphinx_mapping = {
 # -- bibtex configuration -------------------------------------------------
 # https://sphinxcontrib-bibtex.readthedocs.io/en/latest/usage.html
 
-bibtex_bibfiles = ['refs.bib']
+bibtex_bibfiles = ['references.bib']
 bibtex_default_style = 'unsrt'
 
 # If no encoding is specified, utf-8-sig is assumed.
