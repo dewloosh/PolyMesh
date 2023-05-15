@@ -31,7 +31,7 @@ Here and there we also use [NetworkX](https://networkx.org/documentation/stable/
 - Symbolic shape function generation for arbitrarily structured Lagrangian cells in 1, 2 and 3 dimensions.
 - Connections to popular third party libraries.
 
-## Projects using `PolyMesh`
+## Projects using PolyMesh
 
 - [SigmaEpsilon](https://github.com/dewloosh/SigmaEpsilon) - A Python library for computational solid mechanics.
 - [PyAxisVM](https://github.com/AxisVM/pyaxisvm) - The official Python package of [AxisVM](https://axisvm.eu/), a popular structural analysis and design software.
@@ -73,7 +73,7 @@ Contributions are currently expected in any the following ways:
 
 Although `Polymesh` works without `VTK` or `PyVista` being installed, it is highly influenced by these libraries and works best with them around. Also shout-out for the developers of `NumPy`, `Scipy`, `Numba`, `Awkward` and all the third-party libraries involved in the project. Whithout these libraries the concept of writing performant, yet elegant Python code would be much more difficult.
 
-**A lot of the packages mentioned on this document here and the introduction have a citable research paper. If you use `PolyMesh` in your work, take a moment to check them out and cite their papers.**
+**A lot of the packages mentioned on this document here and the introduction have a citable research paper. If you use them in your work through PolyMesh, take a moment to check out their documentations and cite their papers.**
 
 Also, funding of these libraries is partly based on the size of the community they are able to support. If what you are doing strongly relies on these libraries, don't forget to press the :star: button to show your support.
 
