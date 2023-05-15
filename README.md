@@ -21,16 +21,15 @@ Here and there we also use [NetworkX](https://networkx.org/documentation/stable/
 
 ## Highlights
 
-- Linear transformations of points and pointclouds.
+- Classes to handle points, pointclouds, reference frames and jagged topologies.
 - Array-like mesh composition with a Numba-jittable database model. Join or split meshes, attach numerical data and save to and load from disk.
-- Efficient handling of jagged topologies.
 - Simplified and preconfigured plotting facility using PyVista.
 - Grid generation in 1, 2 and 3 dimensions for arbitrarily structured Lagrangian cells.
-- A mechanism of all sorts of geometrical and topological transformations.
-- A configurable nodal distribution mechanism to effortlessly pass around data between points and cells.
+- A mechanism for all sorts of geometrical and topological transformations.
+- A customizable nodal distribution mechanism to effortlessly pass around data between points and cells.
 - Generation of *Pseudo Peripheral Nodes*, *Rooted Level Structures* and *Adjancency Matrices* for arbitrary polygonal meshes.
 - Symbolic shape function generation for arbitrarily structured Lagrangian cells in 1, 2 and 3 dimensions.
-- Connection to popular third party libraries.
+- Connections to popular third party libraries.
 
 ## Projects using `PolyMesh`
 
@@ -57,7 +56,7 @@ PolyMesh can be installed from PyPI using `pip` on Python >= 3.7:
 
 ## How to contribute?
 
-Contributions are curreltly expected in any the following ways:
+Contributions are currently expected in any the following ways:
 
 - finding bugs
   If you run into trouble when using the library and you think it is a bug, feel free to raise an issue.
