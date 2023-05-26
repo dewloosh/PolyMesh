@@ -14,7 +14,7 @@ __all__ = ["grid", "gridQ4", "gridQ9", "gridH8", "gridH27", "knngridL2", "Grid"]
 
 
 def grid(
-    size: Tuple[float] = None, 
+    size: Tuple[float] = None,
     shape: Union[int, Tuple[int]] = None,
     eshape: Union[str, Tuple[int]] = None,
     shift: Iterable = None,
@@ -35,7 +35,7 @@ def grid(
         A 2-tuple, containg side lengths of a rectangular domain.
         Should be provided alongside `shape`. Default is None.
     shape: Union[int, Tuple[int]], Optional
-        An integer or a tuple of integers, describing number of cells along 
+        An integer or a tuple of integers, describing number of cells along
         coordinate directions. Should be provided alongside `size`. Default is None.
     eshape: str or Tuple, Optional
         This specifies element shape.
@@ -60,7 +60,7 @@ def grid(
     -----
     1) The returned topology may not be compliant with vtk. If you want to use
     the results of this call to build a vtk model, you have to account for this
-    (for instance through the 'path' parameter). Optionally, you can use the dedicated 
+    (for instance through the 'path' parameter). Optionally, you can use the dedicated
     grid generation routines of this module.
     2) If you'd rather get the result as a `PolyData`, use the `Grid` class.
 
@@ -178,7 +178,7 @@ def grid(
         coords[:, 1] -= center[1]
         if center.shape[0] > 2:
             coords[:, 2] -= center[2]
-            
+
     if path is not None:
         if not isinstance(path, Iterable):
             raise TypeError("Argument 'path' must be an Iterable!")
