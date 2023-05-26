@@ -135,8 +135,7 @@ def transform_topology(
             try:
                 data = data.to_numpy()
             except Exception:
-                raise TypeError(
-                    "Invalid data type '{}'".format(data.__class__))
+                raise TypeError("Invalid data type '{}'".format(data.__class__))
         if isinstance(data, ndarray):
             data = transform_topology_data(topo, data, path)
             return _transform_topology_(topo, path), data
@@ -295,8 +294,7 @@ def Q9_to_Q4(
 
 def Q9_to_T6(coords: ndarray, topo: ndarray, path: ndarray = None):
     if path is None:
-        path = np.array(
-            [[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
+        path = np.array([[0, 8, 2, 4, 5, 1], [0, 6, 8, 3, 7, 4]], dtype=topo.dtype)
     return _Q9_to_T6(coords, topo, path)
 
 
@@ -325,8 +323,7 @@ def H8_to_TET4(
     else:
         if path is None:
             path = np.array(
-                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0],
-                    [6, 5, 7, 2], [0, 2, 7, 5]],
+                [[1, 2, 0, 5], [3, 0, 2, 7], [5, 4, 7, 0], [6, 5, 7, 2], [0, 2, 7, 5]],
                 dtype=topo.dtype,
             )
         elif isinstance(path, str):

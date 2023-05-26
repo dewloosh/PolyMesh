@@ -13,7 +13,7 @@ __all__ = [
     "download_stand",
     "download_bunny",
     "download_bunny_coarse",
-    "download_gt40"
+    "download_gt40",
 ]
 
 
@@ -40,11 +40,11 @@ def delete_downloads():
 def download_stand(read: bool = False) -> Union[str, PolyData]:
     """
     Downloads and optionally reads the stand example as a vtk file.
-    
+
     Parameters
     ----------
     read: bool, Optional
-        If False, the path of the mesh file is returned instead of a 
+        If False, the path of the mesh file is returned instead of a
         :class:`~polymesh.polydata.PolyData` object. Default is False.
 
     Example
@@ -69,7 +69,7 @@ def download_bunny(tetra: bool = False, read: bool = False) -> Union[str, PolyDa
         If True, the returned mesh is a tetrahedral one, otherwise
         it is a surface triangulation. Default is False.
     read: bool, Optional
-        If False, the path of the mesh file is returned instead of a 
+        If False, the path of the mesh file is returned instead of a
         :class:`~polymesh.polydata.PolyData` object. Default is False.
 
     Example
@@ -96,7 +96,7 @@ def download_bunny_coarse(
         If True, the returned mesh is a tetrahedral one, otherwise
         it is a surface triangulation. Default is False.
     read: bool, Optional
-        If False, the path of the mesh file is returned instead of a 
+        If False, the path of the mesh file is returned instead of a
         :class:`~polymesh.polydata.PolyData` object. Default is False.
 
     Example
@@ -110,18 +110,16 @@ def download_bunny_coarse(
         return PolyData.read(vtkpath)
     else:
         return vtkpath
-    
-    
-def download_gt40(
-    read: bool = False
-) -> Union[str, PolyData]:
+
+
+def download_gt40(read: bool = False) -> Union[str, PolyData]:
     """
     Downloads and optionally reads the Gt40 example as a vtk file.
-    
+
     Parameters
     ----------
     read: bool, Optional
-        If False, the path of the mesh file is returned instead of a 
+        If False, the path of the mesh file is returned instead of a
         :class:`~polymesh.polydata.PolyData` object. Default is False.
 
     Example
@@ -135,18 +133,16 @@ def download_gt40(
         return PolyData.read(vtkpath)
     else:
         return vtkpath
-    
-    
-def download_badacsony(
-    read: bool = False
-) -> Union[str, PolyData]:
+
+
+def download_badacsony(read: bool = False) -> Union[str, PolyData]:
     """
     Downloads and optionally reads the badacsony example as a vtk file.
-    
+
     Parameters
     ----------
     read: bool, Optional
-        If False, the path of the mesh file is returned instead of a 
+        If False, the path of the mesh file is returned instead of a
         :class:`~polymesh.polydata.PolyData` object. Default is False.
 
     Example

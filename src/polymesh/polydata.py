@@ -544,8 +544,8 @@ class PolyData(PolyDataBase):
             else:
                 pass
                 # FIXME needs warning and logging
-                #msg = f"Cells of type '{cbtype}' are not supported here."
-                #raise NotImplementedError(msg)
+                # msg = f"Cells of type '{cbtype}' are not supported here."
+                # raise NotImplementedError(msg)
 
         return polydata
 
@@ -1075,7 +1075,7 @@ class PolyData(PolyDataBase):
         assert self.is_root(), "This must be called on he root object!"
         if not inplace:
             return deepcopy(self).to_standard_form(inplace=True)
-        
+
         # merge points and point related data
         # + decorate the points with globally unique ids
         dpf = defaultdict(lambda: np.nan)
@@ -2208,10 +2208,10 @@ class PolyData(PolyDataBase):
                 if isinstance(show_scalar_bar, bool):
                     params["show_scalar_bar"] = show_scalar_bar
                 plotter.add_mesh(poly, **params)
-                
+
             if return_plotter:
                 return plotter
-            
+
             show_params = dict()
             if notebook:
                 show_params.update(jupyter_backend=jupyter_backend)
@@ -2220,7 +2220,7 @@ class PolyData(PolyDataBase):
                     plotter.show(auto_close=False)
                     plotter.show(screenshot=True)
                     return plotter.last_image
-                
+
             return plotter.show(**show_params)
 
     def plot(

@@ -22,7 +22,7 @@ class PointDataBase(AkWrapper, ABC_MeshData):
     """
     Base class for PointData objects.
     """
-    
+
     @abstractproperty
     def id(self) -> ndarray:
         """Ought to return global ids of the points."""
@@ -82,7 +82,7 @@ class PolyDataBase(LinkedDeepDict):
     """
     Base class for PolyData objects.
     """
-    
+
     @abstractmethod
     def source(self, *args, **kwargs) -> "PolyDataBase":
         """Ought to return the object that holds onto point data."""

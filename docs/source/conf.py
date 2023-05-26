@@ -22,16 +22,13 @@ from sphinx.config import Config
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("../../src"))
 
 from doc_utils import generate_examples_gallery_rst
 
 generate_examples_gallery_rst(
-    title="Examples",
-    filename="examples_gallery",
-    foldername="examples",
-    reversed=True
+    title="Examples", filename="examples_gallery", foldername="examples", reversed=True
 )
 
 # -- Project information -----------------------------------------------------
@@ -43,7 +40,7 @@ author = "Bence Balogh"
 
 
 def setup(app: Config):
-    app.add_config_value('project_name', project, 'html')
+    app.add_config_value("project_name", project, "html")
 
 
 # The short X.Y version.
@@ -130,11 +127,11 @@ intersphinx_mapping = {
 # -- bibtex configuration -------------------------------------------------
 # https://sphinxcontrib-bibtex.readthedocs.io/en/latest/usage.html
 
-bibtex_bibfiles = ['references.bib']
-bibtex_default_style = 'unsrt'
+bibtex_bibfiles = ["references.bib"]
+bibtex_default_style = "unsrt"
 
 # If no encoding is specified, utf-8-sig is assumed.
-#bibtex_encoding = 'latin'
+# bibtex_encoding = 'latin'
 
 # -- MathJax Configuration -------------------------------------------------
 

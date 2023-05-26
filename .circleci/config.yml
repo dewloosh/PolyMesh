@@ -72,6 +72,7 @@ workflows:
   main:
     jobs:
       - test310
+
       - test_pypi_publish:
           context:
             - pypi deploy
@@ -81,6 +82,7 @@ workflows:
             branches:
               only:
                 - main
+                
       - pypi_publish:
           context:
             - pypi deploy
